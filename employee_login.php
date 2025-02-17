@@ -1,3 +1,6 @@
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -64,15 +67,16 @@
         .admin-link a:hover {
             text-decoration: underline;
         }
-    </style>
+           </style>
 </head>
 <body>
     <header>
+          
         <h1>Employee Performance Tracking System</h1>
     </header>
     <div class="container">
         <h2>Employee Login</h2>
-        <form action="employee_authenticate.php" method="post">
+            <form action="employee_authenticate.php" method="post">
             <label for="email">Email:</label>
             <input type="email" id="email" name="email" required>
             

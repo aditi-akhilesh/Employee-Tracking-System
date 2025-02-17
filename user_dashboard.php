@@ -86,8 +86,118 @@ if (!isset($_SESSION['user_email'])) {
             background-color: white;
             overflow-y: auto; /* Allow scrolling for large content */
         }
+       .profile-details {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+}
+
+.update-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.update-btn {
+    grid-column: 1 / -1;
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    margin-top: 20px;
+}
+
+.update-btn:hover {
+    background-color: #45a049;
+}
+
     </style>
     <script>
+        function showProfileForm() {
+    const contentArea = document.getElementById('content-area');
+    contentArea.innerHTML = `
+        <div class="profile-details">
+            <h2>Personal Details</h2>
+            <form class="update-form">
+                <div class="form-group">
+                    <label for="employee_id">Employee ID:</label>
+                    <input type="text" id="employee_id" value="EMP001" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="first_name">First Name:</label>
+                    <input type="text" id="first_name" value="<?php echo htmlspecialchars($_SESSION['first_name']); ?>" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="last_name">Last Name:</label>
+                    <input type="text" id="last_name" value="<?php echo htmlspecialchars($_SESSION['last_name']); ?>" readonly>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" value="<?php echo htmlspecialchars($_SESSION['user_email']); ?>" readonly>
+                </div>                <div class="form-group">
+                    <label for="phone">Phone Number:</label>
+                    <input type="tel" id="phone" value="123-456-7890">
+                </div>
+
+                <div class="form-group">
+                    <label for="street">Street Name:</label>
+                    <input type="text" id="street" value="123 Main Street">
+                </div>
+
+                <div class="form-group">
+                    <label for="apartment">Apartment:</label>
+                    <input type="text" id="apartment" value="Apt 4B">
+                </div>
+
+                <div class="form-group">
+                    <label for="city">City:</label>
+                    <input type="text" id="city" value="New York">
+                </div>
+
+                <div class="form-group">
+                    <label for="zip">ZIP Code:</label>
+                    <input type="text" id="zip" value="10001">
+                </div>
+
+                <div class="form-group">
+                    <label for="country">Country:</label>
+                    <input type="text" id="country" value="United States">
+                </div>
+
+                <div class="form-group">
+                    <label for="emergency_contact">Emergency Contact:</label>
+                    <input type="tel" id="emergency_contact" value="987-654-3210">
+                </div>
+
+                <button type="submit" class="update-btn">Update Details</button>
+            </form>
+        </div>
+    `;
+}
+
         // JavaScript to handle dropdown visibility
         function toggleDropdown(event, id) {
             event.preventDefault(); // Prevent default link behavior
@@ -136,7 +246,7 @@ if (!isset($_SESSION['user_email'])) {
 			<!-- Profile Management -->	
 			<li><a href="#" onclick="toggleDropdown(event, 'profile-dropdown')">Profile Management</a>	
 				<ul id="profile-dropdown" class="dropdown">	
-					<li><a href="#">View and update personal details</a></li>	
+					<li><a href="#" onclick="showProfileForm()">View and update personal details</a></li>	
 					<li><a href="#">Change password</a></li>	
 				</ul>	
 			</li>	
@@ -196,11 +306,18 @@ if (!isset($_SESSION['user_email'])) {
 		 </ul>	
 	  </div>
 	 
-   <!-- Content Area -->
-   <div class='content' id='content-area'>
-	   <h2><?php echo htmlspecialchars($_SESSION['user_email']); ?></h2>
-	   <p>Select an option from the menu on the left to get started.</p>
-   </div>
+  <!-- Content Area -->
+<div class='content' id='content-area'>
+    <h2>Welcome, <?php 
+        if(isset($_SESSION['first_name']) && isset($_SESSION['last_name'])) {
+            echo htmlspecialchars($_SESSION['first_name']) . ' ' . 
+                 htmlspecialchars($_SESSION['last_name']);
+        } else {
+            echo htmlspecialchars($_SESSION['user_email']);
+        }
+    ?></h2>
+    <p>Select an option from the menu on the left to get started.</p>
+</div>
    </div>
    </body>
    </html>
