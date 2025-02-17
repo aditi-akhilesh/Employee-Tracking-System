@@ -26,9 +26,10 @@
             background-color: white;
             padding: 2em;
             border-radius: 5px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
         }
         h2 {
+            text-align: center;
             margin-top: 0;
             color: #333;
         }
@@ -72,8 +73,9 @@
 <body>
     <header>
           
-        <h1>Employee Performance Tracking System</h1>
+        <h1>Employee Tracking System</h1>
     </header>
+      <br> <h3 style="text-align: center; color: #333;">Welcome to Employee Tracking Portal!</h3><br>
     <div class="container">
         <h2>Employee Login</h2>
             <form action="employee_authenticate.php" method="post">
@@ -83,7 +85,14 @@
             <label for="password">Password:</label>
             <input type="password" id="password" name="password" required>
             
-            <input type="submit" value="Login">
+            <input type="submit" value="Login"> 
+            <?php
+            session_start();
+           if (isset($_SESSION['error'])) {
+           echo "<p style='color:red;'>" . $_SESSION['error'] . "</p>";
+           unset($_SESSION['error']); // Clear the error after displaying it
+           }
+          ?>
         </form>
         <div class="admin-link">
             <p>Are you an admin? <a href="admin_login.php">Login here</a></p>

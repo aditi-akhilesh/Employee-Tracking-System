@@ -3,23 +3,35 @@ session_start();
 
 // Hardcoded employee credentials
 $employees = [
-    ['email' => 'kondojuvaishali98@gmail.com', 'password' => password_hash('password123', PASSWORD_DEFAULT)],
-    ['email' => 'abc@gmail.com', 'password' => password_hash('1234', PASSWORD_DEFAULT)],
+    ['first_name' => 'Vaishali', 'last_name' => 'Kondoju', 'email' => 'kondojuvaishali98@gmail.com', 'password' => password_hash('password123', PASSWORD_DEFAULT), 'role' => 'Admin'],
+    ['first_name' => 'Amritha', 'last_name' => 'P', 'email' => 'employee2@gmail.com', 'password' => password_hash('mypassword', PASSWORD_DEFAULT), 'role' => 'Superadmin'],
 ];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $email = $_POST['email'];
-    $password = $_POST['password'];
+    $email = trim($_POST['email']);
+    $password = trim($_POST['password']);
 
     foreach ($employees as $employee) {
-        if ($employee['email'] === $email && password_verify($password, $employee['password'])) {
-            $_SESSION['user_email'] = $email;
-            header("Location: admin_dashboard.php");
+        if ($employee['email'] == $email && password_verify($password, $employee['password'])) {
+            // Store session variables
+            $_SESSION['user_email'] = $employee['email'];
+            $_SESSION['first_name'] = $employee['first_name'];
+            $_SESSION['last_name'] = $employee['last_name'];
+            $_SESSION['role'] = $employee['role'];
+
+            // Redirect based on role
+            if ($employee['role'] == 'Admin') {
+                header("Location: admin_dashboard.php");
+            } elseif ($employee['role'] == 'Superadmin') {
+                header("Location: superadmin_dashboard.php");
+            }
             exit();
         }
     }
 
-    $_SESSION['error'] = "Invalid email or password";
+    // If authentication fails
+    $_SESSION['error'] = "Invalid email or password. Please try again.";
     header("Location: admin_login.php");
     exit();
 }
+?>

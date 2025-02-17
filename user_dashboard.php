@@ -143,7 +143,10 @@ if (!isset($_SESSION['user_email'])) {
                     <label for="employee_id">Employee ID:</label>
                     <input type="text" id="employee_id" value="EMP001" readonly>
                 </div>
-
+                <div class="form-group">
+                    <label for="department_id">Department ID:</label>
+                    <input type="text" id="employee_id" value="D346" readonly>
+                </div>
                 <div class="form-group">
                     <label for="first_name">First Name:</label>
                     <input type="text" id="first_name" value="<?php echo htmlspecialchars($_SESSION['first_name']); ?>" readonly>
@@ -188,8 +191,12 @@ if (!isset($_SESSION['user_email'])) {
                 </div>
 
                 <div class="form-group">
-                    <label for="emergency_contact">Emergency Contact:</label>
+                    <label for="emergency_contact">Primary Emergency Contact:</label>
                     <input type="tel" id="emergency_contact" value="987-654-3210">
+                </div>
+                <div class="form-group">
+                    <label for="emergency_contact">Secondary Emergency Contact:</label>
+                    <input type="tel" id="emergency_contact" value="">
                 </div>
 
                 <button type="submit" class="update-btn">Update Details</button>
@@ -262,7 +269,7 @@ if (!isset($_SESSION['user_email'])) {
 			</li>	
 
 			<!-- Payroll & Salary -->	
-			<li><a href="#" onclick="toggleDropdown(event, 'payroll-dropdown')">Payroll & Salary</a>	
+			<li><a href="#" onclick="toggleDropdown(event, 'payroll-dropdown')">Payroll and Salary</a>	
 				<ul id="payroll-dropdown" class="dropdown">	
 					<li><a href="#">View salary details and payslips</a></li>	
 					<li><a href="#">Track salary changes</a></li>	
@@ -270,7 +277,7 @@ if (!isset($_SESSION['user_email'])) {
 			</li>
 
 		           <!-- Projects & Tasks -->
-			<li><a href="#" onclick="toggleDropdown(event,'project-dropdown')">Projects & Tasks</a>
+			<li><a href="#" onclick="toggleDropdown(event,'project-dropdown')">Projects and Tasks</a>
 				<ul id="project-dropdown" class="dropdown">
 					<li><a href="#">View assigned projects and roles</a></li>
 					<li><a href="#">Update project completion status</a></li>
@@ -278,7 +285,7 @@ if (!isset($_SESSION['user_email'])) {
 			</li>
 
 			<!-- Training & Performance -->
-			<li><a href="#" onclick="toggleDropdown(event, 'training-dropdown')">Training & Performance</a>
+			<li><a href="#" onclick="toggleDropdown(event, 'training-dropdown')">Training and Performance</a>
 				<ul id="training-dropdown" class="dropdown">
 					<li><a href="#">Enroll in training programs</a></li>
 					<li><a href="#">Track training completion status</a></li>
@@ -287,21 +294,29 @@ if (!isset($_SESSION['user_email'])) {
 			</li>
 
 			<!-- Travel & Expenses -->
-			<li><a href="#" onclick="toggleDropdown(event, 'travel-dropdown')">Travel & Expenses</a>
+			<li><a href="#" onclick="toggleDropdown(event, 'travel-dropdown')">Travel and Expenses</a>
 				<ul id="travel-dropdown" class="dropdown">
 					<li><a href="#">Submit travel requests</a></li>
-					<li><a href="#">Upload expense reports and receipts</a></li>
+					<li><a href="#">Travel and Expenses history</a></li>
 					<li><a href="#">Track approval status of travel and expense requests</a></li>
 				</ul>
 			</li>
 
 			<!-- Feedback -->
-			<li><a href="#" onclick="toggleDropdown(event , 'feedback-dropdown')">Feedback & Exit Interviews</a>
+			<li><a href="#" onclick="toggleDropdown(event , 'feedback-dropdown')">Feedback and Exit Interviews</a>
 				<ul id= "feedback-dropdown" class="dropdown">
 					<li><a href="#">Submit feedback about company policies or issues</a></li>
-					<li><a href="#">View exit interview details (if applicable)</a></li>
+					<li><a href="#">View exit interview details</a></li>
 				</ul>
 			</li>
+                                   <!-- Help & Support -->
+			<li><a href="#" onclick="toggleDropdown(event , 'Help-dropdown')">Help & Support</a>
+				<ul id= "Help-dropdown" class="dropdown">
+					<li><a href="#">FAQs</a></li>
+					<li><a href="#">HR contact</a></li>
+				</ul>
+			</li>
+
 
 		 </ul>	
 	  </div>

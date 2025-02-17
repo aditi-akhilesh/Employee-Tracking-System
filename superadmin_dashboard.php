@@ -236,10 +236,10 @@ if (!isset($_SESSION['user_email'])) {
 	<div class="sidebar">	
 		<ul>	
 			<!-- Profile Management -->	
-			<li><a href="#" onclick="toggleDropdown(event, 'manage-dropdown')">Manage Users</a>	
+			<li><a href="#" onclick="toggleDropdown(event, 'manage-dropdown')">Manage Employees</a>	
 				<ul id="manage-dropdown" class="dropdown">	
 					<li><a href="#" onclick="showProfileForm()">Create new profile</a></li>	
-					<li><a href="#">Update or remove employee</a></li>	
+					<li><a href="#">Update or remove employee</a></li>
 				</ul>	
 			</li>	
 
@@ -259,8 +259,7 @@ if (!isset($_SESSION['user_email'])) {
 					<li><a href="#">Generate and update salary details</a></li>	
 				</ul>	
 			</li>
-
-		           <!-- Department Management-->
+                                    <!-- Department Management-->
 			<li><a href="#" onclick="toggleDropdown(event,'Department-dropdown')">Department Management</a>
 				<ul id="Department-dropdown" class="dropdown">
 					<li><a href="#">Assign employees to department</a></li>
@@ -273,7 +272,7 @@ if (!isset($_SESSION['user_email'])) {
 				<ul id="project-dropdown" class="dropdown">
 					<li><a href="#">Assign employees to projects</a></li>
                                                             <li><a href="#">Assign tasks to employee</a></li>
-					<li><a href="#">Track project status</a></li>
+					<li><a href="#">Track project and task status</a></li>
 				</ul>
 			</li>
 
@@ -305,6 +304,19 @@ if (!isset($_SESSION['user_email'])) {
 				<ul id= "Help-dropdown" class="dropdown">
 					<li><a href="#">Generate reports of an employee</a></li>
 					<li><a href="#">View department-wise performance metrics</a></li>
+				</ul>
+			</li>
+                                  <!-- Manage Admins -->
+			<li><a href="#" onclick="toggleDropdown(event , 'role-dropdown')">Admin Management</a>
+				<ul id= "role-dropdown" class="dropdown">
+					<li><a href="#">Update roles</a></li>
+					<li><a href="#">Add or remove admins</a></li>
+				</ul>
+			</li>
+                                 <!-- Audits -->
+			<li><a href="#" onclick="toggleDropdown(event , 'audit-dropdown')">Audits</a>
+				<ul id= "audit-dropdown" class="dropdown">
+					<li><a href="#">Track audit logs</a></li>
 				</ul>
 			</li>
 
