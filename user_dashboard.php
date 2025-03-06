@@ -159,7 +159,7 @@ if (!isset($_SESSION['user_email'])) {
 
                 <div class="form-group">
                     <label for="email">Email:</label>
-                    <input type="email" id="email" value="<?php echo htmlspecialchars($_SESSION['user_email']); ?>" readonly>
+                    <input type="email" id="email" value="<?php echo htmlspecialchars($_SESSION['user_email']); ?>" >
                 </div>                <div class="form-group">
                     <label for="phone">Phone Number:</label>
                     <input type="tel" id="phone" value="123-456-7890">
@@ -198,6 +198,11 @@ if (!isset($_SESSION['user_email'])) {
                     <label for="emergency_contact">Secondary Emergency Contact:</label>
                     <input type="tel" id="emergency_contact" value="">
                 </div>
+                 <div class="form-group">
+                    <label for="snn">Social Security Number : </label>
+                    <input type="tel" id="ssn" value="">
+                </div>
+
 
                 <button type="submit" class="update-btn">Update Details</button>
             </form>
@@ -301,6 +306,13 @@ if (!isset($_SESSION['user_email'])) {
 					<li><a href="#">Track approval status of travel and expense requests</a></li>
 				</ul>
 			</li>
+                                     <!-- Assets -->
+			<li><a href="#" onclick="toggleDropdown(event, 'asset-dropdown')">Asset Information</a>
+				<ul id="asset-dropdown" class="dropdown">
+					<li><a href="#">View my Asset details</a></li>
+									</ul>
+			</li>
+
 
 			<!-- Feedback -->
 			<li><a href="#" onclick="toggleDropdown(event , 'feedback-dropdown')">Feedback and Exit Interviews</a>

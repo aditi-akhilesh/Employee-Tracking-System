@@ -5,6 +5,7 @@ session_start();
 $employees = [
     ['first_name' => 'Vaishali', 'last_name' => 'Kondoju', 'email' => 'kondojuvaishali98@gmail.com', 'password' => password_hash('password123', PASSWORD_DEFAULT), 'role' => 'Admin'],
     ['first_name' => 'Amritha', 'last_name' => 'P', 'email' => 'employee2@gmail.com', 'password' => password_hash('mypassword', PASSWORD_DEFAULT), 'role' => 'Superadmin'],
+    ['first_name' => 'Aditi', 'last_name' => 'A', 'email' => 'employee3@gmail.com', 'password' => password_hash('password123', PASSWORD_DEFAULT), 'role' => 'Manager']
 ];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
@@ -25,6 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             } elseif ($employee['role'] == 'Superadmin') {
                 header("Location: superadmin_dashboard.php");
             }
+              elseif ($employee['role'] == 'Manager') {
+                header("Location: manager_dashboard.php");
+}
             exit();
         }
     }

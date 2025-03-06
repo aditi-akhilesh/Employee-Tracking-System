@@ -93,7 +93,7 @@ if (isset($_SESSION['error'])) {
 
         </form>
         <div class="employee-link">
-            <p>Are you an employee? <a href="employee_login.php">Login here</a></p>
+            <p>Are you an employee? <a href="employee_login.php" style="color: #007bff;">Login here</a></p>
         </div>
     </div>
 </body>

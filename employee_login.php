@@ -95,7 +95,7 @@
           ?>
         </form>
         <div class="admin-link">
-            <p>Are you an admin? <a href="admin_login.php">Login here</a></p>
+            <p>Are you an admin? <a href="admin_login.php" style="color: #007bff;">Login here</a></p>
         </div>
     </div>
 </body>

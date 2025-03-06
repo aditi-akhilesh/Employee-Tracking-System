@@ -11,7 +11,6 @@ if (!isset($_SESSION['user_email'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Admin Dashboard</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -133,68 +132,7 @@ if (!isset($_SESSION['user_email'])) {
 
     </style>
     <script>
-        function showProfileForm() {
-    const contentArea = document.getElementById('content-area');
-    contentArea.innerHTML = `
-        <div class="profile-details">
-            <h2>Enter New Profile Details</h2>
-            <form class="update-form">
-               
-                <div class="form-group">
-                    <label for="first_name">First Name:</label>
-                    <input type="text" id="first_name" >
-                </div>
-
-                <div class="form-group">
-                    <label for="last_name">Last Name:</label>
-                    <input type="text" id="last_name">
-                </div>
-
-                <div class="form-group">
-                    <label for="email">Email:</label>
-                    <input type="email" id="email"  >
-                </div>  
-                <div class="form-group">
-                    <label for="dpt_id">Department ID :</label>
-                    <input type="dpt_id" id="dpt_id"  >
-                </div>               
-                    <div class="form-group">
-                    <label for="phone">Phone Number:</label>
-                    <input type="tel" id="phone" >
-                </div>
-
-                <div class="form-group">
-                    <label for="street">Street Name:</label>
-                    <input type="text" id="street" >
-                </div>
-
-                <div class="form-group">
-                    <label for="apartment">Apartment:</label>
-                    <input type="text" id="apartment">
-                </div>
-
-                <div class="form-group">
-                    <label for="city">City:</label>
-                    <input type="text" id="city" >
-                </div>
-
-                <div class="form-group">
-                    <label for="zip">ZIP Code:</label>
-                    <input type="text" id="zip" >
-                </div>
-
-                <div class="form-group">
-                    <label for="country">Country:</label>
-                    <input type="text" id="country" >
-                </div>
-
-                <button type="submit" class="update-btn">Create profile</button>
-            </form>
-        </div>
-    `;
-}
-
-        // JavaScript to handle dropdown visibility
+            // JavaScript to handle dropdown visibility
         function toggleDropdown(event, id) {
             event.preventDefault(); // Prevent default link behavior
 
@@ -229,7 +167,7 @@ if (!isset($_SESSION['user_email'])) {
 </head>	
 <body>	
 <header>	
-	<h1>Super Admin Dashboard</h1>	
+	<h1>Manager Dashboard</h1>	
 	<div class="logout">	
 		<a href="logout.php">Logout</a>	
 	</div>	
@@ -240,10 +178,9 @@ if (!isset($_SESSION['user_email'])) {
 	<div class="sidebar">	
 		<ul>	
 			<!-- Profile Management -->	
-			<li><a href="#" onclick="toggleDropdown(event, 'manage-dropdown')">Manage Employees</a>	
+			<li><a href="#" onclick="toggleDropdown(event, 'manage-dropdown')">Manage Users</a>	
 				<ul id="manage-dropdown" class="dropdown">	
-					<li><a href="#" onclick="showProfileForm()">Create new profile</a></li>	
-					<li><a href="#">Update or remove employee</a></li>
+					<li><a href="#" onclick="showProfileForm()">Employees assigned to me</a></li>	
 				</ul>	
 			</li>	
 
@@ -256,17 +193,10 @@ if (!isset($_SESSION['user_email'])) {
 				</ul>	
 			</li>	
 
-			<!-- Payroll & Salary -->	
-			<li><a href="#" onclick="toggleDropdown(event, 'payroll-dropdown')">Payroll Management</a>	
-				<ul id="payroll-dropdown" class="dropdown">	
-					<li><a href="#">Process bonuses and deductions</a></li>	
-					<li><a href="#">Generate and update salary details</a></li>	
-				</ul>	
-			</li>
-                                    <!-- Department Management-->
-			<li><a href="#" onclick="toggleDropdown(event,'Department-dropdown')">Department Management</a>
-				<ul id="Department-dropdown" class="dropdown">
-					<li><a href="#">update department assignment</a></li>
+			
+		           <!-- Department Management-->
+			<li><a href="#" onclick="toggleDropdown(event,'department-dropdown')">Department Management</a>
+				<ul id="department-dropdown" class="dropdown">
                                                             <li><a href="#">Track department information</a></li>
 				</ul>
 			</li>
@@ -274,53 +204,15 @@ if (!isset($_SESSION['user_email'])) {
 		           <!-- Projects & Tasks -->
 			<li><a href="#" onclick="toggleDropdown(event,'project-dropdown')">Projects and Tasks</a>
 				<ul id="project-dropdown" class="dropdown">
-					<li><a href="#">Assign employees to projects</a></li>
                                                             <li><a href="#">Assign tasks to employee</a></li>
-					<li><a href="#">Track project and task status</a></li>
+					<li><a href="#">Track project status</a></li>
 				</ul>
 			</li>
 
-			<!-- Training & Performance -->
-			<li><a href="#" onclick="toggleDropdown(event, 'training-dropdown')">Training and Performance</a>
-				<ul id="training-dropdown" class="dropdown">
-					<li><a href="#">Add/manage training programs</a></li>
-					<li><a href="#">Assign employees to training</a></li>
-					<li><a href="#">Conduct and record performance reviews</a></li>
-				</ul>
-			</li>
-
-			<!-- Travel & Expenses -->
-			<li><a href="#" onclick="toggleDropdown(event, 'travel-dropdown')">Travel and Expenses</a>
-				<ul id="travel-dropdown" class="dropdown">
-					<li><a href="#">Approve/reject travel requests</a></li>
-					</ul>
-			</li>
-
-			<!-- Asset Management-->
-			<li><a href="#" onclick="toggleDropdown(event , 'Asset-dropdown')">Asset Management</a>
-				<ul id= "Asset-dropdown" class="dropdown">
-					<li><a href="#">Assign company assets to employees</a></li>
-					<li><a href="#">Track asset usage and maintenance</a></li>
-				</ul>
-			</li>
-                                   <!-- Reports & Analytics -->
+			  <!-- Reports & Analytics -->
 			<li><a href="#" onclick="toggleDropdown(event , 'Help-dropdown')">Reports & Analytics</a>
 				<ul id= "Help-dropdown" class="dropdown">
 					<li><a href="#">Generate reports of an employee</a></li>
-					<li><a href="#">View department-wise performance metrics</a></li>
-				</ul>
-			</li>
-                                  <!-- Manage Admins -->
-			<li><a href="#" onclick="toggleDropdown(event , 'role-dropdown')">Admin Management</a>
-				<ul id= "role-dropdown" class="dropdown">
-					<li><a href="#">Update roles</a></li>
-					<li><a href="#">Add or remove admins</a></li>
-				</ul>
-			</li>
-                                 <!-- Audits -->
-			<li><a href="#" onclick="toggleDropdown(event , 'audit-dropdown')">Audits</a>
-				<ul id= "audit-dropdown" class="dropdown">
-					<li><a href="#">Track audit logs</a></li>
 				</ul>
 			</li>
 
@@ -330,7 +222,7 @@ if (!isset($_SESSION['user_email'])) {
 	 
   <!-- Content Area -->
 <div class='content' id='content-area'>
-    <h2>Welcome, <?php 
+    <h2>Hi , <?php 
         if(isset($_SESSION['first_name']) && isset($_SESSION['last_name'])) {
             echo htmlspecialchars($_SESSION['first_name']) . ' ' . 
                  htmlspecialchars($_SESSION['last_name']);
@@ -338,7 +230,7 @@ if (!isset($_SESSION['user_email'])) {
             echo htmlspecialchars($_SESSION['user_email']);
         }
     ?></h2>
-    <p>You are in Super Admin dashboard , select an option from the menu on the left to get started.</p>
+    <p>Welcome to the manager dashboard , select an option from the menu on the left to get started.</p>
 </div>
    </div>
    </body>

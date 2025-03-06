@@ -11,7 +11,6 @@ if (!isset($_SESSION['user_email'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Employee Dashboard</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -137,7 +136,7 @@ if (!isset($_SESSION['user_email'])) {
     const contentArea = document.getElementById('content-area');
     contentArea.innerHTML = `
         <div class="profile-details">
-            <h2>Personal Details</h2>
+            <h2>Enter New Profile Details</h2>
             <form class="update-form">
                
                 <div class="form-group">
@@ -153,7 +152,11 @@ if (!isset($_SESSION['user_email'])) {
                 <div class="form-group">
                     <label for="email">Email:</label>
                     <input type="email" id="email"  >
-                </div>                
+                </div>   
+                <div class="form-group">
+                    <label for="dpt_id">Department ID :</label>
+                    <input type="dpt_id" id="dpt_id"  >
+                </div>               
                     <div class="form-group">
                     <label for="phone">Phone Number:</label>
                     <input type="tel" id="phone" >
@@ -263,7 +266,7 @@ if (!isset($_SESSION['user_email'])) {
 		           <!-- Department Management-->
 			<li><a href="#" onclick="toggleDropdown(event,'Department-dropdown')">Department Management</a>
 				<ul id="Department-dropdown" class="dropdown">
-					<li><a href="#">Assign employees to department</a></li>
+					<li><a href="#">update department assignment</a></li>
                                                             <li><a href="#">Track department information</a></li>
 				</ul>
 			</li>

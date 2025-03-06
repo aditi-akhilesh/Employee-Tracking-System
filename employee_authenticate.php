@@ -5,8 +5,8 @@ session_start();
 $employees = [
     ['first_name' => 'Vaishali', 'last_name' => 'Kondoju', 'email' => 'kondojuvaishali98@gmail.com', 'password' => password_hash('password123', PASSWORD_DEFAULT)],
     ['first_name' => 'Amritha', 'last_name' => 'P', 'email' => 'employee2@example.com', 'password' => password_hash('mypassword', PASSWORD_DEFAULT)],
-    ['first_name' => 'Aditya', 'last_name' => 'S', 'email' => 'employee3@gmail.com', 'password' => password_hash('password123', PASSWORD_DEFAULT)],
-    ['first_name' => 'Aditi', 'last_name' => 'A', 'email' => 'employee4@example.com', 'password' => password_hash('mypassword', PASSWORD_DEFAULT)]
+    ['first_name' => 'Aditya', 'last_name' => 'S', 'email' => 'employee4@gmail.com', 'password' => password_hash('password', PASSWORD_DEFAULT)],
+    ['first_name' => 'Aditi', 'last_name' => 'A', 'email' => 'employee3@example.com', 'password' => password_hash('password123', PASSWORD_DEFAULT)]
 ];
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
