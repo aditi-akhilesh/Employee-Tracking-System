@@ -21,7 +21,7 @@ session_start();
     <form method="POST" id="login-form">
         <label for="role">Select Role:</label>
         <select id="role" name="role" required>
-            <option value="user">User (Employee)</option>
+            <option value="user">User</option>
             <option value="manager">Manager</option>
             <option value="hr">HR</option>
             <option value="superadmin">Super Admin</option>

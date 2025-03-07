@@ -19,7 +19,7 @@ $page_title = "Super Admin Dashboard";
 <div class="dashboard-container">
     <?php include '../includes/sidebar_superadmin.php'; ?>
     <div class="content" id="content-area">
-        <h2>Welcome, <?php echo htmlspecialchars($_SESSION['first_name'] . ' ' . $_SESSION['last_name']); ?> (Super Admin)</h2>
+        <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name']); ?></h2>
         <p>You are in the Super Admin dashboard. Select an option from the menu on the left to get started.</p>
     </div>
 </div>

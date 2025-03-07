@@ -19,8 +19,8 @@ $page_title = "Employee Dashboard";
 <div class="dashboard-container">
     <?php include '../includes/sidebar_user.php'; ?>
     <div class="content" id="content-area">
-        <h2>Welcome, <?php echo htmlspecialchars($_SESSION['first_name'] . ' ' . $_SESSION['last_name']); ?> (Employee)</h2>
-        <p>Select an option from the menu on the left to get started.</p>
+        <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name']); ?></h2>
+        <p>You are in Employee Dashboard ,select an option from the menu on the left to get started.</p>
         <?php if (isset($_SESSION['success'])): ?>
             <p style="color: #4CAF50;"><?php echo $_SESSION['success']; unset($_SESSION['success']); ?></p>
         <?php endif; ?>

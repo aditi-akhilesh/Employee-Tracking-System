@@ -19,8 +19,8 @@ $page_title = "HR Dashboard";
 <div class="dashboard-container">
     <?php include '../includes/sidebar_hr.php'; ?>
     <div class="content" id="content-area">
-        <h2>Welcome, <?php echo htmlspecialchars($_SESSION['first_name'] . ' ' . $_SESSION['last_name']); ?> (HR)</h2>
-        <p>Select an option from the menu on the left to get started.</p>
+        <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name']); ?> (HR)</h2>
+        <p>You are in HR Dashboard .Select an option from the menu on the left to get started.</p>
     </div>
 </div>
 <script src="../assets/js/dashboard.js"></script>
