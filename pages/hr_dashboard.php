@@ -5,16 +5,25 @@ $page_title = "HR Dashboard";
 
 include '../auth/dbconnect.php'; // Uses $con
 
-// Fetch departments (for the form)
+// Fetch departments with employee count
 try {
-    $stmt = $con->query("SELECT department_id, department_name FROM Department");
+    $stmt = $con->query("
+        SELECT 
+            d.department_id, 
+            d.department_name, 
+            d.department_description, 
+            COUNT(e.employee_id) AS employee_count
+        FROM Department d
+        LEFT JOIN Employees e ON d.department_id = e.department_id
+        GROUP BY d.department_id, d.department_name, d.department_description
+    ");
     $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    file_put_contents('departments_debug.log', "Departments fetched: " . print_r($departments, true) . "\n", FILE_APPEND);
 } catch (PDOException $e) {
     $departments = [];
-    file_put_contents('departments_debug.log', "Query failed: " . $e->getMessage() . "\n", FILE_APPEND);
-    $_SESSION['error'] = "Failed to fetch departments: " . $e->getMessage();
-}?>
+    $_SESSION['error'] = "Failed to fetch department information: " . $e->getMessage();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -32,9 +41,9 @@ try {
     <?php include '../includes/sidebar_hr.php'; ?>
     <div class="content" id="content-area">
         <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name']); ?> (HR)</h2>
-        <p>You are in HR Dashboard .Select an option from the menu on the left to get started.</p>
-    <div id="profile-update-form"></div>
-<?php
+        <p>Select an option from the menu on the left to get started.</p>
+        <div id="profile-update-form"></div>
+        <?php
         if (isset($_SESSION['success'])) {
             echo '<div class="alert alert-success">' . htmlspecialchars($_SESSION['success']) . '</div>';
             unset($_SESSION['success']);
