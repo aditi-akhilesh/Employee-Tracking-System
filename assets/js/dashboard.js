@@ -25,71 +25,91 @@ document.addEventListener('click', function(event) {
         });
     }
 });
+
 function showCreateUserForm() {
-        alert("Button Clicked! Function is working."); // Debugging step
-        console.log("showCreateUserForm called");
+    alert("Button Clicked! Function is working."); // Debugging step
+    console.log("showCreateUserForm called");
+    const contentArea = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (contentArea && profileUpdateForm) {
+        // Hide existing h2 and p elements in content-area
+        const welcomeHeading = contentArea.querySelector('h2');
+        const welcomeMessage = contentArea.querySelector('p');
+        if (welcomeHeading) welcomeHeading.style.display = 'none';
+        if (welcomeMessage) welcomeMessage.style.display = 'none';
+
+        // Show and populate the form
+        profileUpdateForm.style.display = 'block';
+        profileUpdateForm.innerHTML = `
+            <h2>Create New User</h2>
+            <form action="../pages/features/create_user.php" method="POST" onsubmit="if (this.department_id.value === '') { alert('Please select a department'); return false; }">
+                <div class="form-group">
+                    <label for="first_name">First Name:</label>
+                    <input type="text" id="first_name" name="first_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="middle_name">Middle Name (Optional):</label>
+                    <input type="text" id="middle_name" name="middle_name">
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Last Name:</label>
+                    <input type="text" id="last_name" name="last_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                  <div class="form-group">
+                    <label for="dob">Date of Birth:</label>
+                    <input type="date" id="dob" name="dob" required>
+                </div>
+                <div class="form-group">
+                    <label for="emp_hire_date">Hire Date:</label>
+                    <input type="date" id="emp_hire_date" name="emp_hire_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="role">Role:</label>
+                    <select id="role" name="role" required>
+                        <option value="User">User</option>
+                        <option value="Manager">Manager</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="department_id">Department:</label>
+                    <select id="department_id" name="department_id" required>
+                        <option value="">Select a department</option>
+                        ${departments.map(dept => `<option value="${dept.department_id}">${dept.department_name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group button-group">
+                    <button type="submit">Create User</button>
+                    <button type="button" onclick="showWelcomeMessage()">Back</button>
+                </div>
+            </form>
+        `;
+    } else {
+        console.error("content-area or profile-update-form not found");
+    }
+}
+function showWelcomeMessage() {
+        console.log("showWelcomeMessage called"); // Debugging step
         const contentArea = document.getElementById('content-area');
         const profileUpdateForm = document.getElementById('profile-update-form');
         if (contentArea && profileUpdateForm) {
-            // Hide existing h2 and p elements in content-area
+            // Show the welcome h2 and p elements
             const welcomeHeading = contentArea.querySelector('h2');
             const welcomeMessage = contentArea.querySelector('p');
-            if (welcomeHeading) welcomeHeading.style.display = 'none';
-            if (welcomeMessage) welcomeMessage.style.display = 'none';
+            if (welcomeHeading) welcomeHeading.style.display = 'block';
+            if (welcomeMessage) welcomeMessage.style.display = 'block';
 
-            // Show and populate the form
-            profileUpdateForm.style.display = 'block';
-            profileUpdateForm.innerHTML = `
-                <h2>Create New User</h2>
-                <form action="../pages/features/create_user.php" method="POST" onsubmit="if (this.department_id.value === '') { alert('Please select a department'); return false; }">
-                    <div class="form-group">
-                        <label for="first_name">First Name:</label>
-                        <input type="text" id="first_name" name="first_name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="last_name">Last Name:</label>
-                        <input type="text" id="last_name" name="last_name" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password:</label>
-                        <input type="password" id="password" name="password" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="dob">Date of Birth:</label>
-                        <input type="date" id="dob" name="dob" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="emp_hire_date">Hire Date:</label>
-                        <input type="date" id="emp_hire_date" name="emp_hire_date" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="role">Role:</label>
-                        <select id="role" name="role" required>
-                            <option value="User">User</option>
-                            <option value="Manager">Manager</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="department_id">Department:</label>
-                        <select id="department_id" name="department_id" required>
-                            <option value="">Select a department</option>
-                            ${departments.map(dept => `<option value="${dept.department_id}">${dept.department_name}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="form-group button-group">
-                        <button type="submit">Create User</button>
-                        <button type="button" onclick="showWelcomeMessage()">Back</button>
-                    </div>
-                </form>
-            `;
+            // Hide the form
+            profileUpdateForm.style.display = 'none';
+            profileUpdateForm.innerHTML = ''; // Clear the form content
         } else {
             console.error("content-area or profile-update-form not found");
         }
     }
+
 function showProfileForm() {
     const contentArea = document.getElementById('content-area');
 

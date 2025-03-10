@@ -49,13 +49,17 @@ if (empty($hr_id)) {
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $first_name = trim($_POST['first_name']);
+    $middle_name = trim($_POST['middle_name']) ?: null; // Optional, set to NULL if empty
     $last_name = trim($_POST['last_name']);
     $email = trim($_POST['email']);
-    $password = trim($_POST['password']);
+    $dob = trim($_POST['dob']);
     $role = trim($_POST['role']);
     $department_id = trim($_POST['department_id']);
-    $dob = trim($_POST['dob']);
     $emp_hire_date = trim($_POST['emp_hire_date']);
+
+    // Generate password as first_name@dob
+    $password = $first_name . "@" . $dob;
+    file_put_contents('create_user_debug.log', "Generated password: $password\n", FILE_APPEND);
 
     // Debug: Log the submitted data
     file_put_contents('create_user_post.log', "Submitted data: " . print_r($_POST, true) . "\n", FILE_APPEND);
@@ -92,18 +96,19 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             exit();
         }
 
-        // Hash the password
+        // Hash the generated password
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
         if ($hashed_password === false) {
             throw new Exception("Password hashing failed.");
         }
 
-        // Insert into Users table
-        $sql_users = "INSERT INTO Users (first_name, last_name, email, password_hash, role, is_active) 
-                      VALUES (:first_name, :last_name, :email, :password, :role, 1)";
+        // Insert into Users table with middle_name
+        $sql_users = "INSERT INTO Users (first_name, middle_name, last_name, email, password_hash, role, is_active) 
+                      VALUES (:first_name, :middle_name, :last_name, :email, :password, :role, 1)";
         $stmt_users = $con->prepare($sql_users);
         $stmt_users->execute([
             'first_name' => $first_name,
+            'middle_name' => $middle_name,
             'last_name' => $last_name,
             'email' => $email,
             'password' => $hashed_password,
@@ -120,7 +125,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $is_hr = ($role === 'HR') ? 1 : 0;
         $is_manager = ($role === 'Manager') ? 1 : 0;
 
-        // Insert into Employees table with hr_id, DOB, emp_hire_date, is_hr, and is_manager
+        // Insert into Employees table
         $sql_employees = "INSERT INTO Employees (user_id, department_id, hr_id, DOB, emp_hire_date, is_hr, is_manager) 
                           VALUES (:user_id, :department_id, :hr_id, :dob, :emp_hire_date, :is_hr, :is_manager)";
         $stmt_employees = $con->prepare($sql_employees);
@@ -134,7 +139,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             'is_manager' => $is_manager
         ]);
 
-        $_SESSION['success'] = "User created successfully!";
+        $_SESSION['success'] = "User created successfully!;
     } catch (PDOException $e) {
         $_SESSION['error'] = "Database error: " . $e->getMessage();
     } catch (Exception $e) {
