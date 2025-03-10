@@ -20,8 +20,8 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'project-dropdown')"><i class="fas fa-tasks"></i> Projects and Tasks</a>
             <ul id="project-dropdown" class="dropdown">
-                <li><a href="#">Add new project to department</a></li>
-                <li><a href="#">Track project status</a></li>
+                <li><a href="#" onclick="showAddProjectForm()">Add New Project to Department</a></li>
+                <li><a href="#" onclick="showProjectStatus()">Track or Edit Project Status</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'training-dropdown')"><i class="fas fa-graduation-cap"></i> Training Management</a>
