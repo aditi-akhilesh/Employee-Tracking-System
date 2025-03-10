@@ -19,7 +19,7 @@ $page_title = "Manager Dashboard";
 <div class="dashboard-container">
     <?php include '../includes/sidebar_manager.php'; ?>
     <div class="content" id="content-area">
-        <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name']); ?></h2>
+        <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name']); ?>(Manager)</h2>
         <p>You are in Manager Dashboard. Select an option from the menu on the left to get started.</p>
     </div>
 </div>

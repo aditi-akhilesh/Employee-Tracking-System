@@ -9,7 +9,6 @@
             <ul id="attendance-dropdown" class="dropdown">
                 <li><a href="#">View attendance records</a></li>
                 <li><a href="#">Approve/reject leave requests</a></li>
-                <li><a href="#">Track employee working hours</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'department-dropdown')"><i class="fas fa-building"></i> Department Management</a>
@@ -19,8 +18,15 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'project-dropdown')"><i class="fas fa-tasks"></i> Projects and Tasks</a>
             <ul id="project-dropdown" class="dropdown">
+                <li><a href="#">Assign project to employees</a></li>
                 <li><a href="#">Assign tasks to employee</a></li>
                 <li><a href="#">Track project status</a></li>
+            </ul>
+        </li>
+        <li><a href="#" onclick="toggleDropdown(event, 'feedback-dropdown')"><i class="fas fa-comment"></i> Feedback and Review</a>
+            <ul id="feedback-dropdown" class="dropdown">
+                <li><a href="#">Give feedback to employees or managers</a></li>
+                <li><a href="#">View employee or manager feedback history</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'reports-dropdown')"><i class="fas fa-chart-bar"></i> Reports & Analytics</a>

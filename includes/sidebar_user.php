@@ -16,21 +16,19 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'payroll-dropdown')"><i class="fas fa-money-bill"></i> Payroll and Salary</a>
             <ul id="payroll-dropdown" class="dropdown">
-                <li><a href="#">View salary details and payslips</a></li>
-                <li><a href="#">Track salary changes</a></li>
-            </ul>
+                <li><a href="#">View salary details</ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'project-dropdown')"><i class="fas fa-tasks"></i> Projects and Tasks</a>
             <ul id="project-dropdown" class="dropdown">
-                <li><a href="#">View assigned projects and roles</a></li>
-                <li><a href="#">Update project completion status</a></li>
+                <li><a href="#">View assigned projects</a></li>
+                <li><a href="#">View assigned tasks</a></li>
+                <li><a href="#">Update project or task completion status</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'training-dropdown')"><i class="fas fa-graduation-cap"></i> Training and Performance</a>
             <ul id="training-dropdown" class="dropdown">
                 <li><a href="#">Enroll in training programs</a></li>
-                <li><a href="#">Track training completion status</a></li>
-                <li><a href="#">View performance review scores and feedback</a></li>
+                <li><a href="#">Update training status</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'travel-dropdown')"><i class="fas fa-plane"></i> Travel and Expenses</a>
