@@ -21,10 +21,10 @@ session_start();
     <form method="POST" id="login-form">
         <label for="role">Select Role:</label>
         <select id="role" name="role" required>
-            <option value="user">User</option>
-            <option value="manager">Manager</option>
-            <option value="hr">HR</option>
-            <option value="superadmin">Super Admin</option>
+            <option value="User">User</option>
+            <option value="Manager">Manager</option>
+            <option value="HR">HR</option>
+            <option value="Super Admin">Super Admin</option>
         </select>
         <label for="email">Email:</label>
         <input type="email" id="email" name="email" required>
