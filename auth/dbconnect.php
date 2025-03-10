@@ -20,7 +20,7 @@ $password = 'marathoner dispirit lamely supping';
 try {
     	$con = new PDO("mysql:host=$hostname;dbname=amriprak_db", $username, $password);
     	/*** echo a message saying we have connected ***/
-    	echo 'Connected to database';
+    //	echo 'Connected to database';
     }
 catch(PDOException $e)
     {

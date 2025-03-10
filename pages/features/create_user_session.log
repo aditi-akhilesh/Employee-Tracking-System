@@ -1,0 +1,8 @@
+Array
+(
+    [user_id] => 2
+    [user_name] => Jane Smith
+    [user_email] => jane.smith@gmail.com
+    [role] => HR
+)
+

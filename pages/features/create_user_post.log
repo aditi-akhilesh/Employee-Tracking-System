@@ -1,0 +1,59 @@
+Array
+(
+    [first_name] => Mark
+    [last_name] => B
+    [email] => mark.b@gmail.com
+    [password] => Mark@123
+    [role] => User
+    [department] => D01
+)
+
+Submitted department_id: D01
+Submitted data: Array
+(
+    [first_name] => Smith
+    [last_name] => H
+    [email] => smith.h@gmail.com
+    [password] => Smith@123
+    [dob] => 2000-01-09
+    [emp_hire_date] => 2025-03-09
+    [role] => User
+    [department_id] => D01
+)
+
+Submitted data: Array
+(
+    [first_name] => Smith
+    [last_name] => H
+    [email] => smith.h@gmail.com
+    [password] => Smith@123
+    [dob] => 2000-01-09
+    [emp_hire_date] => 2025-03-09
+    [role] => User
+    [department_id] => D01
+)
+
+Submitted data: Array
+(
+    [first_name] => Smith
+    [last_name] => H
+    [email] => smith.h@gmail.com
+    [password] => Smith@123
+    [dob] => 2000-05-07
+    [emp_hire_date] => 2025-03-09
+    [role] => User
+    [department_id] => D01
+)
+
+Submitted data: Array
+(
+    [first_name] => Smith
+    [last_name] => H
+    [email] => smith.h@gmail.com
+    [password] => Smith@123
+    [dob] => 2002-05-05
+    [emp_hire_date] => 2025-03-09
+    [role] => User
+    [department_id] => D01
+)
+

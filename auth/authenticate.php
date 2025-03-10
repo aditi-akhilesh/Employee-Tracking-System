@@ -1,31 +1,45 @@
 <?php
 session_start();
 ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-include '../auth/dbconnect.php'; // Ensure this file correctly establishes the database connection
+include '../auth/dbconnect.php'; // Uses $con
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST['email']);
-    $password = trim($_POST['password']); // Note: Hash passwords before deploying in production
+    $password = trim($_POST['password']);
     $role = trim($_POST['role']);
 
     try {
-        // Query to check if user exists with the given role
-       $stmt = $con->prepare("SELECT email, password_hash, role, first_name, last_name FROM Users WHERE email = :email AND role = :role");        $stmt->bindParam(':email', $email);        
-       $stmt->bindParam(':role', $role);        
-       $stmt->execute();  
+        $stmt = $con->prepare("SELECT user_id, email, password_hash, role, first_name, last_name FROM Users WHERE email = :email AND role = :role");
+        $stmt->bindParam(':email', $email);
+        $stmt->bindParam(':role', $role);
+        $stmt->execute();
         $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($user) {
-            // Compare password (not hashed for now)
-            if ($password === $user['password_hash']) { 
-                // Store user session data
-                $_SESSION['user_id'] = $user['id'];
+            // Use password_verify for hashed password comparison
+            if (password_verify($password, $user['password_hash'])) {
+                $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['user_name'] = $user['first_name'] . " " . $user['last_name'];
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['role'] = $user['role'];
 
-                // Redirect based on role
+                // Debug: Log session data with timestamp
+                $log_data = date('Y-m-d H:i:s') . " - " . print_r($_SESSION, true);
+                file_put_contents('session_debug.log', $log_data . "\n", FILE_APPEND);
+
+                // Optionally fetch employee_id here if needed
+                $stmt_emp = $con->prepare("SELECT employee_id FROM Employees WHERE user_id = :user_id");
+                $stmt_emp->execute(['user_id' => $user['user_id']]);
+                $employee_id = $stmt_emp->fetchColumn();
+                if ($employee_id !== false) {
+                    $_SESSION['employee_id'] = $employee_id;
+                } else {
+                    // Log warning but allow login if employee_id is missing
+                    file_put_contents('session_debug.log', date('Y-m-d H:i:s') . " - Warning: No employee_id found for user_id: " . $user['user_id'] . "\n", FILE_APPEND);
+                }
+
                 switch ($user['role']) {
                     case 'Super Admin':
                         header("Location: ../pages/superadmin_dashboard.php");
