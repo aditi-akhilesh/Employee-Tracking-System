@@ -153,25 +153,36 @@ function showCreateUserForm() {
     }
 }
 
-function showWelcomeMessage() {
+ function showWelcomeMessage(event) {
+    if (event) event.preventDefault(); // Prevent form submission or default behavior
     console.log("showWelcomeMessage called");
     const mainContent = document.getElementById('main-content');
     const profileUpdateForm = document.getElementById('profile-update-form');
     if (mainContent && profileUpdateForm) {
+        console.log("Elements found, updating display");
         mainContent.style.display = 'block';
         profileUpdateForm.style.display = 'none';
         profileUpdateForm.innerHTML = '';
+        mainContent.innerHTML = `
+            <h2>Welcome,<?php echo htmlspecialchars($_SESSION['user_name']); ?> (HR)</h2>
+            <p>Select an option from the menu on the left to get started.</p>
+        `;
     } else {
         console.error("main-content or profile-update-form not found");
     }
 }
-
 function showAddProjectForm() {
-    const mainContent = document.getElementById('main-content');
-    const profileUpdateForm = document.getElementById('profile-update-form');
-    if (mainContent && profileUpdateForm) {
-        mainContent.style.display = 'none';
-        profileUpdateForm.style.display = 'block';
+            const contentArea = document.getElementById('content-area');
+        const profileUpdateForm = document.getElementById('profile-update-form');
+        if (contentArea && profileUpdateForm) {
+            // Hide existing h2 and p elements in content-area
+            const welcomeHeading = contentArea.querySelector('h2');
+            const welcomeMessage = contentArea.querySelector('p');
+            if (welcomeHeading) welcomeHeading.style.display = 'none';
+            if (welcomeMessage) welcomeMessage.style.display = 'none';
+
+            // Show and populate the form
+            profileUpdateForm.style.display = 'block';
         profileUpdateForm.innerHTML = `
             <h2>Add New Project</h2>
             <form action="../pages/features/manage_projects.php" method="POST" onsubmit="return validateProjectForm(this)">
