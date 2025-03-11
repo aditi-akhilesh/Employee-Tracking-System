@@ -164,7 +164,7 @@ function showCreateUserForm() {
         profileUpdateForm.style.display = 'none';
         profileUpdateForm.innerHTML = '';
         mainContent.innerHTML = `
-            <h2>Welcome,<?php echo htmlspecialchars($_SESSION['user_name']); ?> (HR)</h2>
+            <h2>Welcome ,${username} (HR)</h2>
             <p>Select an option from the menu on the left to get started.</p>
         `;
     } else {
@@ -579,5 +579,51 @@ function removeEmployee(employeeId) {
         form.appendChild(input);
         document.body.appendChild(form);
         form.submit();
+    }
+}
+
+function showDepartmentInfo() {
+    const contentArea = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (contentArea && profileUpdateForm) {
+        // Hide welcome message
+        const welcomeHeading = contentArea.querySelector('h2');
+        const welcomeMessage = contentArea.querySelector('p');
+        if (welcomeHeading) welcomeHeading.style.display = 'none';
+        if (welcomeMessage) welcomeMessage.style.display = 'none';
+
+        profileUpdateForm.style.display = 'block';
+        profileUpdateForm.innerHTML = `
+            <h2>Track Department Information</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Department ID</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Name</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Description</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Employee Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${departments.length > 0 ? departments.map(dept => `
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_id}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_name}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_description || 'No description'}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${dept.employee_count}</td>
+                        </tr>
+                    `).join('') : `
+                        <tr>
+                            <td colspan="4" style="border: 1px solid #ddd; padding: 8px; text-align: center;">No departments found.</td>
+                        </tr>
+                    `}
+                </tbody>
+            </table>
+            <div class="form-group button-group" style="margin-top: 20px;">
+                <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+        `;
+    } else {
+        console.error("content-area or profile-update-form not found");
     }
 }
