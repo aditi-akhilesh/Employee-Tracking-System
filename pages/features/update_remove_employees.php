@@ -8,7 +8,6 @@ if (!$con) {
     die("Database connection failed. Check dbconnect.php.");
 }
 
-$page_title = "Update or Remove Employees";
 
 // Get the logged-in HR's user_id from session
 $hr_user_id = $_SESSION['user_id'];
