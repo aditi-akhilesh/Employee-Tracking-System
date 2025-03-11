@@ -4,15 +4,24 @@ require_once '../includes/auth_check.php';
 $page_title = "HR Dashboard";
 
 include '../auth/dbconnect.php'; // Uses $con
-
-// Fetch departments
+// Fetch departments with employee count
 try {
-    $stmt = $con->query("SELECT department_id, department_name FROM Department");
+    $stmt = $con->query("
+        SELECT 
+            d.department_id, 
+            d.department_name, 
+            d.department_description, 
+            COUNT(e.employee_id) AS employee_count
+        FROM Department d
+        LEFT JOIN Employees e ON d.department_id = e.department_id
+        GROUP BY d.department_id, d.department_name, d.department_description
+    ");
     $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     $departments = [];
-    $_SESSION['error'] = "Failed to fetch departments: " . $e->getMessage();
+    $_SESSION['error'] = "Failed to fetch department information: " . $e->getMessage();
 }
+
 
 // Fetch projects
 try {
