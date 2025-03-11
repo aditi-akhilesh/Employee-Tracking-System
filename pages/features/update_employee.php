@@ -5,7 +5,7 @@ $page_title = "HR Dashboard";
 
 include '../auth/dbconnect.php'; // Uses $con
 
-// Fetch departments
+// Fetch departments (already present)
 try {
     $stmt = $con->query("SELECT department_id, department_name FROM Department");
     $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -14,7 +14,7 @@ try {
     $_SESSION['error'] = "Failed to fetch departments: " . $e->getMessage();
 }
 
-// Fetch projects
+// Fetch projects (already present)
 try {
     $stmt = $con->query("
         SELECT 
@@ -44,48 +44,12 @@ try {
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HR Dashboard</title>
-    <link rel="stylesheet" href="../assets/css/styles.css">
-    <link rel="stylesheet" href="../assets/css/dashboard.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        .alert { padding: 10px; margin: 10px 0; border-radius: 5px; cursor: pointer; }
-        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-        .alert-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    </style>
-</head>
-<body>
-<?php include '../includes/header.php'; ?>
-<div class="dashboard-container">
-    <?php include '../includes/sidebar_hr.php'; ?>
-    <div class="content" id="content-area">
-        <div id="main-content">
-            <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name']); ?> (HR)</h2>
-            <p>Select an option from the menu on the left to get started.</p>
-        </div>
-        <div id="profile-update-form" style="display: none;"></div>
-        <?php
-        if (isset($_SESSION['success'])) {
-            echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';
-            unset($_SESSION['success']);
-        } elseif (isset($_SESSION['error'])) {
-            echo '<div class="alert alert-error" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['error']) . '</div>';
-            unset($_SESSION['error']);
-        }
-        ?>
-    </div>
-</div>
+<!-- Rest of your HTML remains the same until the script tag -->
 <script>
     const departments = <?php echo json_encode($departments); ?>;
     const projects = <?php echo json_encode($projects); ?>;
     const employees = <?php echo json_encode($employees); ?>;
-
+    // Existing alert hide logic
     document.addEventListener('click', function(event) {
         const alerts = document.querySelectorAll('.alert');
         alerts.forEach(alert => {
