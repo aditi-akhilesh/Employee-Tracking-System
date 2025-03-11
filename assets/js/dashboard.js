@@ -525,20 +525,20 @@ function showEmployeeUpdateForm(employeeId) {
             </option>
         `).join('');
         profileUpdateForm.innerHTML = `
-            <h2>Update Employee</h2>
+            <h2>Update Users</h2>
             <form method="POST" action="../pages/features/update_employee.php">
                 <input type="hidden" name="employee_id" value="${emp.employee_id}">
                 <div class="form-group">
                     <label>First Name</label>
-                    <input type="text" name="first_name" value="${emp.first_name}" required>
+                    <input type="text" name="first_name" value="${emp.first_name}">
                 </div>
                 <div class="form-group">
                     <label>Last Name</label>
-                    <input type="text" name="last_name" value="${emp.last_name}" required>
+                    <input type="text" name="last_name" value="${emp.last_name}">
                 </div>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" name="email" value="${emp.email}" required>
+                    <input type="email" name="email" value="${emp.email}">
                 </div>
                 <div class="form-group">
                     <label>Role</label>
@@ -549,17 +549,17 @@ function showEmployeeUpdateForm(employeeId) {
                 </div>
                 <div class="form-group">
                     <label>Department</label>
-                    <select name="department_id" required>
+                    <select name="department_id">
                         ${deptOptions}
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Hire Date</label>
-                    <input type="date" name="emp_hire_date" value="${emp.emp_hire_date}" required>
+                    <input type="date" name="emp_hire_date" value="${emp.emp_hire_date}">
                 </div>
                 <div class="form-group">
                     <label>Salary</label>
-                    <input type="number" name="salary" value="${emp.salary}" step="0.01" required>
+                    <input type="number" name="salary" value="${emp.salary}" step="0.01">
                 </div>
                 <div class="form-group button-group">
                     <button type="submit">Save Changes</button>
@@ -571,6 +571,7 @@ function showEmployeeUpdateForm(employeeId) {
         console.error("main-content or profile-update-form not found");
     }
 }
+
 
 function removeEmployee(employeeId) {
     if (confirm('Are you sure you want to remove this employee?')) {
