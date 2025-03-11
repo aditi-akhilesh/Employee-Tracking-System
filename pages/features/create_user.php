@@ -52,10 +52,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $middle_name = trim($_POST['middle_name']) ?: null; // Optional, set to NULL if empty
     $last_name = trim($_POST['last_name']);
     $email = trim($_POST['email']);
+    $phone_number = trim($_POST['phone_number']);
     $dob = trim($_POST['dob']);
     $role = trim($_POST['role']);
     $department_id = trim($_POST['department_id']);
     $emp_hire_date = trim($_POST['emp_hire_date']);
+    $salary = trim($_POST['salary']);
+
+    // Server-side validation for salary
+    if (!is_numeric($salary) || floatval($salary) <= 0) {
+        file_put_contents('create_user_debug.log', "Salary validation failed: Invalid salary $salary\n", FILE_APPEND);
+        $_SESSION['error'] = "Salary must be a positive number.";
+        header("Location: ../hr_dashboard.php");
+        exit();
+    }
+
+    // Validate DOB (server-side)
+    $dobDate = new DateTime($dob);
+    $currentDate = new DateTime();
+    $ageInterval = $currentDate->diff($dobDate);
+    $age = $ageInterval->y;
+    if ($age < 18) {
+        file_put_contents('create_user_debug.log', "DOB validation failed: Age $age is less than 18 for DOB $dob\n", FILE_APPEND);
+        $_SESSION['error'] = "User must be at least 18 years old.";
+        header("Location: ../hr_dashboard.php");
+        exit();
+    }
 
     // Generate password as first_name@dob
     $password = $first_name . "@" . $dob;
@@ -64,7 +86,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     // Debug: Log the submitted data
     file_put_contents('create_user_post.log', "Submitted data: " . print_r($_POST, true) . "\n", FILE_APPEND);
 
-    // Validate department_id by checking if it exists in the Department table
+    // Validate department_id
     try {
         $stmt_check_dept = $con->prepare("SELECT COUNT(*) FROM Department WHERE department_id = :department_id");
         $stmt_check_dept->execute(['department_id' => $department_id]);
@@ -102,15 +124,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             throw new Exception("Password hashing failed.");
         }
 
-        // Insert into Users table with middle_name
-        $sql_users = "INSERT INTO Users (first_name, middle_name, last_name, email, password_hash, role, is_active) 
-                      VALUES (:first_name, :middle_name, :last_name, :email, :password, :role, 1)";
+        // Insert into Users table with phone_number
+        $sql_users = "INSERT INTO Users (first_name, middle_name, last_name, email, phone_number, password_hash, role, is_active) 
+                      VALUES (:first_name, :middle_name, :last_name, :email, :phone_number, :password, :role, 1)";
         $stmt_users = $con->prepare($sql_users);
         $stmt_users->execute([
             'first_name' => $first_name,
             'middle_name' => $middle_name,
             'last_name' => $last_name,
             'email' => $email,
+            'phone_number' => $phone_number,
             'password' => $hashed_password,
             'role' => $role
         ]);
@@ -125,9 +148,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $is_hr = ($role === 'HR') ? 1 : 0;
         $is_manager = ($role === 'Manager') ? 1 : 0;
 
-        // Insert into Employees table
-        $sql_employees = "INSERT INTO Employees (user_id, department_id, hr_id, DOB, emp_hire_date, is_hr, is_manager) 
-                          VALUES (:user_id, :department_id, :hr_id, :dob, :emp_hire_date, :is_hr, :is_manager)";
+        // Insert into Employees table with salary
+        $sql_employees = "INSERT INTO Employees (user_id, department_id, hr_id, DOB, emp_hire_date, salary, is_hr, is_manager) 
+                          VALUES (:user_id, :department_id, :hr_id, :dob, :emp_hire_date, :salary, :is_hr, :is_manager)";
         $stmt_employees = $con->prepare($sql_employees);
         $stmt_employees->execute([
             'user_id' => $user_id,
@@ -135,11 +158,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             'hr_id' => $hr_id,
             'dob' => $dob,
             'emp_hire_date' => $emp_hire_date,
+            'salary' => floatval($salary),
             'is_hr' => $is_hr,
             'is_manager' => $is_manager
         ]);
 
-        $_SESSION['success'] = "User created successfully!;
+        $_SESSION['success'] = "User created successfully!";
     } catch (PDOException $e) {
         $_SESSION['error'] = "Database error: " . $e->getMessage();
     } catch (Exception $e) {
