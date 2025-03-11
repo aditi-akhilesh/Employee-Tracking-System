@@ -164,13 +164,14 @@ function showCreateUserForm() {
         profileUpdateForm.style.display = 'none';
         profileUpdateForm.innerHTML = '';
         mainContent.innerHTML = `
-            <h2>Welcome ,${username} (HR)</h2>
+            <h2>Welcome, ${userName} (HR)</h2>
             <p>Select an option from the menu on the left to get started.</p>
         `;
     } else {
         console.error("main-content or profile-update-form not found");
     }
 }
+
 function showAddProjectForm() {
             const contentArea = document.getElementById('content-area');
         const profileUpdateForm = document.getElementById('profile-update-form');
@@ -437,7 +438,7 @@ function showAllEmployees() {
                 <tbody>
         `;
         // Filter employees to only show 'User' or 'Manager' roles
-        const filteredEmployees = employees.filter(emp => emp.role === 'User' || emp.role === 'Manager');
+        const filteredEmployees = employees.filter(emp => emp.role === 'User' || emp.role === 'Manager' && emp.emp_status != "Inactive");
         filteredEmployees.forEach(emp => {
             const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
             html += `
@@ -483,7 +484,7 @@ function showUpdateRemoveUserForm() {
                 <tbody>
         `;
         // Filter employees to only show 'User' or 'Manager' roles
-        const filteredEmployees = employees.filter(emp => emp.role === 'User' || emp.role === 'Manager');
+        const filteredEmployees = employees.filter(emp => emp.role === 'User' || emp.role === 'Manager' && emp.emp_status != "Inactive");
         filteredEmployees.forEach(emp => {
             const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
             html += `
@@ -525,20 +526,20 @@ function showEmployeeUpdateForm(employeeId) {
             </option>
         `).join('');
         profileUpdateForm.innerHTML = `
-            <h2>Update Users</h2>
+            <h2>Update Employee</h2>
             <form method="POST" action="../pages/features/update_employee.php">
                 <input type="hidden" name="employee_id" value="${emp.employee_id}">
                 <div class="form-group">
                     <label>First Name</label>
-                    <input type="text" name="first_name" value="${emp.first_name}">
+                    <input type="text" name="first_name" value="${emp.first_name}" required>
                 </div>
                 <div class="form-group">
                     <label>Last Name</label>
-                    <input type="text" name="last_name" value="${emp.last_name}">
+                    <input type="text" name="last_name" value="${emp.last_name}" required>
                 </div>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" name="email" value="${emp.email}">
+                    <input type="email" name="email" value="${emp.email}" required>
                 </div>
                 <div class="form-group">
                     <label>Role</label>
@@ -549,17 +550,17 @@ function showEmployeeUpdateForm(employeeId) {
                 </div>
                 <div class="form-group">
                     <label>Department</label>
-                    <select name="department_id">
+                    <select name="department_id" required>
                         ${deptOptions}
                     </select>
                 </div>
                 <div class="form-group">
                     <label>Hire Date</label>
-                    <input type="date" name="emp_hire_date" value="${emp.emp_hire_date}">
+                    <input type="date" name="emp_hire_date" value="${emp.emp_hire_date}" required>
                 </div>
                 <div class="form-group">
                     <label>Salary</label>
-                    <input type="number" name="salary" value="${emp.salary}" step="0.01">
+                    <input type="number" name="salary" value="${emp.salary}" step="0.01" required>
                 </div>
                 <div class="form-group button-group">
                     <button type="submit">Save Changes</button>
@@ -571,7 +572,6 @@ function showEmployeeUpdateForm(employeeId) {
         console.error("main-content or profile-update-form not found");
     }
 }
-
 
 function removeEmployee(employeeId) {
     if (confirm('Are you sure you want to remove this employee?')) {
@@ -589,21 +589,17 @@ function removeEmployee(employeeId) {
 }
 
 function showDepartmentInfo() {
-    const contentArea = document.getElementById('content-area');
+    console.log("showDepartmentInfo called");
+    const mainContent = document.getElementById('main-content');
     const profileUpdateForm = document.getElementById('profile-update-form');
-    if (contentArea && profileUpdateForm) {
-        // Hide welcome message
-        const welcomeHeading = contentArea.querySelector('h2');
-        const welcomeMessage = contentArea.querySelector('p');
-        if (welcomeHeading) welcomeHeading.style.display = 'none';
-        if (welcomeMessage) welcomeMessage.style.display = 'none';
-
-        profileUpdateForm.style.display = 'block';
-        profileUpdateForm.innerHTML = `
-            <h2>Track Department Information</h2>
-            <table style="width: 100%; border-collapse: collapse;">
+    if (mainContent && profileUpdateForm) {
+        mainContent.style.display = 'block';
+        profileUpdateForm.style.display = 'none';
+        let html = `
+            <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Department Information</h2>
+            <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                 <thead>
-                    <tr>
+                    <tr style="background-color: #003087; color: #FFFFFF;">
                         <th style="border: 1px solid #ddd; padding: 8px;">Department ID</th>
                         <th style="border: 1px solid #ddd; padding: 8px;">Name</th>
                         <th style="border: 1px solid #ddd; padding: 8px;">Description</th>
@@ -611,25 +607,37 @@ function showDepartmentInfo() {
                     </tr>
                 </thead>
                 <tbody>
-                    ${departments.length > 0 ? departments.map(dept => `
-                        <tr>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_id}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_name}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_description || 'No description'}</td>
-                            <td style="border: 1px solid #ddd; padding: 8px;">${dept.employee_count}</td>
-                        </tr>
-                    `).join('') : `
-                        <tr>
-                            <td colspan="4" style="border: 1px solid #ddd; padding: 8px; text-align: center;">No departments found.</td>
-                        </tr>
-                    `}
+        `;
+        if (departments.length > 0) {
+            departments.forEach(dept => {
+                html += `
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_id}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_name}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_description || 'No description'}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${dept.employee_count}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            html += `
+                <tr>
+                    <td colspan="4" style="padding: 20px; text-align: center; color: #666;">No departments found.</td>
+                </tr>
+            `;
+        }
+        html += `
                 </tbody>
             </table>
-            <div class="form-group button-group" style="margin-top: 20px;">
-                <button type="button" onclick="showWelcomeMessage()">Back</button>
+            <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                        onmouseover="this.style.backgroundColor='#5a6268'" 
+                        onmouseout="this.style.backgroundColor='#6c757d'"
+                        onclick="showWelcomeMessage()">Back</button>
             </div>
         `;
+        mainContent.innerHTML = html;
     } else {
-        console.error("content-area or profile-update-form not found");
+        console.error("main-content or profile-update-form not found");
     }
 }
