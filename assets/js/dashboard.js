@@ -510,7 +510,7 @@ function showEmployeeUpdateForm(employeeId) {
         `).join('');
         profileUpdateForm.innerHTML = `
             <h2>Update Employee</h2>
-            <form method="POST" action="../includes/update_employee.php">
+            <form method="POST" action="../pages/features/update_employee.php">
                 <input type="hidden" name="employee_id" value="${emp.employee_id}">
                 <div class="form-group">
                     <label>First Name</label>
@@ -560,7 +560,7 @@ function removeEmployee(employeeId) {
     if (confirm('Are you sure you want to remove this employee?')) {
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = '../includes/remove_employee.php';
+        form.action = '../pages/features/remove_employee.php';
         const input = document.createElement('input');
         input.type = 'hidden';
         input.name = 'employee_id';
