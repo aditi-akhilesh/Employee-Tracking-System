@@ -27,18 +27,15 @@ document.addEventListener('click', function(event) {
 });
 
 function showCreateUserForm() {
-    alert("Button Clicked! Function is working."); // Debugging step
-    console.log("showCreateUserForm called");
+    // Existing implementation (unchanged)
     const contentArea = document.getElementById('content-area');
     const profileUpdateForm = document.getElementById('profile-update-form');
     if (contentArea && profileUpdateForm) {
-        // Hide existing h2 and p elements in content-area
         const welcomeHeading = contentArea.querySelector('h2');
         const welcomeMessage = contentArea.querySelector('p');
         if (welcomeHeading) welcomeHeading.style.display = 'none';
         if (welcomeMessage) welcomeMessage.style.display = 'none';
 
-        // Show and populate the form
         profileUpdateForm.style.display = 'block';
         profileUpdateForm.innerHTML = `
             <h2>Create New User</h2>
@@ -59,7 +56,7 @@ function showCreateUserForm() {
                     <label for="email">Email:</label>
                     <input type="email" id="email" name="email" required>
                 </div>
-                  <div class="form-group">
+                <div class="form-group">
                     <label for="dob">Date of Birth:</label>
                     <input type="date" id="dob" name="dob" required>
                 </div>
@@ -91,111 +88,314 @@ function showCreateUserForm() {
         console.error("content-area or profile-update-form not found");
     }
 }
+
 function showWelcomeMessage() {
-        console.log("showWelcomeMessage called"); // Debugging step
-        const contentArea = document.getElementById('content-area');
-        const profileUpdateForm = document.getElementById('profile-update-form');
-        if (contentArea && profileUpdateForm) {
-            // Show the welcome h2 and p elements
-            const welcomeHeading = contentArea.querySelector('h2');
-            const welcomeMessage = contentArea.querySelector('p');
-            if (welcomeHeading) welcomeHeading.style.display = 'block';
-            if (welcomeMessage) welcomeMessage.style.display = 'block';
-
-            // Hide the form
-            profileUpdateForm.style.display = 'none';
-            profileUpdateForm.innerHTML = ''; // Clear the form content
-        } else {
-            console.error("content-area or profile-update-form not found");
-        }
-    }
-
-function showProfileForm() {
     const contentArea = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (contentArea && profileUpdateForm) {
+        const welcomeHeading = contentArea.querySelector('h2');
+        const welcomeMessage = contentArea.querySelector('p');
+        if (welcomeHeading) welcomeHeading.style.display = 'block';
+        if (welcomeMessage) welcomeMessage.style.display = 'block';
+        profileUpdateForm.style.display = 'none';
+        profileUpdateForm.innerHTML = '';
+    } else {
+        console.error("content-area or profile-update-form not found");
+    }
+}
 
-    // Simulated user data from session (to be replaced with actual DB fetch later)
-    const user = {
-        first_name: 'Aditya',
-        last_name: 'S',
-        employee_id: 'EMP001', // Placeholder, replace with actual ID later
-        dpt_id: 'D001',       // Placeholder, replace with actual dept ID
-        email: 'aditya@gmail.com',
-        phone: '123-456-7890',
-        street: '123 Main St',
-        apartment: 'Apt 4B',
-        city: 'Springfield',
-        zip: '62701',
-        country: 'USA'
-    };
+function showDepartmentInfo() {
+    const contentArea = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (contentArea && profileUpdateForm) {
+        const welcomeHeading = contentArea.querySelector('h2');
+        const welcomeMessage = contentArea.querySelector('p');
+        if (welcomeHeading) welcomeHeading.style.display = 'none';
+        if (welcomeMessage) welcomeMessage.style.display = 'none';
 
-    contentArea.innerHTML = `
-        <div class="profile-details">
-            <h2>View and Update Personal Details</h2>
-            <form class="update-form" id="profile-update-form" action="../auth/update_profile.php" method="post">
+        profileUpdateForm.style.display = 'block';
+        profileUpdateForm.innerHTML = `
+            <h2>Track Department Information</h2>
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Department ID</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Name</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Description</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Employee Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${departments.length > 0 ? departments.map(dept => `
+                        <tr>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_id}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_name}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_description || 'No description'}</td>
+                            <td style="border: 1px solid #ddd; padding: 8px;">${dept.employee_count}</td>
+                        </tr>
+                    `).join('') : `
+                        <tr>
+                            <td colspan="4" style="border: 1px solid #ddd; padding: 8px; text-align: center;">No departments found.</td>
+                        </tr>
+                    `}
+                </tbody>
+            </table>
+            <div class="form-group button-group" style="margin-top: 20px;">
+                <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+        `;
+    } else {
+        console.error("content-area or profile-update-form not found");
+    }
+}
+
+function showAddProjectForm() {
+    const contentArea = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (contentArea && profileUpdateForm) {
+        const welcomeHeading = contentArea.querySelector('h2');
+        const welcomeMessage = contentArea.querySelector('p');
+        if (welcomeHeading) welcomeHeading.style.display = 'none';
+        if (welcomeMessage) welcomeMessage.style.display = 'none';
+
+        profileUpdateForm.style.display = 'block';
+        profileUpdateForm.innerHTML = `
+            <h2>Add New Project</h2>
+            <form action="../pages/features/manage_projects.php" method="POST" onsubmit="return validateProjectForm(this)">
+                <input type="hidden" name="action" value="add">
                 <div class="form-group">
-                    <label for="first_name">First Name:</label>
-                    <input type="text" id="first_name" name="first_name" value="${user.first_name}" readonly>
+                    <label for="project_name">Project Name:</label>
+                    <input type="text" id="project_name" name="project_name" required>
                 </div>
                 <div class="form-group">
-                    <label for="last_name">Last Name:</label>
-                    <input type="text" id="last_name" name="last_name" value="${user.last_name}" readonly>
+                    <label for="start_date">Start Date:</label>
+                    <input type="date" id="start_date" name="start_date" required>
                 </div>
                 <div class="form-group">
-                    <label for="employee_id">Employee ID:</label>
-                    <input type="text" id="employee_id" name="employee_id" value="${user.employee_id}" readonly>
+                    <label for="expected_end_date">Expected End Date:</label>
+                    <input type="date" id="expected_end_date" name="expected_end_date" required>
                 </div>
                 <div class="form-group">
-                    <label for="dpt_id">Department ID:</label>
-                    <input type="text" id="dpt_id" name="dpt_id" value="${user.dpt_id}" readonly>
+                    <label for="client_name">Client Name:</label>
+                    <input type="text" id="client_name" name="client_name" required>
                 </div>
                 <div class="form-group">
-                    <label for="email">Email:</label>
-                    <input type="email" id="email" name="email" value="${user.email}" readonly>
+                    <label for="client_contact_email">Client Contact Email:</label>
+                    <input type="email" id="client_contact_email" name="client_contact_email" required>
                 </div>
                 <div class="form-group">
-                    <label for="phone">Phone Number:</label>
-                    <input type="tel" id="phone" name="phone" value="${user.phone}">
+                    <label for="project_status">Project Status:</label>
+                    <select id="project_status" name="project_status" required>
+                        <option value="Not Started">Not Started</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="On Hold">On Hold</option>
+                        <option value="Completed">Completed</option>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label for="street">Street Name:</label>
-                    <input type="text" id="street" name="street" value="${user.street}">
+                    <label for="budget">Budget ($):</label>
+                    <input type="number" id="budget" name="budget" step="0.01" required>
                 </div>
                 <div class="form-group">
-                    <label for="apartment">Apartment:</label>
-                    <input type="text" id="apartment" name="apartment" value="${user.apartment}">
+                    <label for="department_id">Department:</label>
+                    <select id="department_id" name="department_id" required>
+                        <option value="">Select a department</option>
+                        ${departments.map(dept => `<option value="${dept.department_id}">${dept.department_name}</option>`).join('')}
+                    </select>
                 </div>
-                <div class="form-group">
-                    <label for="city">City:</label>
-                    <input type="text" id="city" name="city" value="${user.city}">
+                <div class="form-group button-group">
+                    <button type="submit">Add Project</button>
+                    <button type="button" onclick="showWelcomeMessage()">Back</button>
                 </div>
-                <div class="form-group">
-                    <label for="zip">ZIP Code:</label>
-                    <input type="text" id="zip" name="zip" value="${user.zip}">
-                </div>
-                <div class="form-group">
-                    <label for="country">Country:</label>
-                    <input type="text" id="country" name="country" value="${user.country}">
-                </div>
-                <button type="submit" class="update-btn" id="update-btn" disabled>Update Profile</button>
             </form>
-        </div>
-    `;
+        `;
+    } else {
+        console.error("content-area or profile-update-form not found");
+    }
+}
 
-    // Enable update button when changes are made
-    const form = document.getElementById('profile-update-form');
-    const updateBtn = document.getElementById('update-btn');
-    const editableInputs = form.querySelectorAll('input:not([readonly])');
+function showProjectStatus() {
+    const contentArea = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (contentArea && profileUpdateForm) {
+        const welcomeHeading = contentArea.querySelector('h2');
+        const welcomeMessage = contentArea.querySelector('p');
+        if (welcomeHeading) welcomeHeading.style.display = 'none';
+        if (welcomeMessage) welcomeMessage.style.display = 'none';
 
-    editableInputs.forEach(input => {
-        const originalValue = input.value;
-        input.addEventListener('input', function() {
-            let hasChanges = false;
-            editableInputs.forEach(inp => {
-                if (inp.value !== inp.defaultValue) {
-                    hasChanges = true;
-                }
-            });
-            updateBtn.disabled = !hasChanges;
-        });
-    });
+        // Filter for ongoing projects (exclude Completed)
+        const ongoingProjects = projects.filter(p => p.project_status !== 'Completed');
+
+        profileUpdateForm.style.display = 'block';
+        profileUpdateForm.innerHTML = `
+            <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Track Project Status</h2>
+            <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background-color: #f5f5f5; color: #333;">
+                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Project Name</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Status</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Department</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${ongoingProjects.length > 0 ? ongoingProjects.map(proj => `
+                        <tr style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='#fff'">
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                                <span style="cursor: pointer; color: #007bff;" onclick="showProjectDetails(${proj.project_id})">${proj.project_name}</span>
+                            </td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                                <span style="padding: 5px 10px; border-radius: 12px; font-size: 12px; color: #fff; display: inline-block;
+                                    ${proj.project_status === 'In Progress' ? 'background-color: #28a745;' :
+            proj.project_status === 'Not Started' ? 'background-color: #6c757d;' :
+                'background-color: #ffc107;'}">
+                                    ${proj.project_status}
+                                </span>
+                            </td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${proj.department_id}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                                <button style="padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                                        onmouseover="this.style.backgroundColor='#0056b3'" 
+                                        onmouseout="this.style.backgroundColor='#007bff'"
+                                        onclick="showEditProjectForm(${proj.project_id})">Edit</button>
+                            </td>
+                        </tr>
+                    `).join('') : `
+                        <tr>
+                            <td colspan="4" style="padding: 20px; text-align: center; color: #666; border-bottom: 1px solid #eee;">No ongoing projects found.</td>
+                        </tr>
+                    `}
+                </tbody>
+            </table>
+            <div class="form-group button-group" style="margin-top: 20px;">
+                <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                        onmouseover="this.style.backgroundColor='#5a6268'" 
+                        onmouseout="this.style.backgroundColor='#6c757d'"
+                        onclick="showWelcomeMessage()">Back</button>
+            </div>
+            <div id="project-details" style="display: none; margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"></div>
+        `;
+    } else {
+        console.error("content-area or profile-update-form not found");
+    }
+}
+
+function showProjectDetails(projectId) {
+    const proj = projects.find(p => p.project_id == projectId);
+    if (!proj) {
+        alert("Project not found!");
+        return;
+    }
+    const detailsDiv = document.getElementById('project-details');
+    if (detailsDiv) {
+        detailsDiv.style.display = 'block';
+        detailsDiv.innerHTML = `
+            <h3 style="font-size: 20px; color: #333; margin-bottom: 15px;">${proj.project_name} Details</h3>
+            <p><strong>Start Date:</strong> ${proj.start_date}</p>
+            <p><strong>Expected End Date:</strong> ${proj.expected_end_date}</p>
+            <p><strong>Actual End Date:</strong> ${proj.actual_end_date || 'N/A'}</p>
+            <p><strong>Client Name:</strong> ${proj.client_name}</p>
+            <p><strong>Client Contact Email:</strong> ${proj.client_contact_email}</p>
+            <p><strong>Budget:</strong> $${parseFloat(proj.budget).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <p><strong>Actual Cost:</strong> ${proj.actual_cost ? '$' + parseFloat(proj.actual_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : 'N/A'}</p>
+            <button style="padding: 6px 12px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                    onmouseover="this.style.backgroundColor='#c82333'" 
+                    onmouseout="this.style.backgroundColor='#dc3545'"
+                    onclick="document.getElementById('project-details').style.display='none'">Close</button>
+        `;
+    }
+}
+
+function showEditProjectForm(projectId) {
+    const proj = projects.find(p => p.project_id == projectId);
+    if (!proj) {
+        alert("Project not found!");
+        return;
+    }
+    const contentArea = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (contentArea && profileUpdateForm) {
+        const welcomeHeading = contentArea.querySelector('h2');
+        const welcomeMessage = contentArea.querySelector('p');
+        if (welcomeHeading) welcomeHeading.style.display = 'none';
+        if (welcomeMessage) welcomeMessage.style.display = 'none';
+
+        profileUpdateForm.style.display = 'block';
+        profileUpdateForm.innerHTML = `
+            <h2>Edit Project</h2>
+            <form action="../pages/features/manage_projects.php" method="POST" onsubmit="return validateProjectForm(this)">
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="project_id" value="${proj.project_id}">
+                <div class="form-group">
+                    <label for="project_name">Project Name:</label>
+                    <input type="text" id="project_name" name="project_name" value="${proj.project_name}" required>
+                </div>
+                <div class="form-group">
+                    <label for="start_date">Start Date:</label>
+                    <input type="date" id="start_date" name="start_date" value="${proj.start_date}" required>
+                </div>
+                <div class="form-group">
+                    <label for="expected_end_date">Expected End Date:</label>
+                    <input type="date" id="expected_end_date" name="expected_end_date" value="${proj.expected_end_date}" required>
+                </div>
+                <div class="form-group">
+                    <label for="actual_end_date">Actual End Date (if completed):</label>
+                    <input type="date" id="actual_end_date" name="actual_end_date" value="${proj.actual_end_date || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="client_name">Client Name:</label>
+                    <input type="text" id="client_name" name="client_name" value="${proj.client_name}" required>
+                </div>
+                <div class="form-group">
+                    <label for="client_contact_email">Client Contact Email:</label>
+                    <input type="email" id="client_contact_email" name="client_contact_email" value="${proj.client_contact_email}" required>
+                </div>
+                <div class="form-group">
+                    <label for="project_status">Project Status:</label>
+                    <select id="project_status" name="project_status" required>
+                        <option value="Not Started" ${proj.project_status === 'Not Started' ? 'selected' : ''}>Not Started</option>
+                        <option value="In Progress" ${proj.project_status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                        <option value="On Hold" ${proj.project_status === 'On Hold' ? 'selected' : ''}>On Hold</option>
+                        <option value="Completed" ${proj.project_status === 'Completed' ? 'selected' : ''}>Completed</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="budget">Budget ($):</label>
+                    <input type="number" id="budget" name="budget" step="0.01" value="${proj.budget}" required>
+                </div>
+                <div class="form-group">
+                    <label for="actual_cost">Actual Cost ($):</label>
+                    <input type="number" id="actual_cost" name="actual_cost" step="0.01" value="${proj.actual_cost || ''}">
+                </div>
+                <div class="form-group">
+                    <label for="department_id">Department:</label>
+                    <select id="department_id" name="department_id" required>
+                        ${departments.map(dept => `<option value="${dept.department_id}" ${proj.department_id === dept.department_id ? 'selected' : ''}>${dept.department_name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group button-group">
+                    <button type="submit">Update Project</button>
+                    <button type="button" onclick="showProjectStatus()">Back</button>
+                </div>
+            </form>
+        `;
+    } else {
+        console.error("content-area or profile-update-form not found");
+    }
+}
+
+function validateProjectForm(form) {
+    const startDate = new Date(form.start_date.value);
+    const expectedEndDate = new Date(form.expected_end_date.value);
+    const actualEndDate = form.actual_end_date.value ? new Date(form.actual_end_date.value) : null;
+
+    if (expectedEndDate < startDate) {
+        alert("Expected End Date must be after Start Date.");
+        return false;
+    }
+    if (actualEndDate && actualEndDate < startDate) {
+        alert("Actual End Date must be after Start Date.");
+        return false;
+    }
+    return true;
 }
