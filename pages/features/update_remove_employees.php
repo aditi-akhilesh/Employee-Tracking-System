@@ -8,6 +8,7 @@ if (!$con) {
     die("Database connection failed. Check dbconnect.php.");
 }
 
+$page_title = "HR Dashboard";
 
 // Get the logged-in HR's user_id from session
 $hr_user_id = $_SESSION['user_id'];
