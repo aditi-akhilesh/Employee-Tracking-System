@@ -1,41 +1,49 @@
 <?php
 session_start();
-include '../../auth/dbconnect.php';
+require_once '../../auth/dbconnect.php'; // Your database connection file
 
-if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'HR') {
-    header("Location: ../login.php");
-    exit();
-}
-
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $employee_id = intval($_POST['employee_id']);
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['employee_id'])) {
+    $employee_id = filter_var($_POST['employee_id'], FILTER_SANITIZE_NUMBER_INT);
 
     try {
-        // Get user_id to delete from Users table
+        // Begin transaction to ensure both updates succeed or fail together
+        $con->beginTransaction();
+
+        // Step 1: Get the user_id from Employees table
         $stmt = $con->prepare("SELECT user_id FROM Employees WHERE employee_id = :employee_id");
-        $stmt->execute(['employee_id' => $employee_id]);
-        $user_id = $stmt->fetchColumn();
+        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
+        $stmt->execute();
+        $employee = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($user_id === false) {
-            $_SESSION['error'] = "Employee not found.";
-            header("Location: ../hr_dashboard.php");
-            exit();
+        if (!$employee) {
+            throw new Exception("Employee not found.");
         }
+        $user_id = $employee['user_id'];
 
-        // Delete from Employees table
-        $stmt = $con->prepare("DELETE FROM Employees WHERE employee_id = :employee_id");
-        $stmt->execute(['employee_id' => $employee_id]);
+        // Step 2: Update is_active to 0 in Users table
+        $stmt = $con->prepare("UPDATE Users SET is_active = 0 WHERE user_id = :user_id");
+        $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
+        $stmt->execute();
 
-        // Delete from Users table
-        $stmt = $con->prepare("DELETE FROM Users WHERE user_id = :user_id");
-        $stmt->execute(['user_id' => $user_id]);
+        // Step 3: Update emp_status to 'inactive' in Employees table
+        $stmt = $con->prepare("UPDATE Employees SET emp_status = 'inactive' WHERE employee_id = :employee_id");
+        $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
+        $stmt->execute();
 
-        $_SESSION['success'] = "Employee removed successfully!";
-    } catch (PDOException $e) {
-        $_SESSION['error'] = "Database error: " . $e->getMessage();
+        // Commit the transaction
+        $con->commit();
+
+        $_SESSION['success'] = "Employee successfully deactivated.";
+    } catch (Exception $e) {
+        // Roll back the transaction on error
+        $con->rollBack();
+        $_SESSION['error'] = "Failed to deactivate employee: " . $e->getMessage();
     }
+} else {
+    $_SESSION['error'] = "Invalid request.";
 }
 
-header("Location: ../hr_dashboard.php");
+// Redirect back to HR dashboard
+header("Location: ../../pages/hr_dashboard.php");
 exit();
 ?>

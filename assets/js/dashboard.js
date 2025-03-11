@@ -436,7 +436,9 @@ function showAllEmployees() {
                 </thead>
                 <tbody>
         `;
-        employees.forEach(emp => {
+        // Filter employees to only show 'User' or 'Manager' roles
+        const filteredEmployees = employees.filter(emp => emp.role === 'User' || emp.role === 'Manager');
+        filteredEmployees.forEach(emp => {
             const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
             html += `
                 <tr style="border-bottom: 1px solid #ddd;">
