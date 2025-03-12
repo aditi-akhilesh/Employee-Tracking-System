@@ -3,8 +3,9 @@
         <li><a href="#" onclick="toggleDropdown(event, 'manage-dropdown')"><i class="fas fa-users"></i> Manage Users</a>
             <ul id="manage-dropdown" class="dropdown">
                 <li><a href="#" onclick="showCreateUserForm()">Create new profile</a></li>
-                <li><a href="#">Update / remove user</a></li>
-                <li><a href="#">View all employees/managers</a></li>
+                <li><a href="#" onclick="showUpdateRemoveUserForm()">Update / remove user</a></li>
+                <li><a href="#" onclick="showAllEmployees()">View all employees/managers</a></li>
+
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'attendance-dropdown')"><i class="fas fa-clock"></i> Attendance and Leave</a>

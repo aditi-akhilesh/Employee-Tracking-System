@@ -26,9 +26,8 @@ document.addEventListener('click', function(event) {
     }
 });
 
-// Define validateForm globally
 function validateForm(event) {
-    console.log("validateForm called"); // Debugging
+    console.log("validateForm called");
     const dobInput = document.getElementById('dob');
     if (!dobInput || !dobInput.value) {
         console.error("DOB input not found or empty");
@@ -46,7 +45,6 @@ function validateForm(event) {
         return false;
     }
 
-    // Calculate age precisely
     let age = currentDate.getFullYear() - dobValue.getFullYear();
     const monthDiff = currentDate.getMonth() - dobValue.getMonth();
     const dayDiff = currentDate.getDate() - dobValue.getDate();
@@ -54,7 +52,6 @@ function validateForm(event) {
         age--;
     }
 
-    console.log("Calculated age:", age, "DOB:", dobInput.value, "Current Date:", currentDate.toISOString().split('T')[0]);
     if (age < 18) {
         console.log("Age validation failed: User is under 18");
         alert("You must be at least 18 years old.");
@@ -74,10 +71,109 @@ function validateForm(event) {
     return true;
 }
 
-    function showCreateUserForm() {
-        alert("Form retrieved successfully"); // Debugging step
-        console.log("showCreateUserForm called");
-        const contentArea = document.getElementById('content-area');
+function showCreateUserForm() {
+    console.log("showCreateUserForm called");
+    const mainContent = document.getElementById('main-content');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (mainContent && profileUpdateForm) {
+        mainContent.style.display = 'none';
+        profileUpdateForm.style.display = 'block';
+        profileUpdateForm.innerHTML = `
+            <h2>Create New User</h2>
+            <form action="../pages/features/create_user.php" method="POST" id="createUserForm">
+                <div class="form-group">
+                    <label for="first_name">First Name:</label>
+                    <input type="text" id="first_name" name="first_name" required 
+                           pattern="[A-Za-z ]+" 
+                           title="First name must contain only letters and spaces" 
+                           onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122) || event.charCode === 32">
+                </div>
+                <div class="form-group">
+                    <label for="middle_name">Middle Name (Optional):</label>
+                    <input type="text" id="middle_name" name="middle_name"
+                           pattern="[A-Za-z]+"
+                           title="Middle name must contain only letters"
+                           onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122)">
+                </div>
+                <div class="form-group">
+                    <label for="last_name">Last Name:</label>
+                    <input type="text" id="last_name" name="last_name" required 
+                           pattern="[A-Za-z ]+" 
+                           title="Last name must contain only letters and spaces" 
+                           onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122) || event.charCode === 32">
+                </div>
+                <div class="form-group">
+                    <label for="email">Email:</label>
+                    <input type="email" id="email" name="email" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone_number">Phone Number:</label>
+                    <input type="tel" id="phone_number" name="phone_number" pattern="[0-9]{10}" placeholder="1234567890" required>
+                </div>
+                <div class="form-group">
+                    <label for="dob">Date of Birth:</label>
+                    <input type="date" id="dob" name="dob" required>
+                </div>
+                <div class="form-group">
+                    <label for="emp_hire_date">Hire Date:</label>
+                    <input type="date" id="emp_hire_date" name="emp_hire_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="salary">Salary (Annual, in USD):</label>
+                    <input type="number" id="salary" name="salary" required min="0.01" step="0.01" placeholder="50000.00">
+                </div>
+                <div class="form-group">
+                    <label for="role">Role:</label>
+                    <select id="role" name="role" required>
+                        <option value="User">User</option>
+                        <option value="Manager">Manager</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="department_id">Department:</label>
+                    <select id="department_id" name="department_id" required>
+                        <option value="">Select a department</option>
+                        ${departments.map(dept => `<option value="${dept.department_id}">${dept.department_name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group button-group">
+                    <button type="submit">Create User</button>
+                    <button type="button" onclick="showWelcomeMessage()">Back</button>
+                </div>
+            </form>
+        `;
+        const form = document.getElementById('createUserForm');
+        if (form) {
+            form.addEventListener('submit', validateForm);
+        } else {
+            console.error("createUserForm not found after rendering");
+        }
+    } else {
+        console.error("main-content or profile-update-form not found");
+    }
+}
+
+ function showWelcomeMessage(event) {
+    if (event) event.preventDefault(); // Prevent form submission or default behavior
+    console.log("showWelcomeMessage called");
+    const mainContent = document.getElementById('main-content');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (mainContent && profileUpdateForm) {
+        console.log("Elements found, updating display");
+        mainContent.style.display = 'block';
+        profileUpdateForm.style.display = 'none';
+        profileUpdateForm.innerHTML = '';
+        mainContent.innerHTML = `
+            <h2>Welcome, ${userName} (HR)</h2>
+            <p>Select an option from the menu on the left to get started.</p>
+        `;
+    } else {
+        console.error("main-content or profile-update-form not found");
+    }
+}
+
+function showAddProjectForm() {
+            const contentArea = document.getElementById('content-area');
         const profileUpdateForm = document.getElementById('profile-update-form');
         if (contentArea && profileUpdateForm) {
             // Hide existing h2 and p elements in content-area
@@ -88,113 +184,6 @@ function validateForm(event) {
 
             // Show and populate the form
             profileUpdateForm.style.display = 'block';
-            profileUpdateForm.innerHTML = `
-                <h2>Create New User</h2>
-                <form action="../pages/features/create_user.php" method="POST" id="createUserForm">
-                    <div class="form-group">
-                        <label for="first_name">First Name:</label>
-                        <input type="text" id="first_name" name="first_name" required 
-                               pattern="[A-Za-z ]+" 
-                               title="First name must contain only letters and spaces" 
-                               onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122) || event.charCode === 32">
-                    </div>
-                    <div class="form-group">
-                        <label for="middle_name">Middle Name (Optional):</label>
-                        <input type="text" id="middle_name" name="middle_name"
-                               pattern="[A-Za-z]+"
-                               title="middle name must contain only letters and spaces"
-                               onkeypress="return (event.charCode>= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122)|| event.charCode === 32">
-                    </div>
-                    <div class="form-group">
-                        <label for="last_name">Last Name:</label>
-                        <input type="text" id="last_name" name="last_name" required 
-                               pattern="[A-Za-z ]+" 
-                               title="Last name must contain only letters and spaces" 
-                               onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122) || event.charCode === 32">
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" name="email" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="phone_number">Phone Number:</label>
-                        <input type="tel" id="phone_number" name="phone_number" pattern="[0-9]{10}" placeholder="1234567890" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="dob">Date of Birth:</label>
-                        <input type="date" id="dob" name="dob" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="emp_hire_date">Hire Date:</label>
-                        <input type="date" id="emp_hire_date" name="emp_hire_date" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="salary">Salary (Annual, in USD):</label>
-                        <input type="number" id="salary" name="salary" required min="0.01" step="0.01" placeholder="50000.00">
-                    </div>
-                    <div class="form-group">
-                        <label for="role">Role:</label>
-                        <select id="role" name="role" required>
-                            <option value="User">User</option>
-                            <option value="Manager">Manager</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="department_id">Department:</label>
-                        <select id="department_id" name="department_id" required>
-                            <option value="">Select a department</option>
-                            ${departments.map(dept => `<option value="${dept.department_id}">${dept.department_name}</option>`).join('')}
-                        </select>
-                    </div>
-                    <div class="form-group button-group">
-                        <button type="submit">Create User</button>
-                        <button type="button" onclick="showWelcomeMessage()">Back</button>
-                    </div>
-                </form>
-            `;
-            // Add event listener to the form after it’s created
-            const form = document.getElementById('createUserForm');
-            if (form) {
-                form.addEventListener('submit', function(event) {
-                    console.log("Form submit event triggered"); // Debugging
-                    if (!validateForm(event)) {
-                        event.preventDefault(); // Ensure prevention if validateForm returns false
-                    }
-                });
-            } else {
-                console.error("createUserForm not found after rendering");
-            }
-        } else {
-            console.error("content-area or profile-update-form not found");
-        }
-    }
-
-    function showWelcomeMessage() {
-        console.log("showWelcomeMessage called");
-        const contentArea = document.getElementById('content-area');
-        const profileUpdateForm = document.getElementById('profile-update-form');
-        if (contentArea && profileUpdateForm) {
-            const welcomeHeading = contentArea.querySelector('h2');
-            const welcomeMessage = contentArea.querySelector('p');
-            if (welcomeHeading) welcomeHeading.style.display = 'block';
-            if (welcomeMessage) welcomeMessage.style.display = 'block';
-            profileUpdateForm.style.display = 'none';
-            profileUpdateForm.innerHTML = '';
-        } else {
-            console.error("content-area or profile-update-form not found");
-        }
-    }
-
-function showAddProjectForm() {
-    const contentArea = document.getElementById('content-area');
-    const profileUpdateForm = document.getElementById('profile-update-form');
-    if (contentArea && profileUpdateForm) {
-        const welcomeHeading = contentArea.querySelector('h2');
-        const welcomeMessage = contentArea.querySelector('p');
-        if (welcomeHeading) welcomeHeading.style.display = 'none';
-        if (welcomeMessage) welcomeMessage.style.display = 'none';
-
-        profileUpdateForm.style.display = 'block';
         profileUpdateForm.innerHTML = `
             <h2>Add New Project</h2>
             <form action="../pages/features/manage_projects.php" method="POST" onsubmit="return validateProjectForm(this)">
@@ -246,23 +235,17 @@ function showAddProjectForm() {
             </form>
         `;
     } else {
-        console.error("content-area or profile-update-form not found");
+        console.error("main-content or profile-update-form not found");
     }
 }
 
 function showProjectStatus() {
-    const contentArea = document.getElementById('content-area');
+    const mainContent = document.getElementById('main-content');
     const profileUpdateForm = document.getElementById('profile-update-form');
-    if (contentArea && profileUpdateForm) {
-        const welcomeHeading = contentArea.querySelector('h2');
-        const welcomeMessage = contentArea.querySelector('p');
-        if (welcomeHeading) welcomeHeading.style.display = 'none';
-        if (welcomeMessage) welcomeMessage.style.display = 'none';
-
-        // Filter for ongoing projects (exclude Completed)
-        const ongoingProjects = projects.filter(p => p.project_status !== 'Completed');
-
+    if (mainContent && profileUpdateForm) {
+        mainContent.style.display = 'none';
         profileUpdateForm.style.display = 'block';
+        const ongoingProjects = projects.filter(p => p.project_status !== 'Completed');
         profileUpdateForm.innerHTML = `
             <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Track Project Status</h2>
             <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
@@ -283,12 +266,12 @@ function showProjectStatus() {
                             <td style="padding: 12px; border-bottom: 1px solid #eee;">
                                 <span style="padding: 5px 10px; border-radius: 12px; font-size: 12px; color: #fff; display: inline-block;
                                     ${proj.project_status === 'In Progress' ? 'background-color: #28a745;' :
-            proj.project_status === 'Not Started' ? 'background-color: #6c757d;' :
-                'background-color: #ffc107;'}">
+                                    proj.project_status === 'Not Started' ? 'background-color: #6c757d;' :
+                                    'background-color: #ffc107;'}">
                                     ${proj.project_status}
                                 </span>
                             </td>
-                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${proj.department_id}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${departments.find(d => d.department_id == proj.department_id)?.department_name || 'N/A'}</td>
                             <td style="padding: 12px; border-bottom: 1px solid #eee;">
                                 <button style="padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;" 
                                         onmouseover="this.style.backgroundColor='#0056b3'" 
@@ -312,7 +295,7 @@ function showProjectStatus() {
             <div id="project-details" style="display: none; margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);"></div>
         `;
     } else {
-        console.error("content-area or profile-update-form not found");
+        console.error("main-content or profile-update-form not found");
     }
 }
 
@@ -348,14 +331,10 @@ function showEditProjectForm(projectId) {
         alert("Project not found!");
         return;
     }
-    const contentArea = document.getElementById('content-area');
+    const mainContent = document.getElementById('main-content');
     const profileUpdateForm = document.getElementById('profile-update-form');
-    if (contentArea && profileUpdateForm) {
-        const welcomeHeading = contentArea.querySelector('h2');
-        const welcomeMessage = contentArea.querySelector('p');
-        if (welcomeHeading) welcomeHeading.style.display = 'none';
-        if (welcomeMessage) welcomeMessage.style.display = 'none';
-
+    if (mainContent && profileUpdateForm) {
+        mainContent.style.display = 'none';
         profileUpdateForm.style.display = 'block';
         profileUpdateForm.innerHTML = `
             <h2>Edit Project</h2>
@@ -416,7 +395,7 @@ function showEditProjectForm(projectId) {
             </form>
         `;
     } else {
-        console.error("content-area or profile-update-form not found");
+        console.error("main-content or profile-update-form not found");
     }
 }
 
@@ -434,4 +413,231 @@ function validateProjectForm(form) {
         return false;
     }
     return true;
+}
+
+function showAllEmployees() {
+    const mainContent = document.getElementById('main-content');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (mainContent && profileUpdateForm) {
+        mainContent.style.display = 'block';
+        profileUpdateForm.style.display = 'none';
+        let html = `
+            <h2>All Employees/Managers</h2>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr style="background-color: #003087; color: #FFFFFF;">
+                        <th style="padding: 10px;">ID</th>
+                        <th style="padding: 10px;">Name</th>
+                        <th style="padding: 10px;">Email</th>
+                        <th style="padding: 10px;">Role</th>
+                        <th style="padding: 10px;">Department</th>
+                        <th style="padding: 10px;">Hire Date</th>
+                        <th style="padding: 10px;">Salary</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        // Filter employees to only show 'User' or 'Manager' roles
+        const filteredEmployees = employees.filter(emp => emp.role === 'User' || emp.role === 'Manager' && emp.emp_status != "Inactive");
+        filteredEmployees.forEach(emp => {
+            const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
+            html += `
+                <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 10px;">${emp.employee_id}</td>
+                    <td style="padding: 10px;">${emp.first_name} ${emp.last_name}</td>
+                    <td style="padding: 10px;">${emp.email}</td>
+                    <td style="padding: 10px;">${emp.role}</td>
+                    <td style="padding: 10px;">${deptName}</td>
+                    <td style="padding: 10px;">${emp.emp_hire_date}</td>
+                    <td style="padding: 10px;">$${parseFloat(emp.salary).toFixed(2)}</td>
+                </tr>
+            `;
+        });
+        html += `
+                </tbody>
+            </table>
+        `;
+        mainContent.innerHTML = html;
+    } else {
+        console.error("main-content or profile-update-form not found");
+    }
+}
+
+function showUpdateRemoveUserForm() {
+    const mainContent = document.getElementById('main-content');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (mainContent && profileUpdateForm) {
+        mainContent.style.display = 'block';
+        profileUpdateForm.style.display = 'none';
+        let html = `
+            <h2>Update or Remove Employee</h2>
+            <p>Select an employee to update or remove:</p>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                <thead>
+                    <tr style="background-color: #003087; color: #FFFFFF;">
+                        <th style="padding: 10px;">ID</th>
+                        <th style="padding: 10px;">Name</th>
+                        <th style="padding: 10px;">Email</th>
+                        <th style="padding: 10px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        // Filter employees to only show 'User' or 'Manager' roles
+        const filteredEmployees = employees.filter(emp => emp.role === 'User' || emp.role === 'Manager' && emp.emp_status != "Inactive");
+        filteredEmployees.forEach(emp => {
+            const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
+            html += `
+                <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 10px;">${emp.employee_id}</td>
+                    <td style="padding: 10px;">${emp.first_name} ${emp.last_name}</td>
+                    <td style="padding: 10px;">${emp.email}</td>
+                    <td style="padding: 10px;">
+                        <button onclick="showEmployeeUpdateForm(${emp.employee_id})" style="background-color: #007BFF; color: #FFFFFF; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer;">Update</button>
+                        <button onclick="removeEmployee(${emp.employee_id})" style="background-color: #dc3545; color: #FFFFFF; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; margin-left: 5px;">Remove</button>
+                    </td>
+                </tr>
+            `;
+        });
+        html += `
+                </tbody>
+            </table>
+        `;
+        mainContent.innerHTML = html;
+    } else {
+        console.error("main-content or profile-update-form not found");
+    }
+}
+
+function showEmployeeUpdateForm(employeeId) {
+    const emp = employees.find(e => e.employee_id == employeeId);
+    if (!emp) {
+        alert('Employee not found!');
+        return;
+    }
+    const mainContent = document.getElementById('main-content');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (mainContent && profileUpdateForm) {
+        mainContent.style.display = 'none';
+        profileUpdateForm.style.display = 'block';
+        const deptOptions = departments.map(d => `
+            <option value="${d.department_id}" ${d.department_id == emp.department_id ? 'selected' : ''}>
+                ${d.department_name}
+            </option>
+        `).join('');
+        profileUpdateForm.innerHTML = `
+            <h2>Update Employee</h2>
+            <form method="POST" action="../pages/features/update_employee.php">
+                <input type="hidden" name="employee_id" value="${emp.employee_id}">
+                <div class="form-group">
+                    <label>First Name</label>
+                    <input type="text" name="first_name" value="${emp.first_name}" required>
+                </div>
+                <div class="form-group">
+                    <label>Last Name</label>
+                    <input type="text" name="last_name" value="${emp.last_name}" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" value="${emp.email}" required>
+                </div>
+                <div class="form-group">
+                    <label>Role</label>
+                    <select name="role" required>
+                        <option value="User" ${emp.role === 'User' ? 'selected' : ''}>User</option>
+                        <option value="Manager" ${emp.role === 'Manager' ? 'selected' : ''}>Manager</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Department</label>
+                    <select name="department_id" required>
+                        ${deptOptions}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Hire Date</label>
+                    <input type="date" name="emp_hire_date" value="${emp.emp_hire_date}" required>
+                </div>
+                <div class="form-group">
+                    <label>Salary</label>
+                    <input type="number" name="salary" value="${emp.salary}" step="0.01" required>
+                </div>
+                <div class="form-group button-group">
+                    <button type="submit">Save Changes</button>
+                    <button type="button" onclick="showUpdateRemoveUserForm()">Back</button>
+                </div>
+            </form>
+        `;
+    } else {
+        console.error("main-content or profile-update-form not found");
+    }
+}
+
+function removeEmployee(employeeId) {
+    if (confirm('Are you sure you want to remove this employee?')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '../pages/features/remove_employee.php';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'employee_id';
+        input.value = employeeId;
+        form.appendChild(input);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+function showDepartmentInfo() {
+    console.log("showDepartmentInfo called");
+    const mainContent = document.getElementById('main-content');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (mainContent && profileUpdateForm) {
+        mainContent.style.display = 'block';
+        profileUpdateForm.style.display = 'none';
+        let html = `
+            <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Department Information</h2>
+            <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background-color: #003087; color: #FFFFFF;">
+                        <th style="border: 1px solid #ddd; padding: 8px;">Department ID</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Name</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Description</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Employee Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        if (departments.length > 0) {
+            departments.forEach(dept => {
+                html += `
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_id}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_name}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_description || 'No description'}</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${dept.employee_count}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            html += `
+                <tr>
+                    <td colspan="4" style="padding: 20px; text-align: center; color: #666;">No departments found.</td>
+                </tr>
+            `;
+        }
+        html += `
+                </tbody>
+            </table>
+            <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                        onmouseover="this.style.backgroundColor='#5a6268'" 
+                        onmouseout="this.style.backgroundColor='#6c757d'"
+                        onclick="showWelcomeMessage()">Back</button>
+            </div>
+        `;
+        mainContent.innerHTML = html;
+    } else {
+        console.error("main-content or profile-update-form not found");
+    }
 }

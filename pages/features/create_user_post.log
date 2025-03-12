@@ -1,0 +1,124 @@
+Array
+(
+    [first_name] => Mark
+    [last_name] => B
+    [email] => mark.b@gmail.com
+    [password] => Mark@123
+    [role] => User
+    [department] => D01
+)
+
+Submitted department_id: D01
+Submitted data: Array
+(
+    [first_name] => Smith
+    [last_name] => H
+    [email] => smith.h@gmail.com
+    [password] => Smith@123
+    [dob] => 2000-01-09
+    [emp_hire_date] => 2025-03-09
+    [role] => User
+    [department_id] => D01
+)
+
+Submitted data: Array
+(
+    [first_name] => Smith
+    [last_name] => H
+    [email] => smith.h@gmail.com
+    [password] => Smith@123
+    [dob] => 2000-01-09
+    [emp_hire_date] => 2025-03-09
+    [role] => User
+    [department_id] => D01
+)
+
+Submitted data: Array
+(
+    [first_name] => Smith
+    [last_name] => H
+    [email] => smith.h@gmail.com
+    [password] => Smith@123
+    [dob] => 2000-05-07
+    [emp_hire_date] => 2025-03-09
+    [role] => User
+    [department_id] => D01
+)
+
+Submitted data: Array
+(
+    [first_name] => Smith
+    [last_name] => H
+    [email] => smith.h@gmail.com
+    [password] => Smith@123
+    [dob] => 2002-05-05
+    [emp_hire_date] => 2025-03-09
+    [role] => User
+    [department_id] => D01
+)
+
+Submitted data: Array
+(
+    [first_name] => Mathew
+    [middle_name] => Joseph
+    [last_name] => T
+    [email] => mathew.t@gmail.com
+    [password] => Mathew@123
+    [dob] => 1995-09-09
+    [emp_hire_date] => 2025-03-09
+    [role] => User
+    [department_id] => D01
+)
+
+Submitted data: Array
+(
+    [first_name] => Martin
+    [middle_name] => Bow
+    [last_name] => Josep
+    [email] => martin.j@gmail.com
+    [dob] => 1998-05-12
+    [emp_hire_date] => 2025-03-09
+    [role] => User
+    [department_id] => D01
+)
+
+Submitted data: Array
+(
+    [first_name] => Lilly
+    [middle_name] => T
+    [last_name] => C
+    [email] => lilly.c@gmail.com
+    [phone_number] => 3171414110
+    [dob] => 2025-03-10
+    [emp_hire_date] => 2025-03-10
+    [role] => User
+    [department_id] => D01
+)
+
+Submitted data: Array
+(
+    [first_name] => Brandon
+    [middle_name] => 
+    [last_name] => B
+    [email] => Brandan@gmail.com
+    [phone_number] => 2201148800
+    [dob] => 2025-03-10
+    [emp_hire_date] => 2025-03-10
+    [role] => User
+    [department_id] => D01
+)
+
+Submitted data: Array
+(
+    [first_name] => Maria
+    [middle_name] => 
+    [last_name] => C
+    [email] => Maria.c@gmail.com
+    [phone_number] => 3341022401
+    [dob] => 2002-05-05
+    [emp_hire_date] => 2025-03-10
+    [salary] => 50000
+    [role] => Manager
+    [department_id] => D01
+)
+

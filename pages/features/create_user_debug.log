@@ -1,0 +1,68 @@
+Session at start: Array
+(
+    [user_id] => 2
+    [user_name] => Jane Smith
+    [user_email] => jane.smith@gmail.com
+    [role] => HR
+    [employee_id] => 2
+)
+
+Session at start: Array
+(
+    [user_id] => 2
+    [user_name] => Jane Smith
+    [user_email] => jane.smith@gmail.com
+    [role] => HR
+    [employee_id] => 2
+)
+
+Session at start: Array
+(
+    [user_id] => 2
+    [user_name] => Jane Smith
+    [user_email] => jane.smith@gmail.com
+    [role] => HR
+    [employee_id] => 2
+)
+
+Generated password: Martin@1998-05-12
+Session at start: Array
+(
+    [user_id] => 2
+    [user_name] => Jane Smith
+    [user_email] => jane.smith@gmail.com
+    [role] => HR
+    [employee_id] => 2
+)
+
+Generated password: Lilly@2025-03-10
+Session at start: Array
+(
+    [user_id] => 2
+    [user_name] => Jane Smith
+    [user_email] => jane.smith@gmail.com
+    [role] => HR
+    [employee_id] => 2
+)
+
+Generated password: Brandon@2025-03-10
+Session at start: Array
+(
+    [user_id] => 2
+    [user_name] => Jane Smith
+    [user_email] => jane.smith@gmail.com
+    [role] => HR
+    [employee_id] => 2
+)
+
+DOB validation failed: Age 0 is less than 18 for DOB 2025-03-10
+Session at start: Array
+(
+    [user_id] => 2
+    [user_name] => Jane Smith
+    [user_email] => jane.smith@gmail.com
+    [role] => HR
+    [employee_id] => 2
+)
+
+Generated password: Maria@2002-05-05

@@ -1,0 +1,94 @@
+.employee-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.employee-table th, .employee-table td {
+    padding: 12px;
+    border: 1px solid #ddd;
+    text-align: left;
+    color: #6C757D;
+}
+
+.employee-table th {
+    background-color: #003087;
+    color: #FFFFFF;
+    font-weight: 600;
+}
+
+.employee-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.employee-table tr:hover {
+    background-color: #f1f1f1;
+}
+
+.action-btn {
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    color: #FFFFFF;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.update-btn {
+    background-color: #007BFF;
+}
+
+.update-btn:hover {
+    background-color: #0056b3;
+}
+
+.remove-btn {
+    background-color: #DC3545;
+}
+
+.remove-btn:hover {
+    background-color: #b02a37;
+}
+
+#update-form-container {
+    display: none; /* Default hidden, toggled by PHP */
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 60%;
+    margin: 20px auto;
+}
+
+#update-form-container form {
+    display: grid;
+    gap: 10px;
+}
+
+#update-form-container label {
+    font-weight: bold;
+    color: #003087;
+}
+
+#update-form-container input,
+#update-form-container select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+#update-form-container button {
+    background-color: #007BFF;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+#update-form-container button:hover {
+    background-color: #0056b3;
+}

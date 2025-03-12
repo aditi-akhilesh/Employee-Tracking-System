@@ -4,15 +4,24 @@ require_once '../includes/auth_check.php';
 $page_title = "HR Dashboard";
 
 include '../auth/dbconnect.php'; // Uses $con
-
-// Fetch departments
+// Fetch departments with employee count
 try {
-    $stmt = $con->query("SELECT department_id, department_name FROM Department");
+    $stmt = $con->query("
+        SELECT 
+            d.department_id, 
+            d.department_name, 
+            d.department_description, 
+            COUNT(e.employee_id) AS employee_count
+        FROM Department d
+        LEFT JOIN Employees e ON d.department_id = e.department_id
+        GROUP BY d.department_id, d.department_name, d.department_description
+    ");
     $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     $departments = [];
-    $_SESSION['error'] = "Failed to fetch departments: " . $e->getMessage();
+    $_SESSION['error'] = "Failed to fetch department information: " . $e->getMessage();
 }
+
 
 // Fetch projects
 try {
@@ -26,6 +35,21 @@ try {
 } catch (PDOException $e) {
     $projects = [];
     $_SESSION['error'] = "Failed to fetch projects: " . $e->getMessage();
+}
+
+// Fetch employees
+try {
+    $stmt = $con->query("
+        SELECT 
+            e.employee_id, u.first_name, u.last_name, u.email, u.role, 
+            e.department_id, e.emp_hire_date, e.salary , e.emp_status
+        FROM Employees e
+        JOIN Users u ON e.user_id = u.user_id
+    ");
+    $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $employees = [];
+    $_SESSION['error'] = "Failed to fetch employees: " . $e->getMessage();
 }
 ?>
 
@@ -50,16 +74,18 @@ try {
 <div class="dashboard-container">
     <?php include '../includes/sidebar_hr.php'; ?>
     <div class="content" id="content-area">
-        <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name']); ?> (HR)</h2>
-        <p>Select an option from the menu on the left to get started.</p>
-        <div id="profile-update-form"></div>
+        <div id="main-content">
+            <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name']); ?> (HR)</h2>
+            <p>Select an option from the menu on the left to get started.</p>
+        </div>
+        <div id="profile-update-form" style="display: none;"></div>
         <?php
         if (isset($_SESSION['success'])) {
             echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';
-            unset($_SESSION['success']); // Clear after displaying
+            unset($_SESSION['success']);
         } elseif (isset($_SESSION['error'])) {
             echo '<div class="alert alert-error" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['error']) . '</div>';
-            unset($_SESSION['error']); // Clear after displaying
+            unset($_SESSION['error']);
         }
         ?>
     </div>
@@ -67,7 +93,8 @@ try {
 <script>
     const departments = <?php echo json_encode($departments); ?>;
     const projects = <?php echo json_encode($projects); ?>;
-    // Hide alert when clicking elsewhere
+    const employees = <?php echo json_encode($employees); ?>;
+
     document.addEventListener('click', function(event) {
         const alerts = document.querySelectorAll('.alert');
         alerts.forEach(alert => {

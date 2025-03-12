@@ -71,9 +71,13 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     header("Location: ../pages/login.php");
     exit();
-} else {
-    $_SESSION['error'] = "Invalid request method.";
-    header("Location: ../pages/login.php");
+}
+
+// Page protection logic: Check if user is logged in
+if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
+    $_SESSION['error'] = "Please log in to access this page.";
+    header("Location: /Employee-Tracking-System/pages/login.php"); // Absolute path
     exit();
 }
+
 ?>
