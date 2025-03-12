@@ -3,56 +3,6 @@ session_start();
 require_once '../includes/auth_check.php';
 $page_title = "HR Dashboard";
 
-<<<<<<< Updated upstream
-include '../auth/dbconnect.php'; // Uses $con
-// Fetch departments with employee count
-try {
-    $stmt = $con->query("
-        SELECT 
-            d.department_id, 
-            d.department_name, 
-            d.department_description, 
-            COUNT(e.employee_id) AS employee_count
-        FROM Department d
-        LEFT JOIN Employees e ON d.department_id = e.department_id
-        GROUP BY d.department_id, d.department_name, d.department_description
-    ");
-    $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    $departments = [];
-    $_SESSION['error'] = "Failed to fetch department information: " . $e->getMessage();
-}
-
-
-// Fetch projects
-try {
-    $stmt = $con->query("
-        SELECT 
-            project_id, project_name, start_date, expected_end_date, actual_end_date,
-            client_name, client_contact_email, project_status, budget, actual_cost, department_id
-        FROM Projects
-    ");
-    $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    $projects = [];
-    $_SESSION['error'] = "Failed to fetch projects: " . $e->getMessage();
-}
-
-// Fetch employees
-try {
-    $stmt = $con->query("
-        SELECT 
-            e.employee_id, u.first_name, u.last_name, u.email, u.role, 
-            e.department_id, e.emp_hire_date, e.salary , e.emp_status
-        FROM Employees e
-        JOIN Users u ON e.user_id = u.user_id
-    ");
-    $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    $employees = [];
-    $_SESSION['error'] = "Failed to fetch employees: " . $e->getMessage();
-}
-=======
 include '../auth/dbconnect.php';
 
 function fetchData($con, $query, $errorMessage) {
@@ -65,25 +15,49 @@ function fetchData($con, $query, $errorMessage) {
     }
 }
 
-$departments = fetchData($con, "SELECT department_id, department_name FROM Department", "Failed to fetch departments");
+// Fetch departments with additional details and employee count
+$departments = fetchData($con, "
+    SELECT 
+        d.department_id, 
+        d.department_name, 
+        d.department_description, 
+        COUNT(e.employee_id) AS employee_count
+    FROM Department d
+    LEFT JOIN Employees e ON d.department_id = e.department_id
+    GROUP BY d.department_id, d.department_name, d.department_description
+", "Failed to fetch departments");
+
+// Fetch projects
 $projects = fetchData($con, "
-    SELECT project_id, project_name, start_date, expected_end_date, actual_end_date,
-           client_name, client_contact_email, project_status, budget, actual_cost, department_id
-    FROM Projects", "Failed to fetch projects");
+    SELECT 
+        project_id, project_name, start_date, expected_end_date, actual_end_date,
+        client_name, client_contact_email, project_status, budget, actual_cost, department_id
+    FROM Projects
+", "Failed to fetch projects");
+
+// Fetch trainings
 $trainings = fetchData($con, "
     SELECT training_id, training_name, training_date, certificate, end_date, department_id
-    FROM Training", "Failed to fetch trainings");
+    FROM Training
+", "Failed to fetch trainings");
+
+// Fetch employee trainings
 $employeeTrainings = fetchData($con, "
     SELECT et.employee_training_id, et.employee_id, et.training_id, et.enrollment_date,
            et.completion_status, et.score, u.first_name, u.last_name, e.department_id
     FROM Employee_Training et
     JOIN Employees e ON et.employee_id = e.employee_id
-    JOIN Users u ON e.user_id = u.user_id", "Failed to fetch employee trainings");
+    JOIN Users u ON e.user_id = u.user_id
+", "Failed to fetch employee trainings");
+
+// Fetch employees with additional details
 $employees = fetchData($con, "
-    SELECT e.employee_id, u.first_name, u.last_name, e.department_id
+    SELECT 
+        e.employee_id, u.first_name, u.last_name, u.email, u.role, 
+        e.department_id, e.emp_hire_date, e.salary, e.emp_status
     FROM Employees e
-    JOIN Users u ON e.user_id = u.user_id", "Failed to fetch employees");
->>>>>>> Stashed changes
+    JOIN Users u ON e.user_id = u.user_id
+", "Failed to fetch employees");
 ?>
 
 <!DOCTYPE html>
@@ -116,12 +90,8 @@ $employees = fetchData($con, "
         if (isset($_SESSION['success'])) {
             echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';
             unset($_SESSION['success']);
-<<<<<<< Updated upstream
-        } elseif (isset($_SESSION['error'])) {
-=======
         }
         if (isset($_SESSION['error'])) {
->>>>>>> Stashed changes
             echo '<div class="alert alert-error" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['error']) . '</div>';
             unset($_SESSION['error']);
         }
@@ -129,11 +99,6 @@ $employees = fetchData($con, "
     </div>
 </div>
 <script>
-<<<<<<< Updated upstream
-    const departments = <?php echo json_encode($departments); ?>;
-    const projects = <?php echo json_encode($projects); ?>;
-    const employees = <?php echo json_encode($employees); ?>;
-=======
     const departments = <?php echo json_encode($departments ?: []); ?>;
     const projects = <?php echo json_encode($projects ?: []); ?>;
     const trainings = <?php echo json_encode($trainings ?: []); ?>;
@@ -144,7 +109,6 @@ $employees = fetchData($con, "
     if (!departments.length || !projects.length || !trainings.length || !employeeTrainings.length || !employees.length) {
         console.warn("Some data could not be loaded. Functionality may be limited.");
     }
->>>>>>> Stashed changes
 
     document.addEventListener('click', function(event) {
         const alerts = document.querySelectorAll('.alert');
