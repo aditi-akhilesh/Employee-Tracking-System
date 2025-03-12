@@ -32,11 +32,11 @@
                 <li><a href="#" onclick="showTrainingStatus()">View training status</a></li>
             </ul>
         </li>
-        <li><a href="#" onclick="toggleDropdown(event, 'reports-dropdown')"><i class="fas fa-chart-bar"></i> Reports & Analytics</a>
+ <!--       <li><a href="#" onclick="toggleDropdown(event, 'reports-dropdown')"><i class="fas fa-chart-bar"></i> Reports & Analytics</a>
             <ul id="reports-dropdown" class="dropdown">
                 <li><a href="#">Generate report for an employee</a></li>
                 <li><a href="#">View department-wise performance metrics</a></li>
             </ul>
-        </li>
+        </li> -->
     </ul>
 </div>
