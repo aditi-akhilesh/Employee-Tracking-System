@@ -42,7 +42,7 @@ try {
     $stmt = $con->query("
         SELECT 
             e.employee_id, u.first_name, u.last_name, u.email, u.role, 
-            e.department_id, e.emp_hire_date, e.salary
+            e.department_id, e.emp_hire_date, e.salary , e.emp_status
         FROM Employees e
         JOIN Users u ON e.user_id = u.user_id
     ");

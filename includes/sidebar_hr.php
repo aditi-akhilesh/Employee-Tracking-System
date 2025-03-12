@@ -5,6 +5,7 @@
                 <li><a href="#" onclick="showCreateUserForm()">Create new profile</a></li>
                 <li><a href="#" onclick="showUpdateRemoveUserForm()">Update / remove user</a></li>
                 <li><a href="#" onclick="showAllEmployees()">View all employees/managers</a></li>
+
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'attendance-dropdown')"><i class="fas fa-clock"></i> Attendance and Leave</a>
