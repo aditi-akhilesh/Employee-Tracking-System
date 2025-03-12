@@ -94,6 +94,7 @@ try {
     const departments = <?php echo json_encode($departments); ?>;
     const projects = <?php echo json_encode($projects); ?>;
     const employees = <?php echo json_encode($employees); ?>;
+    const userName = <?php echo json_encode(htmlspecialchars($_SESSION['user_name'])); ?>;
 
     document.addEventListener('click', function(event) {
         const alerts = document.querySelectorAll('.alert');

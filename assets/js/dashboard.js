@@ -138,7 +138,7 @@ function showCreateUserForm() {
                 </div>
                 <div class="form-group button-group">
                     <button type="submit">Create User</button>
-                    <button type="button" onclick="showWelcomeMessage()">Back</button>
+                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
                 </div>
             </form>
         `;
@@ -173,19 +173,16 @@ function showCreateUserForm() {
 }
 
 function showAddProjectForm() {
-            const contentArea = document.getElementById('content-area');
-        const profileUpdateForm = document.getElementById('profile-update-form');
-        if (contentArea && profileUpdateForm) {
-            // Hide existing h2 and p elements in content-area
-            const welcomeHeading = contentArea.querySelector('h2');
-            const welcomeMessage = contentArea.querySelector('p');
-            if (welcomeHeading) welcomeHeading.style.display = 'none';
-            if (welcomeMessage) welcomeMessage.style.display = 'none';
-
-            // Show and populate the form
-            profileUpdateForm.style.display = 'block';
+    console.log("showAddProjectForm called");
+    const mainContent = document.getElementById('main-content');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (mainContent && profileUpdateForm) {
+        // Reset both mainContent and profileUpdateForm to avoid overlap
+        mainContent.style.display = 'none';
+        profileUpdateForm.style.display = 'block';
+        profileUpdateForm.innerHTML = ''; // Clear any previous content
         profileUpdateForm.innerHTML = `
-            <h2>Add New Project</h2>
+            <h2 style="font-size: 24px; color: #007bff; margin-bottom: 20px;">Add New Project</h2>
             <form action="../pages/features/manage_projects.php" method="POST" onsubmit="return validateProjectForm(this)">
                 <input type="hidden" name="action" value="add">
                 <div class="form-group">
@@ -228,9 +225,12 @@ function showAddProjectForm() {
                         ${departments.map(dept => `<option value="${dept.department_id}">${dept.department_name}</option>`).join('')}
                     </select>
                 </div>
-                <div class="form-group button-group">
-                    <button type="submit">Add Project</button>
-                    <button type="button" onclick="showWelcomeMessage()">Back</button>
+                <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                    <button type="submit" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">Add Project</button>
+                    <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                            onmouseover="this.style.backgroundColor='#5a6268'" 
+                            onmouseout="this.style.backgroundColor='#6c757d'"
+                            onclick="showWelcomeMessage(event)">Back</button>
                 </div>
             </form>
         `;
@@ -238,7 +238,6 @@ function showAddProjectForm() {
         console.error("main-content or profile-update-form not found");
     }
 }
-
 function showProjectStatus() {
     const mainContent = document.getElementById('main-content');
     const profileUpdateForm = document.getElementById('profile-update-form');
@@ -441,6 +440,7 @@ function showAllEmployees() {
         const filteredEmployees = employees.filter(emp => emp.role === 'User' || emp.role === 'Manager' && emp.emp_status != "Inactive");
         filteredEmployees.forEach(emp => {
             const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
+            const salary = isNaN(parseFloat(emp.salary)) ? 0 : parseFloat(emp.salary); // Fallback to 0 if NaN
             html += `
                 <tr style="border-bottom: 1px solid #ddd;">
                     <td style="padding: 10px;">${emp.employee_id}</td>
@@ -449,7 +449,7 @@ function showAllEmployees() {
                     <td style="padding: 10px;">${emp.role}</td>
                     <td style="padding: 10px;">${deptName}</td>
                     <td style="padding: 10px;">${emp.emp_hire_date}</td>
-                    <td style="padding: 10px;">$${parseFloat(emp.salary).toFixed(2)}</td>
+                    <td style="padding: 10px;">$${parseFloat(salary).toFixed(2)}</td>
                 </tr>
             `;
         });
