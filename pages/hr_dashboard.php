@@ -4,7 +4,19 @@ require_once '../includes/auth_check.php';
 $page_title = "HR Dashboard";
 
 include '../auth/dbconnect.php'; // Uses $con
-// Fetch departments with employee count
+
+// Helper function to fetch data with error handling
+function fetchData($con, $query, $errorMessage) {
+    try {
+        $stmt = $con->query($query);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        $_SESSION['error'] = $errorMessage . ": " . $e->getMessage();
+        return [];
+    }
+}
+
+// Fetch departments with description and employee count
 try {
     $stmt = $con->query("
         SELECT 
@@ -22,7 +34,6 @@ try {
     $_SESSION['error'] = "Failed to fetch department information: " . $e->getMessage();
 }
 
-
 // Fetch projects
 try {
     $stmt = $con->query("
@@ -37,12 +48,25 @@ try {
     $_SESSION['error'] = "Failed to fetch projects: " . $e->getMessage();
 }
 
-// Fetch employees
+// Fetch trainings
+$trainings = fetchData($con, "
+    SELECT training_id, training_name, training_date, certificate, end_date, department_id
+    FROM Training", "Failed to fetch trainings");
+
+// Fetch employee trainings
+$employeeTrainings = fetchData($con, "
+    SELECT et.employee_training_id, et.employee_id, et.training_id, et.enrollment_date,
+           et.completion_status, et.score, u.first_name, u.last_name, e.department_id
+    FROM Employee_Training et
+    JOIN Employees e ON et.employee_id = e.employee_id
+    JOIN Users u ON e.user_id = u.user_id", "Failed to fetch employee trainings");
+
+// Fetch employees with additional fields (role, hire date, salary, status)
 try {
     $stmt = $con->query("
         SELECT 
             e.employee_id, u.first_name, u.last_name, u.email, u.role, 
-            e.department_id, e.emp_hire_date, e.salary , e.emp_status
+            e.department_id, e.emp_hire_date, e.salary, e.emp_status
         FROM Employees e
         JOIN Users u ON e.user_id = u.user_id
     ");
@@ -83,7 +107,8 @@ try {
         if (isset($_SESSION['success'])) {
             echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';
             unset($_SESSION['success']);
-        } elseif (isset($_SESSION['error'])) {
+        }
+        if (isset($_SESSION['error'])) {
             echo '<div class="alert alert-error" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['error']) . '</div>';
             unset($_SESSION['error']);
         }
@@ -91,9 +116,17 @@ try {
     </div>
 </div>
 <script>
-    const departments = <?php echo json_encode($departments); ?>;
-    const projects = <?php echo json_encode($projects); ?>;
-    const employees = <?php echo json_encode($employees); ?>;
+    const departments = <?php echo json_encode($departments ?: []); ?>;
+    const projects = <?php echo json_encode($projects ?: []); ?>;
+    const trainings = <?php echo json_encode($trainings ?: []); ?>;
+    const employeeTrainings = <?php echo json_encode($employeeTrainings ?: []); ?>;
+    const employees = <?php echo json_encode($employees ?: []); ?>;
+    const userName = <?php echo json_encode(htmlspecialchars($_SESSION['user_name'])); ?>;
+
+    // Check if data is available
+    if (!departments.length || !projects.length || !trainings.length || !employeeTrainings.length || !employees.length) {
+        console.warn("Some data could not be loaded. Functionality may be limited.");
+    }
 
     document.addEventListener('click', function(event) {
         const alerts = document.querySelectorAll('.alert');

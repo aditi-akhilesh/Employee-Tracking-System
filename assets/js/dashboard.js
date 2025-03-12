@@ -138,7 +138,7 @@ function showCreateUserForm() {
                 </div>
                 <div class="form-group button-group">
                     <button type="submit">Create User</button>
-                    <button type="button" onclick="showWelcomeMessage()">Back</button>
+                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
                 </div>
             </form>
         `;
@@ -173,19 +173,16 @@ function showCreateUserForm() {
 }
 
 function showAddProjectForm() {
-            const contentArea = document.getElementById('content-area');
-        const profileUpdateForm = document.getElementById('profile-update-form');
-        if (contentArea && profileUpdateForm) {
-            // Hide existing h2 and p elements in content-area
-            const welcomeHeading = contentArea.querySelector('h2');
-            const welcomeMessage = contentArea.querySelector('p');
-            if (welcomeHeading) welcomeHeading.style.display = 'none';
-            if (welcomeMessage) welcomeMessage.style.display = 'none';
-
-            // Show and populate the form
-            profileUpdateForm.style.display = 'block';
+    console.log("showAddProjectForm called");
+    const mainContent = document.getElementById('main-content');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (mainContent && profileUpdateForm) {
+        // Reset both mainContent and profileUpdateForm to avoid overlap
+        mainContent.style.display = 'none';
+        profileUpdateForm.style.display = 'block';
+        profileUpdateForm.innerHTML = ''; // Clear any previous content
         profileUpdateForm.innerHTML = `
-            <h2>Add New Project</h2>
+            <h2 style="font-size: 24px; color: #007bff; margin-bottom: 20px;">Add New Project</h2>
             <form action="../pages/features/manage_projects.php" method="POST" onsubmit="return validateProjectForm(this)">
                 <input type="hidden" name="action" value="add">
                 <div class="form-group">
@@ -228,9 +225,12 @@ function showAddProjectForm() {
                         ${departments.map(dept => `<option value="${dept.department_id}">${dept.department_name}</option>`).join('')}
                     </select>
                 </div>
-                <div class="form-group button-group">
-                    <button type="submit">Add Project</button>
-                    <button type="button" onclick="showWelcomeMessage()">Back</button>
+                <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                    <button type="submit" style="padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">Add Project</button>
+                    <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                            onmouseover="this.style.backgroundColor='#5a6268'" 
+                            onmouseout="this.style.backgroundColor='#6c757d'"
+                            onclick="showWelcomeMessage(event)">Back</button>
                 </div>
             </form>
         `;
@@ -238,7 +238,6 @@ function showAddProjectForm() {
         console.error("main-content or profile-update-form not found");
     }
 }
-
 function showProjectStatus() {
     const mainContent = document.getElementById('main-content');
     const profileUpdateForm = document.getElementById('profile-update-form');
@@ -438,9 +437,10 @@ function showAllEmployees() {
                 <tbody>
         `;
         // Filter employees to only show 'User' or 'Manager' roles
-        const filteredEmployees = employees.filter(emp => emp.role === 'User' || emp.role === 'Manager' && emp.emp_status != "Inactive");
+        const filteredEmployees = employees.filter(emp => (emp.role === 'User' || emp.role === 'Manager') && emp.emp_status != "Inactive");
         filteredEmployees.forEach(emp => {
             const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
+            const salary = isNaN(parseFloat(emp.salary)) ? 0 : parseFloat(emp.salary); // Fallback to 0 if NaN
             html += `
                 <tr style="border-bottom: 1px solid #ddd;">
                     <td style="padding: 10px;">${emp.employee_id}</td>
@@ -449,13 +449,20 @@ function showAllEmployees() {
                     <td style="padding: 10px;">${emp.role}</td>
                     <td style="padding: 10px;">${deptName}</td>
                     <td style="padding: 10px;">${emp.emp_hire_date}</td>
-                    <td style="padding: 10px;">$${parseFloat(emp.salary).toFixed(2)}</td>
+                    <td style="padding: 10px;">$${parseFloat(salary).toFixed(2)}</td>
                 </tr>
             `;
         });
         html += `
                 </tbody>
-            </table>
+            </table>      
+               <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                        onmouseover="this.style.backgroundColor='#5a6268'" 
+                        onmouseout="this.style.backgroundColor='#6c757d'"
+                        onclick="showWelcomeMessage()">Back</button>
+            </div>
+
         `;
         mainContent.innerHTML = html;
     } else {
@@ -484,7 +491,7 @@ function showUpdateRemoveUserForm() {
                 <tbody>
         `;
         // Filter employees to only show 'User' or 'Manager' roles
-        const filteredEmployees = employees.filter(emp => emp.role === 'User' || emp.role === 'Manager' && emp.emp_status != "Inactive");
+        const filteredEmployees = employees.filter(emp => (emp.role === 'User' || emp.role === 'Manager') && emp.emp_status != "Inactive");
         filteredEmployees.forEach(emp => {
             const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
             html += `
@@ -502,6 +509,13 @@ function showUpdateRemoveUserForm() {
         html += `
                 </tbody>
             </table>
+<div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                        onmouseover="this.style.backgroundColor='#5a6268'" 
+                        onmouseout="this.style.backgroundColor='#6c757d'"
+                        onclick="showWelcomeMessage()">Back</button>
+            </div>
+
         `;
         mainContent.innerHTML = html;
     } else {
@@ -640,4 +654,577 @@ function showDepartmentInfo() {
     } else {
         console.error("main-content or profile-update-form not found");
     }
+}
+
+// Training Management Functions
+
+function showAddTrainingForm() {
+    const contentArea = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (contentArea && profileUpdateForm) {
+        const welcomeHeading = contentArea.querySelector('h2');
+        const welcomeMessage = contentArea.querySelector('p');
+        if (welcomeHeading) welcomeHeading.style.display = 'none';
+        if (welcomeMessage) welcomeMessage.style.display = 'none';
+
+        const departmentMap = new Map(departments.map(d => [d.department_id, d.department_name]));
+
+        profileUpdateForm.style.display = 'block';
+        profileUpdateForm.innerHTML = `
+            <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Manage Training Programs</h2>
+            <h3 style="font-size: 18px; color: #555;">Add New Training</h3>
+            <form action="../pages/features/manage_training.php" method="POST" onsubmit="return validateTrainingForm(this)">
+                <input type="hidden" name="action" value="add">
+                <div class="form-group">
+                    <label for="training_name">Training Name:</label>
+                    <input type="text" id="training_name" name="training_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="training_date">Start Date:</label>
+                    <input type="date" id="training_date" name="training_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="end_date">End Date:</label>
+                    <input type="date" id="end_date" name="end_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="certificate">Certificate:</label>
+                    <input type="text" id="certificate" name="certificate" required>
+                </div>
+                <div class="form-group">
+                    <label for="department_id">Department:</label>
+                    <select id="department_id" name="department_id" required>
+                        <option value="">Select a department</option>
+                        ${departments.map(dept => `<option value="${dept.department_id}">${dept.department_name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group button-group">
+                    <button type="submit">Add Training</button>
+                    <button type="button" onclick="showWelcomeMessage()">Back</button>
+                </div>
+            </form>
+            <h3 style="font-size: 18px; color: #555; margin-top: 30px;">Existing Training Programs</h3>
+            <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background-color: #f5f5f5; color: #333;">
+                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Training Name</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Start Date</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">End Date</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Department</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${trainings.length > 0 ? trainings.map(training => `
+                        <tr style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='#fff'">
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${training.training_name}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${training.training_date}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${training.end_date}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${departmentMap.get(training.department_id) || training.department_id}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                                <button style="padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                                        onmouseover="this.style.backgroundColor='#0056b3'" 
+                                        onmouseout="this.style.backgroundColor='#007bff'"
+                                        onclick="showEditTrainingForm(${training.training_id})">Edit</button>
+                                <button style="padding: 6px 12px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                                        onmouseover="this.style.backgroundColor='#c82333'" 
+                                        onmouseout="this.style.backgroundColor='#dc3545'"
+                                        onclick="deleteTraining(${training.training_id})">Delete</button>
+                            </td>
+                        </tr>
+                    `).join('') : `
+                        <tr>
+                            <td colspan="5" style="padding: 20px; text-align: center; color: #666; border-bottom: 1px solid #eee;">No training programs found.</td>
+                        </tr>
+                    `}
+                </tbody>
+            </table>
+        `;
+    } else {
+        console.error("content-area or profile-update-form not found");
+    }
+}
+
+
+function showEditTrainingForm(trainingId) {
+    const training = trainings.find(t => t.training_id == trainingId);
+    if (!training) {
+        alert("Training not found!");
+        return;
+    }
+    const contentArea = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (contentArea && profileUpdateForm) {
+        const welcomeHeading = contentArea.querySelector('h2');
+        const welcomeMessage = contentArea.querySelector('p');
+        if (welcomeHeading) welcomeHeading.style.display = 'none';
+        if (welcomeMessage) welcomeMessage.style.display = 'none';
+
+        profileUpdateForm.style.display = 'block';
+        profileUpdateForm.innerHTML = `
+            <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Edit Training Program</h2>
+            <form action="../pages/features/manage_training.php" method="POST" onsubmit="return validateTrainingForm(this)">
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" name="training_id" value="${training.training_id}">
+                <div class="form-group">
+                    <label for="training_name">Training Name:</label>
+                    <input type="text" id="training_name" name="training_name" value="${training.training_name}" required>
+                </div>
+                <div class="form-group">
+                    <label for="training_date">Start Date:</label>
+                    <input type="date" id="training_date" name="training_date" value="${training.training_date}" required>
+                </div>
+                <div class="form-group">
+                    <label for="end_date">End Date:</label>
+                    <input type="date" id="end_date" name="end_date" value="${training.end_date}" required>
+                </div>
+                <div class="form-group">
+                    <label for="certificate">Certificate:</label>
+                    <input type="text" id="certificate" name="certificate" value="${training.certificate}" required>
+                </div>
+                <div class="form-group">
+                    <label for="department_id">Department:</label>
+                    <select id="department_id" name="department_id" required>
+                        <option value="">Select a department</option>
+                        ${departments.map(dept => `<option value="${dept.department_id}" ${training.department_id === dept.department_id ? 'selected' : ''}>${dept.department_name}</option>`).join('')}
+                    </select>
+                </div>
+                <div class="form-group button-group">
+                    <button type="submit">Update Training</button>
+                    <button type="button" onclick="showAddTrainingForm()">Back</button>
+                </div>
+            </form>
+        `;
+    }
+}
+
+function deleteTraining(trainingId) {
+    if (confirm("Are you sure you want to delete this training program?")) {
+        const formData = new FormData();
+        formData.append('action', 'delete');
+        formData.append('training_id', trainingId);
+        fetch('../pages/features/manage_training.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    trainings = trainings.filter(t => t.training_id != trainingId);
+                    showAddTrainingForm();
+                } else {
+                    alert(data.error);
+                }
+            });
+    }
+}
+
+function validateTrainingForm(form) {
+    const startDate = new Date(form.training_date.value);
+    const endDate = new Date(form.end_date.value);
+    if (endDate < startDate) {
+        alert("End Date must be after Start Date.");
+        return false;
+    }
+    return true;
+}
+// Helper function for navigation
+function navigateToForm(contentAreaId, formAreaId, formContent, backFunction) {
+    const contentArea = document.getElementById(contentAreaId);
+    const formArea = document.getElementById(formAreaId);
+    if (contentArea && formArea) {
+        const welcomeHeading = contentArea.querySelector('h2');
+        const welcomeMessage = contentArea.querySelector('p');
+        if (welcomeHeading) welcomeHeading.style.display = 'none';
+        if (welcomeMessage) welcomeMessage.style.display = 'none';
+
+        formArea.style.display = 'block';
+        formArea.innerHTML = formContent;
+
+        // Add event listener to the "Back" button dynamically
+        const backButton = formArea.querySelector('.button-group button[type="button"]');
+        if (backButton) {
+            backButton.onclick = (event) => {
+                event.preventDefault();
+                if (backFunction) backFunction();
+                else showWelcomeMessage(event);
+            };
+        }
+    } else {
+        console.error(`${contentAreaId} or ${formAreaId} not found`);
+    }
+}
+
+// Updated showWelcomeMessage to work with content-area
+function showWelcomeMessage(event) {
+    if (event) event.preventDefault();
+    console.log("showWelcomeMessage called with event:", event);
+    const contentArea = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    console.log("contentArea:", contentArea, "profileUpdateForm:", profileUpdateForm);
+    if (contentArea && profileUpdateForm) {
+        console.log("Elements found, updating display");
+        contentArea.querySelector('h2').style.display = 'block';
+        contentArea.querySelector('p').style.display = 'block';
+        profileUpdateForm.style.display = 'none';
+        profileUpdateForm.innerHTML = '';
+    } else {
+        console.error("content-area or profile-update-form not found");
+    }
+}
+
+// Training Management Functions
+
+function showAddTrainingForm() {
+    console.log("showAddTrainingForm called");
+    const departmentMap = new Map(departments.map(d => [d.department_id, d.department_name]));
+    const formContent = `
+        <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Manage Training Programs</h2>
+        <h3 style="font-size: 18px; color: #555;">Add New Training</h3>
+        <form action="../pages/features/manage_training.php" method="POST" onsubmit="return validateTrainingForm(this)">
+            <input type="hidden" name="action" value="add">
+            <div class="form-group">
+                <label for="training_name">Training Name:</label>
+                <input type="text" id="training_name" name="training_name" required>
+            </div>
+            <div class="form-group">
+                <label for="training_date">Start Date:</label>
+                <input type="date" id="training_date" name="training_date" required>
+            </div>
+            <div class="form-group">
+                <label for="end_date">End Date:</label>
+                <input type="date" id="end_date" name="end_date" required>
+            </div>
+            <div class="form-group">
+                <label for="certificate">Certificate:</label>
+                <input type="text" id="certificate" name="certificate" required>
+            </div>
+            <div class="form-group">
+                <label for="department_id">Department:</label>
+                <select id="department_id" name="department_id" required>
+                    <option value="">Select a department</option>
+                    ${departments.map(dept => `<option value="${dept.department_id}">${dept.department_name}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group button-group">
+                <button type="submit">Add Training</button>
+                <button type="button">Back</button>
+            </div>
+        </form>
+        <h3 style="font-size: 18px; color: #555; margin-top: 30px;">Existing Training Programs</h3>
+        <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <thead>
+                <tr style="background-color: #f5f5f5; color: #333;">
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Training Name</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Start Date</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">End Date</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Department</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${trainings.length > 0 ? trainings.map(training => `
+                    <tr style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='#fff'">
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">${training.training_name}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">${training.training_date}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">${training.end_date}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">${departmentMap.get(training.department_id) || training.department_id}</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                            <button style="padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                                    onmouseover="this.style.backgroundColor='#0056b3'" 
+                                    onmouseout="this.style.backgroundColor='#007bff'"
+                                    onclick="showEditTrainingForm(${training.training_id})">Edit</button>
+                            <button style="padding: 6px 12px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                                    onmouseover="this.style.backgroundColor='#c82333'" 
+                                    onmouseout="this.style.backgroundColor='#dc3545'"
+                                    onclick="deleteTraining(${training.training_id})">Delete</button>
+                        </td>
+                    </tr>
+                `).join('') : `
+                    <tr>
+                        <td colspan="5" style="padding: 20px; text-align: center; color: #666; border-bottom: 1px solid #eee;">No training programs found.</td>
+                    </tr>
+                `}
+            </tbody>
+        </table>
+    `;
+    navigateToForm('content-area', 'profile-update-form', formContent, showWelcomeMessage);
+}
+
+function showEditTrainingForm(trainingId) {
+    console.log("showEditTrainingForm called for trainingId:", trainingId);
+    const training = trainings.find(t => t.training_id == trainingId);
+    if (!training) {
+        alert("Training not found!");
+        return;
+    }
+    const formContent = `
+        <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Edit Training Program</h2>
+        <form action="../pages/features/manage_training.php" method="POST" onsubmit="return validateTrainingForm(this)">
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="training_id" value="${training.training_id}">
+            <div class="form-group">
+                <label for="training_name">Training Name:</label>
+                <input type="text" id="training_name" name="training_name" value="${training.training_name}" required>
+            </div>
+            <div class="form-group">
+                <label for="training_date">Start Date:</label>
+                <input type="date" id="training_date" name="training_date" value="${training.training_date}" required>
+            </div>
+            <div class="form-group">
+                <label for="end_date">End Date:</label>
+                <input type="date" id="end_date" name="end_date" value="${training.end_date}" required>
+            </div>
+            <div class="form-group">
+                <label for="certificate">Certificate:</label>
+                <input type="text" id="certificate" name="certificate" value="${training.certificate}" required>
+            </div>
+            <div class="form-group">
+                <label for="department_id">Department:</label>
+                <select id="department_id" name="department_id" required>
+                    <option value="">Select a department</option>
+                    ${departments.map(dept => `<option value="${dept.department_id}" ${training.department_id === dept.department_id ? 'selected' : ''}>${dept.department_name}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group button-group">
+                <button type="submit">Update Training</button>
+                <button type="button">Back</button>
+            </div>
+        </form>
+    `;
+    navigateToForm('content-area', 'profile-update-form', formContent, showAddTrainingForm);
+}
+
+function deleteTraining(trainingId) {
+    if (confirm("Are you sure you want to delete this training program?")) {
+        const formData = new FormData();
+        formData.append('action', 'delete');
+        formData.append('training_id', trainingId);
+        fetch('../pages/features/manage_training.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    trainings = trainings.filter(t => t.training_id != trainingId);
+                    showAddTrainingForm();
+                } else {
+                    alert(data.error);
+                }
+            });
+    }
+}
+
+function validateTrainingForm(form) {
+    const startDate = new Date(form.training_date.value);
+    const endDate = new Date(form.end_date.value);
+    if (endDate < startDate) {
+        alert("End Date must be after Start Date.");
+        return false;
+    }
+    return true;
+}
+function navigateToForm(contentAreaId, formAreaId, formContent, backFunction) {
+    const contentArea = document.getElementById(contentAreaId);
+    const formArea = document.getElementById(formAreaId);
+    const mainContent = document.getElementById('main-content');
+    if (contentArea && formArea && mainContent) {
+        // Hide main-content to prevent overlap
+        mainContent.style.display = 'none';
+        formArea.style.display = 'block';
+        formArea.innerHTML = formContent;
+
+        // Add event listener to the "Back" button dynamically
+        const backButton = formArea.querySelector('.button-group button[type="button"]');
+        if (backButton) {
+            backButton.onclick = (event) => {
+                event.preventDefault();
+                if (backFunction) backFunction(event);
+                else showWelcomeMessage(event);
+            };
+        }
+    } else {
+        console.error(`${contentAreaId}, ${formAreaId}, or main-content not found`);
+    }
+}
+
+// Updated showWelcomeMessage to work with main-content
+function showWelcomeMessage(event) {
+    if (event) event.preventDefault();
+    console.log("showWelcomeMessage called with event:", event);
+    const mainContent = document.getElementById('main-content');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    console.log("mainContent:", mainContent, "profileUpdateForm:", profileUpdateForm);
+    if (mainContent && profileUpdateForm) {
+        console.log("Elements found, updating display");
+        mainContent.style.display = 'block';
+        profileUpdateForm.style.display = 'none';
+        profileUpdateForm.innerHTML = '';
+        // Reset main-content to welcome message
+        mainContent.innerHTML = `
+            <h2>Welcome, ${userName} (HR)</h2>
+            <p>Select an option from the menu on the left to get started.</p>
+        `;
+    } else {
+        console.error("main-content or profile-update-form not found");
+    }
+}
+
+// Updated Training Management Functions
+
+function showAssignTraining(event) {
+    if (event) event.preventDefault();
+    console.log("showAssignTraining called");
+    const formContent = `
+        <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Assign Training to Employees</h2>
+        <form action="../pages/features/manage_training.php" method="POST">
+            <input type="hidden" name="action" value="assign">
+            <div class="form-group">
+                <label for="training_id">Training Program:</label>
+                <select id="training_id" name="training_id" required onchange="showAssignedEmployees(this.value)">
+                    <option value="">Select a training program</option>
+                    ${trainings.map(training => `<option value="${training.training_id}">${training.training_name}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="employee_id">Employee:</label>
+                <select id="employee_id" name="employee_id" required>
+                    <option value="">Select an employee</option>
+                    ${employees.map(emp => `<option value="${emp.employee_id}">${emp.employee_id} - ${emp.first_name} ${emp.last_name} (Dept: ${emp.department_id})</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="enrollment_date">Enrollment Date:</label>
+                <input type="date" id="enrollment_date" name="enrollment_date" required>
+            </div>
+            <div class="form-group button-group">
+                <button type="submit">Assign Training</button>
+                <button type="button">Back</button>
+            </div>
+        </form>
+        <div id="assigned-employees" style="margin-top: 20px;">
+            <h3 style="font-size: 18px; color: #555;">Assigned Employees</h3>
+            <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background-color: #f5f5f5; color: #333;">
+                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Employee</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Enrollment Date</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="assigned-employees-table">
+                    <tr>
+                        <td colspan="3" style="padding: 20px; text-align: center; color: #666;">Select a training program to view assigned employees.</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+    navigateToForm('content-area', 'profile-update-form', formContent, showWelcomeMessage);
+}
+
+function showAssignedEmployees(trainingId) {
+    const assigned = employeeTrainings.filter(et => et.training_id == trainingId);
+    const tableBody = document.getElementById('assigned-employees-table');
+    if (tableBody) {
+        tableBody.innerHTML = assigned.length > 0 ? assigned.map(et => `
+            <tr style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='#fff'">
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${et.first_name} ${et.last_name} (ID: ${et.employee_id})</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${et.enrollment_date || 'N/A'}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                    <button style="padding: 6px 12px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                            onmouseover="this.style.backgroundColor='#c82333'" 
+                            onmouseout="this.style.backgroundColor='#dc3545'"
+                            onclick="removeEmployeeTraining(${et.employee_training_id})">Remove</button>
+                </td>
+            </tr>
+        `).join('') : `
+            <tr>
+                <td colspan="3" style="padding: 20px; text-align: center; color: #666;">No employees assigned to this training.</td>
+            </tr>
+        `;
+    }
+}
+
+function removeEmployeeTraining(employeeTrainingId) {
+    if (confirm("Are you sure you want to remove this employee from the training?")) {
+        const formData = new FormData();
+        formData.append('action', 'remove_assignment');
+        formData.append('employee_training_id', employeeTrainingId);
+        fetch('../pages/features/manage_training.php', {
+            method: 'POST',
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    employeeTrainings = employeeTrainings.filter(et => et.employee_training_id != employeeTrainingId);
+                    const selectedTraining = document.getElementById('training_id').value;
+                    showAssignedEmployees(selectedTraining);
+                } else {
+                    alert(data.error);
+                }
+            });
+    }
+}
+
+function showTrainingStatus(event) {
+    if (event) event.preventDefault();
+    console.log("showTrainingStatus called");
+    const formContent = `
+        <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">View Training Status</h2>
+        <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <thead>
+                <tr style="background-color: #f5f5f5; color: #333;">
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Employee</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Training Program</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Enrollment Date</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Status</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${employeeTrainings.length > 0 ? employeeTrainings.map(et => {
+                    const training = trainings.find(t => t.training_id == et.training_id);
+                    return `
+                        <tr style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='#fff'">
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${et.first_name} ${et.last_name} (ID: ${et.employee_id})</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${training ? training.training_name : 'Unknown'}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${et.enrollment_date || 'N/A'}</td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                                <span style="padding: 5px 10px; border-radius: 12px; font-size: 12px; color: #fff; display: inline-block;
+                                    ${et.completion_status === 'In Progress' ? 'background-color: #28a745;' :
+                                    et.completion_status === 'Not Started' ? 'background-color: #6c757d;' :
+                                    'background-color: #007bff;'}">
+                                    ${et.completion_status || 'N/A'}
+                                </span>
+                            </td>
+                            <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                                <span style="padding: 5px 10px; border-radius: 12px; font-size: 12px; color: #fff;
+                                    ${et.score >= 80 ? 'background-color: #28a745;' :
+                                    et.score >= 50 ? 'background-color: #ffc107;' :
+                                    'background-color: #dc3545;'}">
+                                    ${et.score !== null ? et.score : 'N/A'}
+                                </span>
+                            </td>
+                        </tr>
+                    `;
+                }).join('') : `
+                    <tr>
+                        <td colspan="5" style="padding: 20px; text-align: center; color: #666; border-bottom: 1px solid #eee;">No training assignments found.</td>
+                    </tr>
+                `}
+            </tbody>
+        </table>
+        <div class="form-group button-group" style="margin-top: 20px;">
+            <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                    onmouseover="this.style.backgroundColor='#5a6268'" 
+                    onmouseout="this.style.backgroundColor='#6c757d'">Back</button>
+        </div>
+    `;
+    navigateToForm('content-area', 'profile-update-form', formContent, showWelcomeMessage);
 }
