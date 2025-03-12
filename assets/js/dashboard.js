@@ -441,6 +441,7 @@ function showAllEmployees() {
         const filteredEmployees = employees.filter(emp => emp.role === 'User' || emp.role === 'Manager' && emp.emp_status != "Inactive");
         filteredEmployees.forEach(emp => {
             const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
+            const salary = isNaN(parseFloat(emp.salary)) ? 0 : parseFloat(emp.salary); // Fallback to 0 if NaN
             html += `
                 <tr style="border-bottom: 1px solid #ddd;">
                     <td style="padding: 10px;">${emp.employee_id}</td>
@@ -449,7 +450,7 @@ function showAllEmployees() {
                     <td style="padding: 10px;">${emp.role}</td>
                     <td style="padding: 10px;">${deptName}</td>
                     <td style="padding: 10px;">${emp.emp_hire_date}</td>
-                    <td style="padding: 10px;">$${parseFloat(emp.salary).toFixed(2)}</td>
+                    <td style="padding: 10px;">$${parseFloat(salary).toFixed(2)}</td>
                 </tr>
             `;
         });
