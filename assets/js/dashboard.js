@@ -959,9 +959,19 @@ function showEditTrainingForm(trainingId) {
         alert("Training not found!");
         return;
     }
+
+    // Store original values for comparison
+    const originalValues = {
+        training_name: training.training_name,
+        training_date: training.training_date,
+        end_date: training.end_date,
+        certificate: training.certificate,
+        department_id: training.department_id
+    };
+
     const formContent = `
         <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Edit Training Program</h2>
-        <form action="../pages/features/manage_training.php" method="POST" onsubmit="return validateTrainingForm(this)">
+        <form action="../pages/features/manage_training.php" method="POST" onsubmit="return handleTrainingUpdate(event, this, ${JSON.stringify(originalValues)})">
             <input type="hidden" name="action" value="edit">
             <input type="hidden" name="training_id" value="${training.training_id}">
             <div class="form-group">
@@ -994,6 +1004,64 @@ function showEditTrainingForm(trainingId) {
         </form>
     `;
     navigateToForm('content-area', 'profile-update-form', formContent, showAddTrainingForm);
+}
+
+function handleTrainingUpdate(event, form, originalValues) {
+    event.preventDefault();
+
+    // Get current form values
+    const formData = new FormData(form);
+    const currentValues = {
+        training_name: formData.get('training_name'),
+        training_date: formData.get('training_date'),
+        end_date: formData.get('end_date'),
+        certificate: formData.get('certificate'),
+        department_id: formData.get('department_id')
+    };
+
+    // Compare values
+    const hasChanges = Object.keys(originalValues).some(key =>
+        originalValues[key] !== currentValues[key]
+    );
+
+    if (!hasChanges) {
+        alert("No changes detected. Training remains unchanged.");
+        showAddTrainingForm();
+        return false;
+    }
+
+    // Validate dates if there are changes
+    if (!validateTrainingForm(form)) {
+        return false;
+    }
+
+    // Submit if there are changes
+    fetch(form.action, {
+        method: 'POST',
+        body: formData
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                // Update local trainings array
+                const index = trainings.findIndex(t => t.training_id == formData.get('training_id'));
+                if (index !== -1) {
+                    trainings[index] = {
+                        ...trainings[index],
+                        ...currentValues
+                    };
+                }
+                showAddTrainingForm();
+            } else {
+                alert(data.error);
+            }
+        })
+        .catch(error => {
+            alert("Error updating training: " + error.message);
+        });
+
+    return false; // Prevent default form submission
 }
 
 function deleteTraining(trainingId) {
