@@ -1398,14 +1398,6 @@ function updateLeaveTable() {
             console.log('Leave data received:', data);
             if (leaveTable && data.success) {
                 leaveTable.querySelector('tbody').innerHTML = `
-                    <tr>
-                        <th>Request ID</th>
-                        <th>Employee Name</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
                     ${data.leave_applications.length > 0 ? data.leave_applications.map(app => `
                         <tr>
                             <td style="padding: 10px; border: 1px solid #ddd;">${app.request_id}</td>
@@ -1448,7 +1440,6 @@ function updateLeaveTable() {
             }
         });
 }
-
 function reconsiderLeave(requestId) {
     if (confirm('Are you sure you want to move this application back to pending?')) {
         fetch('hr_dashboard.php', {
