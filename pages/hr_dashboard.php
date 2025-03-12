@@ -3,6 +3,7 @@ session_start();
 require_once '../includes/auth_check.php';
 $page_title = "HR Dashboard";
 
+<<<<<<< Updated upstream
 include '../auth/dbconnect.php'; // Uses $con
 // Fetch departments with employee count
 try {
@@ -51,6 +52,38 @@ try {
     $employees = [];
     $_SESSION['error'] = "Failed to fetch employees: " . $e->getMessage();
 }
+=======
+include '../auth/dbconnect.php';
+
+function fetchData($con, $query, $errorMessage) {
+    try {
+        $stmt = $con->query($query);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        $_SESSION['error'] = $errorMessage . ": " . $e->getMessage();
+        return [];
+    }
+}
+
+$departments = fetchData($con, "SELECT department_id, department_name FROM Department", "Failed to fetch departments");
+$projects = fetchData($con, "
+    SELECT project_id, project_name, start_date, expected_end_date, actual_end_date,
+           client_name, client_contact_email, project_status, budget, actual_cost, department_id
+    FROM Projects", "Failed to fetch projects");
+$trainings = fetchData($con, "
+    SELECT training_id, training_name, training_date, certificate, end_date, department_id
+    FROM Training", "Failed to fetch trainings");
+$employeeTrainings = fetchData($con, "
+    SELECT et.employee_training_id, et.employee_id, et.training_id, et.enrollment_date,
+           et.completion_status, et.score, u.first_name, u.last_name, e.department_id
+    FROM Employee_Training et
+    JOIN Employees e ON et.employee_id = e.employee_id
+    JOIN Users u ON e.user_id = u.user_id", "Failed to fetch employee trainings");
+$employees = fetchData($con, "
+    SELECT e.employee_id, u.first_name, u.last_name, e.department_id
+    FROM Employees e
+    JOIN Users u ON e.user_id = u.user_id", "Failed to fetch employees");
+>>>>>>> Stashed changes
 ?>
 
 <!DOCTYPE html>
@@ -83,7 +116,12 @@ try {
         if (isset($_SESSION['success'])) {
             echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';
             unset($_SESSION['success']);
+<<<<<<< Updated upstream
         } elseif (isset($_SESSION['error'])) {
+=======
+        }
+        if (isset($_SESSION['error'])) {
+>>>>>>> Stashed changes
             echo '<div class="alert alert-error" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['error']) . '</div>';
             unset($_SESSION['error']);
         }
@@ -91,9 +129,22 @@ try {
     </div>
 </div>
 <script>
+<<<<<<< Updated upstream
     const departments = <?php echo json_encode($departments); ?>;
     const projects = <?php echo json_encode($projects); ?>;
     const employees = <?php echo json_encode($employees); ?>;
+=======
+    const departments = <?php echo json_encode($departments ?: []); ?>;
+    const projects = <?php echo json_encode($projects ?: []); ?>;
+    const trainings = <?php echo json_encode($trainings ?: []); ?>;
+    const employeeTrainings = <?php echo json_encode($employeeTrainings ?: []); ?>;
+    const employees = <?php echo json_encode($employees ?: []); ?>;
+
+    // Check if data is available
+    if (!departments.length || !projects.length || !trainings.length || !employeeTrainings.length || !employees.length) {
+        console.warn("Some data could not be loaded. Functionality may be limited.");
+    }
+>>>>>>> Stashed changes
 
     document.addEventListener('click', function(event) {
         const alerts = document.querySelectorAll('.alert');

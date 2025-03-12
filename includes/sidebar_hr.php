@@ -27,9 +27,9 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'training-dropdown')"><i class="fas fa-graduation-cap"></i> Training Management</a>
             <ul id="training-dropdown" class="dropdown">
-                <li><a href="#">Add or manage training programs</a></li>
-                <li><a href="#">Assign training to employees</a></li>
-                <li><a href="#">View training status</a></li>
+                <li><a href="#" onclick="showAddTrainingForm()">Add or manage training programs</a></li>
+                <li><a href="#" onclick="showAssignTraining()">Assign training to employees</a></li>
+                <li><a href="#" onclick="showTrainingStatus()">View training status</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'reports-dropdown')"><i class="fas fa-chart-bar"></i> Reports & Analytics</a>

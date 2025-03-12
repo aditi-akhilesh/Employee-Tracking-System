@@ -7,6 +7,19 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'HR') {
     exit();
 }
 
+function validateEmail($email) {
+    return filter_var($email, FILTER_VALIDATE_EMAIL) !== false;
+}
+
+function validateDates($start_date, $expected_end_date, $actual_end_date = null) {
+    $start = new DateTime($start_date);
+    $expected = new DateTime($expected_end_date);
+    $actual = $actual_end_date ? new DateTime($actual_end_date) : null;
+    if ($expected < $start) return "Expected end date must be after start date.";
+    if ($actual && $actual < $start) return "Actual end date must be after start date.";
+    return true;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
@@ -21,7 +34,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $budget = floatval($_POST['budget']);
             $department_id = $_POST['department_id'];
 
-            // Check if project_name already exists
+            // Validate inputs
+            if (empty($project_name)) throw new Exception("Project name is required.");
+            if (!validateEmail($client_contact_email)) throw new Exception("Invalid client email format.");
+            if ($budget <= 0) throw new Exception("Budget must be a positive number.");
+            $dateValidation = validateDates($start_date, $expected_end_date);
+            if ($dateValidation !== true) throw new Exception($dateValidation);
+
             $stmt = $con->prepare("SELECT COUNT(*) FROM Projects WHERE project_name = :project_name");
             $stmt->execute(['project_name' => $project_name]);
             if ($stmt->fetchColumn() > 0) {
@@ -31,10 +50,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     INSERT INTO Projects (
                         project_name, start_date, expected_end_date, client_name, 
                         client_contact_email, project_status, budget, department_id
-                    ) VALUES (
-                        :project_name, :start_date, :expected_end_date, :client_name, 
-                        :client_contact_email, :project_status, :budget, :department_id
-                    )
+                    ) VALUES (:project_name, :start_date, :expected_end_date, :client_name, 
+                        :client_contact_email, :project_status, :budget, :department_id)
                 ");
                 $stmt->execute([
                     'project_name' => $project_name,
@@ -61,7 +78,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $actual_cost = $_POST['actual_cost'] ? floatval($_POST['actual_cost']) : null;
             $department_id = $_POST['department_id'];
 
-            // Check for duplicate project_name (excluding current project)
+            if (!validateEmail($client_contact_email)) throw new Exception("Invalid client email format.");
+            if ($budget <= 0) throw new Exception("Budget must be a positive number.");
+            if ($actual_cost !== null && $actual_cost < 0) throw new Exception("Actual cost cannot be negative.");
+            $dateValidation = validateDates($start_date, $expected_end_date, $actual_end_date);
+            if ($dateValidation !== true) throw new Exception($dateValidation);
+
             $stmt = $con->prepare("SELECT COUNT(*) FROM Projects WHERE project_name = :project_name AND project_id != :project_id");
             $stmt->execute(['project_name' => $project_name, 'project_id' => $project_id]);
             if ($stmt->fetchColumn() > 0) {
@@ -69,16 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
                 $stmt = $con->prepare("
                     UPDATE Projects
-                    SET project_name = :project_name,
-                        start_date = :start_date,
-                        expected_end_date = :expected_end_date,
-                        actual_end_date = :actual_end_date,
-                        client_name = :client_name,
-                        client_contact_email = :client_contact_email,
-                        project_status = :project_status,
-                        budget = :budget,
-                        actual_cost = :actual_cost,
-                        department_id = :department_id
+                    SET project_name = :project_name, start_date = :start_date, expected_end_date = :expected_end_date,
+                        actual_end_date = :actual_end_date, client_name = :client_name, client_contact_email = :client_contact_email,
+                        project_status = :project_status, budget = :budget, actual_cost = :actual_cost, department_id = :department_id
                     WHERE project_id = :project_id
                 ");
                 $stmt->execute([
@@ -96,12 +111,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ]);
                 $_SESSION['success'] = "Project '$project_name' updated successfully!";
             }
+        } elseif ($action === 'delete') {
+            header('Content-Type: application/json');
+            $project_id = intval($_POST['project_id']);
+            $stmt = $con->prepare("DELETE FROM Projects WHERE project_id = :project_id");
+            $stmt->execute(['project_id' => $project_id]);
+            echo json_encode(['success' => true, 'message' => 'Project deleted successfully!']);
+            exit();
         }
-    } catch (PDOException $e) {
-        $_SESSION['error'] = "Database error: " . $e->getMessage();
+    } catch (Exception $e) {
+        if (in_array($action, ['add', 'edit'])) {
+            $_SESSION['error'] = $e->getMessage();
+        } else {
+            header('Content-Type: application/json');
+            echo json_encode(['success' => false, 'error' => $e->getMessage()]);
+            exit();
+        }
     }
+    header("Location: ../hr_dashboard.php");
+    exit();
 }
-
-header("Location: ../hr_dashboard.php");
-exit();
 ?>
