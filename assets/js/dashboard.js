@@ -574,7 +574,7 @@ function showEmployeeUpdateForm(employeeId) {
                 </div>
                 <div class="form-group">
                     <label>Salary</label>
-                    <input type="number" name="salary" value="${emp.salary}" step="0.01" required>
+                    <input type="number" name="salary" value="${emp.salary}" step="0.01" >
                 </div>
                 <div class="form-group button-group">
                     <button type="submit">Save Changes</button>
