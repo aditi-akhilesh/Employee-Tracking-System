@@ -1027,29 +1027,6 @@ function validateTrainingForm(form) {
     }
     return true;
 }
-function navigateToForm(contentAreaId, formAreaId, formContent, backFunction) {
-    const contentArea = document.getElementById(contentAreaId);
-    const formArea = document.getElementById(formAreaId);
-    const mainContent = document.getElementById('main-content');
-    if (contentArea && formArea && mainContent) {
-        // Hide main-content to prevent overlap
-        mainContent.style.display = 'none';
-        formArea.style.display = 'block';
-        formArea.innerHTML = formContent;
-
-        // Add event listener to the "Back" button dynamically
-        const backButton = formArea.querySelector('.button-group button[type="button"]');
-        if (backButton) {
-            backButton.onclick = (event) => {
-                event.preventDefault();
-                if (backFunction) backFunction(event);
-                else showWelcomeMessage(event);
-            };
-        }
-    } else {
-        console.error(`${contentAreaId}, ${formAreaId}, or main-content not found`);
-    }
-}
 
 // Updated showWelcomeMessage to work with main-content
 function showWelcomeMessage(event) {
@@ -1227,4 +1204,296 @@ function showTrainingStatus(event) {
         </div>
     `;
     navigateToForm('content-area', 'profile-update-form', formContent, showWelcomeMessage);
+}
+
+// Helper function for navigation (already defined in your code)
+function navigateToForm(contentAreaId, formAreaId, formContent, backFunction) {
+    const contentArea = document.getElementById(contentAreaId);
+    const formArea = document.getElementById(formAreaId);
+    const mainContent = document.getElementById('main-content');
+    if (contentArea && formArea && mainContent) {
+        mainContent.style.display = 'none';
+        formArea.style.display = 'block';
+        formArea.innerHTML = formContent;
+
+        const backButton = formArea.querySelector('.button-group button[type="button"]');
+        if (backButton) {
+            backButton.onclick = (event) => {
+                event.preventDefault();
+                if (backFunction) backFunction(event);
+                else showWelcomeMessage(event);
+            };
+        }
+    } else {
+        console.error(`${contentAreaId}, ${formAreaId}, or main-content not found`);
+    }
+}
+
+
+// Attendance Records (updated to attach event listener after form creation)
+function showAttendanceRecords(event) {
+    if (event) event.preventDefault();
+    console.log("showAttendanceRecords called");
+    const formContent = `
+        <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Attendance Records</h2>
+        <form id="attendanceForm" onsubmit="event.preventDefault(); updateAttendanceTable()">
+            <div class="form-group">
+                <label for="employee_id">Employee ID:</label>
+                <input type="text" id="employee_id" name="employee_id">
+            </div>
+            <div class="form-group">
+                <label for="start_date">Start Date:</label>
+                <input type="date" id="start_date" name="start_date">
+            </div>
+            <div class="form-group">
+                <label for="end_date">End Date:</label>
+                <input type="date" id="end_date" name="end_date">
+            </div>
+            <div class="form-group button-group">
+                <button type="submit">Search Attendance</button>
+                <button type="button">Back</button>
+            </div>
+        </form>
+        <div style="margin-top: 20px;">
+            <table id="attendanceTable" style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background-color: #003087; color: #fff;">
+                        <th style="padding: 10px; border: 1px solid #ddd;">Employee ID</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Name</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Department</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Check In</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Check Out</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="6">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    `;
+    navigateToForm('content-area', 'profile-update-form', formContent, showWelcomeMessage);
+    
+    // Attach the event listener to attendanceForm after it's added to the DOM
+    const searchForm = document.getElementById("attendanceForm");
+    if (searchForm) {
+        searchForm.addEventListener("submit", function (event) {
+            event.preventDefault();
+            updateAttendanceTable();
+        });
+    } else {
+        console.warn("attendanceForm not found after rendering");
+    }
+
+    updateAttendanceTable(); // Initial load
+}
+
+function updateAttendanceTable() {
+    const employeeId = document.getElementById("employee_id")?.value || '';
+    const startDate = document.getElementById("start_date")?.value || '';
+    const endDate = document.getElementById("end_date")?.value || '';
+    const attendanceTable = document.getElementById('attendanceTable');
+    if (attendanceTable) {
+        attendanceTable.querySelector('tbody').innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
+    }
+
+    fetch('hr_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `action=fetch_attendance&employee_id=${encodeURIComponent(employeeId)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Attendance data received:', data);
+            if (attendanceTable && data.success) {
+                attendanceTable.querySelector('tbody').innerHTML = `
+                    ${data.attendance_records.length > 0 ? data.attendance_records.map(record => `
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${record.employee_id}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${record.employee_name}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${record.department_name}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${record.check_in || 'N/A'}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${record.check_out || 'N/A'}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${record.status}</td>
+                        </tr>
+                    `).join('') : '<tr><td colspan="6">No attendance records found.</td></tr>'}
+                `;
+            } else {
+                console.error('Error updating attendance table:', data.error);
+                if (attendanceTable) {
+                    attendanceTable.querySelector('tbody').innerHTML = '<tr><td colspan="6">Error fetching data: ' + (data.error || 'Unknown error') + '</td></tr>';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            if (attendanceTable) {
+                attendanceTable.querySelector('tbody').innerHTML = '<tr><td colspan="6">Network error: Unable to fetch data</td></tr>';
+            }
+        });
+}
+
+function showLeaveRequests(event) {
+    if (event) event.preventDefault();
+    console.log("showLeaveRequests called");
+    const formContent = `
+        <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Leave Requests</h2>
+        <div class="form-group">
+            <label for="leaveFilter">Filter by Status:</label>
+            <select id="leaveFilter" onchange="updateLeaveTable()">
+                <option value="ispending">Pending</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+            </select>
+        </div>
+        <div style="margin-top: 20px;">
+            <table id="leaveTable" style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background-color: #003087; color: #fff;">
+                        <th style="padding: 10px; border: 1px solid #ddd;">Request ID</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Employee Name</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Start Date</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">End Date</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Status</th>
+                        <th style="padding: 10px; border: 1px solid #ddd;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="6">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="form-group button-group" style="margin-top: 20px;">
+            <button type="button">Back</button>
+        </div>
+    `;
+    navigateToForm('content-area', 'profile-update-form', formContent, showWelcomeMessage);
+    
+    // Attach the event listener to leaveFilter after it's added to the DOM
+    const leaveFilter = document.getElementById('leaveFilter');
+    if (leaveFilter) {
+        leaveFilter.addEventListener('change', function(event) {
+            event.preventDefault();
+            updateLeaveTable();
+        });
+    }
+
+    updateLeaveTable(); // Initial load
+}
+
+function updateLeaveTable() {
+    const leaveFilter = document.getElementById('leaveFilter')?.value || 'ispending';
+    const leaveTable = document.getElementById('leaveTable');
+    if (leaveTable) {
+        leaveTable.querySelector('tbody').innerHTML = '<tr><td colspan="6">Loading...</td></tr>';
+    }
+
+    fetch('hr_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `action=fetch_leave_applications&leave_filter=${encodeURIComponent(leaveFilter)}`
+    })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Leave data received:', data);
+            if (leaveTable && data.success) {
+                leaveTable.querySelector('tbody').innerHTML = `
+                    <tr>
+                        <th>Request ID</th>
+                        <th>Employee Name</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                    ${data.leave_applications.length > 0 ? data.leave_applications.map(app => `
+                        <tr>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${app.request_id}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${app.employee_name}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${app.leave_start_date}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">${app.leave_end_date || 'N/A'}</td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                <span class="status-badge ${app.status === 'ispending' ? 'status-pending' : app.status === 'approved' ? 'status-approved' : 'status-rejected'}">
+                                    ${app.status}
+                                </span>
+                            </td>
+                            <td style="padding: 10px; border: 1px solid #ddd;">
+                                ${app.status === 'ispending' ? `
+                                    <form class="action-form" onsubmit="updateLeaveStatus(event, ${app.request_id})">
+                                        <input type="hidden" name="request_id" value="${app.request_id}">
+                                        <select name="status">
+                                            <option value="approved">Approve</option>
+                                            <option value="rejected">Reject</option>
+                                        </select>
+                                        <input type="submit" value="Update">
+                                    </form>
+                                ` : app.status === 'approved' || app.status === 'rejected' ? `
+                                    <button class="reconsider-btn" onclick="reconsiderLeave(${app.request_id})">Reconsider</button>
+                                ` : ''}
+                            </td>
+                        </tr>
+                    `).join('') : '<tr><td colspan="6">No leave applications found for the selected status.</td></tr>'}
+                `;
+            } else {
+                console.error('Error updating leave table:', data.error);
+                if (leaveTable) {
+                    leaveTable.querySelector('tbody').innerHTML = '<tr><td colspan="6">Error fetching data: ' + (data.error || 'Unknown error') + '</td></tr>';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            if (leaveTable) {
+                leaveTable.querySelector('tbody').innerHTML = '<tr><td colspan="6">Network error: Unable to fetch data</td></tr>';
+            }
+        });
+}
+
+function reconsiderLeave(requestId) {
+    if (confirm('Are you sure you want to move this application back to pending?')) {
+        fetch('hr_dashboard.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `action=reconsider_leave&request_id=${encodeURIComponent(requestId)}`
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    updateLeaveTable();
+                } else {
+                    alert('Error reconsidering leave application: ' + (data.error || 'Unknown error'));
+                }
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+                alert('Network error: Unable to reconsider leave application.');
+            });
+    }
+}
+
+function updateLeaveStatus(event, requestId) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+    formData.append('action', 'update_leave_status');
+    formData.append('request_id', requestId);
+
+    fetch('hr_dashboard.php', {
+        method: 'POST',
+        body: new URLSearchParams(formData)
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                updateLeaveTable();
+            } else {
+                alert('Error updating leave status: ' + (data.error || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Fetch error:', error);
+            alert('Network error: Unable to update leave status.');
+        });
 }

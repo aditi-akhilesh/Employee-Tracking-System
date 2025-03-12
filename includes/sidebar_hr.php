@@ -10,8 +10,8 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'attendance-dropdown')"><i class="fas fa-clock"></i> Attendance and Leave</a>
             <ul id="attendance-dropdown" class="dropdown">
-                <li><a href="#">View attendance records</a></li>
-                <li><a href="#">Approve or reject leave requests</a></li>
+                <li><a href="#" onclick="showAttendanceRecords()">View attendance records</a></li>
+                <li><a href="#" onclick="showLeaveRequests()">Approve or reject leave requests</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'department-dropdown')"><i class="fas fa-building"></i> Department Management</a>
@@ -32,11 +32,11 @@
                 <li><a href="#" onclick="showTrainingStatus()">View training status</a></li>
             </ul>
         </li>
- <!--       <li><a href="#" onclick="toggleDropdown(event, 'reports-dropdown')"><i class="fas fa-chart-bar"></i> Reports & Analytics</a>
-            <ul id="reports-dropdown" class="dropdown">
-                <li><a href="#">Generate report for an employee</a></li>
-                <li><a href="#">View department-wise performance metrics</a></li>
-            </ul>
-        </li> -->
+        <!--       <li><a href="#" onclick="toggleDropdown(event, 'reports-dropdown')"><i class="fas fa-chart-bar"></i> Reports & Analytics</a>
+             <ul id="reports-dropdown" class="dropdown">
+                 <li><a href="#">Generate report for an employee</a></li>
+                 <li><a href="#">View department-wise performance metrics</a></li>
+             </ul>
+         </li> -->
     </ul>
 </div>
