@@ -32,14 +32,7 @@
                 <li><a href="#">Update training status</a></li>
             </ul>
         </li>
-        <li><a href="#" onclick="toggleDropdown(event, 'travel-dropdown')"><i class="fas fa-plane"></i> Travel and Expenses</a>
-            <ul id="travel-dropdown" class="dropdown">
-                <li><a href="#">Submit travel requests</a></li>
-                <li><a href="#">Travel and Expenses history</a></li>
-                <li><a href="#">Track approval status</a></li>
-            </ul>
-        </li>
-        <li><a href="#" onclick="toggleDropdown(event, 'feedback-dropdown')"><i class="fas fa-comment"></i> Feedback and Exit Interviews</a>
+         <li><a href="#" onclick="toggleDropdown(event, 'feedback-dropdown')"><i class="fas fa-comment"></i> Feedback and Exit Interviews</a>
             <ul id="feedback-dropdown" class="dropdown">
                 <li><a href="#">Submit feedback about company policies</a></li>
                 <li><a href="#">View exit interview details</a></li>

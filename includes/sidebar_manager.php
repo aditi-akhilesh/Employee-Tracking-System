@@ -25,8 +25,8 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'feedback-dropdown')"><i class="fas fa-comment"></i> Feedback and Review</a>
             <ul id="feedback-dropdown" class="dropdown">
-                <li><a href="#">Give feedback to employees or managers</a></li>
-                <li><a href="#">View employee or manager feedback history</a></li>
+                <li><a href="#">Give feedback to employees </a></li>
+                <li><a href="#">View employee feedback history</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'reports-dropdown')"><i class="fas fa-chart-bar"></i> Reports & Analytics</a>
