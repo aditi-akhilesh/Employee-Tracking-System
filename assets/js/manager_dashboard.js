@@ -176,10 +176,71 @@ function validateFeedbackForm(form) {
     return true;
 }
 
-// Show feedback history
+// Helper function to render the feedback table based on the selected employee
+function renderFeedbackTable(selectedEmployeeId) {
+    console.log("Rendering feedback table with selectedEmployeeId:", selectedEmployeeId);
+    console.log("Feedback array:", feedback);
+
+    // Convert selectedEmployeeId to a string to ensure consistent comparison
+    const selectedId = selectedEmployeeId ? String(selectedEmployeeId) : '';
+
+    // Filter feedback based on employee_id
+    let filteredFeedback = feedback;
+    if (selectedId) {
+        filteredFeedback = feedback.filter(f => {
+            const feedbackEmployeeId = String(f.employee_id); // Convert feedback employee_id to string
+            console.log(`Comparing feedbackEmployeeId (${feedbackEmployeeId}) with selectedId (${selectedId})`);
+            return feedbackEmployeeId === selectedId;
+        });
+    }
+
+    let tableHTML = `
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; box-sizing: border-box;">
+            <thead>
+                <tr style="background-color: #003087; color: #FFFFFF;">
+                    <th style="padding: 10px; text-align: center; box-sizing: border-box;">Employee</th>
+                    <th style="padding: 10px; text-align: center; box-sizing: border-box;">Rating</th>
+                    <th style="padding: 10px; text-align: center; box-sizing: border-box;">Type</th>
+                    <th style="padding: 10px; text-align: center; box-sizing: border-box;">Feedback</th>
+                    <th style="padding: 10px; text-align: center; box-sizing: border-box;">Date Submitted</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    if (filteredFeedback.length === 0) {
+        tableHTML += `
+            <tr style="border-bottom: 1px solid #ddd;">
+                <td style="padding: 10px; text-align: center; box-sizing: border-box;" colspan="5">No feedback available.</td>
+            </tr>
+        `;
+    } else {
+        filteredFeedback.forEach(f => {
+            tableHTML += `
+                <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.first_name} ${f.last_name}</td>
+                    <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.rating || 'N/A'}</td>
+                    <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.feedback_type || 'N/A'}</td>
+                    <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.feedback_text || 'N/A'}</td>
+                    <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.date_submitted || 'N/A'}</td>
+                </tr>
+            `;
+        });
+    }
+
+    tableHTML += `
+            </tbody>
+        </table>
+    `;
+
+    return tableHTML;
+}
+
+// Show feedback history with employee filter
 function showFeedbackHistory() {
     console.log("showFeedbackHistory called");
     console.log("Feedback array:", feedback);
+    console.log("Employees array:", employees);
     const mainContent = document.getElementById('content-area');
     const profileUpdateForm = document.getElementById('profile-update-form');
     const innerMainContent = document.getElementById('main-content');
@@ -187,42 +248,20 @@ function showFeedbackHistory() {
         mainContent.style.display = 'block';
         innerMainContent.style.display = 'none';
         profileUpdateForm.style.display = 'block';
+
+        // Start building the HTML with a dropdown for employee filtering
         let feedbackTableHTML = `
             <h2>Feedback History</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 20px; box-sizing: border-box;">
-                <thead>
-                    <tr style="background-color: #003087; color: #FFFFFF;">
-                        <th style="padding: 10px; text-align: center; box-sizing: border-box;">Employee</th>
-                        <th style="padding: 10px; text-align: center; box-sizing: border-box;">Rating</th>
-                        <th style="padding: 10px; text-align: center; box-sizing: border-box;">Type</th>
-                        <th style="padding: 10px; text-align: center; box-sizing: border-box;">Feedback</th>
-                        <th style="padding: 10px; text-align: center; box-sizing: border-box;">Date Submitted</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        if (feedback.length === 0) {
-            feedbackTableHTML += `
-                <tr style="border-bottom: 1px solid #ddd;">
-                    <td style="padding: 10px; text-align: center; box-sizing: border-box;" colspan="5">No feedback available.</td>
-                </tr>
-            `;
-        } else {
-            feedback.forEach(f => {
-                feedbackTableHTML += `
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.first_name} ${f.last_name}</td>
-                        <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.rating || 'N/A'}</td>
-                        <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.feedback_type || 'N/A'}</td>
-                        <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.feedback_text || 'N/A'}</td>
-                        <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.date_submitted || 'N/A'}</td>
-                    </tr>
-                `;
-            });
-        }
-        feedbackTableHTML += `
-                </tbody>
-            </table>
+            <div class="form-group">
+                <label for="employee-filter">Filter by Employee:</label>
+                <select id="employee-filter" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box;">
+                    <option value="">All Employees</option>
+                    ${employees.map(emp => `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`).join('')}
+                </select>
+            </div>
+            <div id="feedback-table-container">
+                ${renderFeedbackTable('')} <!-- Initial render with all feedback -->
+            </div>
             <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
                 <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
                         onmouseover="this.style.backgroundColor='#5a6268'" 
@@ -230,7 +269,20 @@ function showFeedbackHistory() {
                         onclick="showWelcomeMessage(event)">Back</button>
             </div>
         `;
+
         profileUpdateForm.innerHTML = feedbackTableHTML;
+
+        // Add event listener to the dropdown to filter the table
+        const employeeFilter = document.getElementById('employee-filter');
+        const tableContainer = document.getElementById('feedback-table-container');
+        if (employeeFilter && tableContainer) {
+            employeeFilter.addEventListener('change', function() {
+                const selectedEmployeeId = this.value;
+                tableContainer.innerHTML = renderFeedbackTable(selectedEmployeeId);
+            });
+        } else {
+            console.error("Employee filter or table container not found");
+        }
     } else {
         console.error("DOM elements not found: content-area, main-content, or profile-update-form is null");
     }
