@@ -1,7 +1,9 @@
+/* dashboard.css */
 .dashboard-container {
     display: flex;
     min-height: calc(100vh - 80px);
 }
+
 #create-user-container {
     display: none; /* Initially hidden */
     background: #ffffff;
@@ -76,6 +78,7 @@
     margin: 1rem;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
     overflow-y: auto;
+    position: relative; /* Ensure proper positioning context for children */
 }
 
 .content h2 {
@@ -100,47 +103,23 @@
     font-weight: 600;
 }
 
-.form-group input {
+.form-group input,
+.form-group select,
+.form-group textarea {
     width: 100%;
-    padding: 0.75rem;
+    padding: 0.75rem; /* Match HR Dashboard */
     border: 1px solid #ddd;
-    border-radius: 5px;
+    border-radius: 5px; /* Match HR Dashboard */
     transition: border-color 0.3s ease;
+    box-sizing: border-box;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
     border-color: #007BFF;
     outline: none;
     box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
-}
-
-.update-btn {
-    grid-column: 1 / -1;
-    background-color: #007BFF;
-    color: #FFFFFF;
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s ease;
-}
-
-.update-btn:hover {
-    background-color: #0056b3;
-    transform: translateY(-2px);
-}
-
-@media (max-width: 768px) {
-    .dashboard-container {
-        flex-direction: column;
-    }
-    .sidebar {
-        width: 100%;
-    }
-    .content {
-        margin: 0;
-        border-radius: 0;
-    }
 }
 
 .form-group input[readonly] {
@@ -149,11 +128,82 @@
     cursor: not-allowed;
 }
 
-.update-btn:disabled {
-    background-color: #6C757D;
-    cursor: not-allowed;
-    transform: none;
+.form-group textarea {
+    resize: vertical;
 }
+
+.form-group p {
+    margin: 0;
+    padding: 0.75rem; /* Match input padding */
+    border: 1px solid #ddd;
+    border-radius: 5px; /* Match HR Dashboard */
+    background-color: #f0f0f0; /* Read-only background */
+    color: #6C757D; /* Read-only text color */
+}
+
+.button-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center; /* Center buttons */
+}
+
+button {
+    background-color: #007BFF;
+    color: #FFFFFF;
+    padding: 0.75rem 1.5rem; /* Match HR Dashboard */
+    border: none;
+    border-radius: 5px; /* Match HR Dashboard */
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    font-size: 1rem;
+}
+
+button:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 5px; /* Add rounded corners to the table */
+    overflow: hidden; /* Ensure rounded corners are applied */
+}
+
+table th,
+table td {
+    padding: 12px 15px; /* Slightly more horizontal padding for better spacing */
+    border: 1px solid #e0e0e0; /* Softer border color */
+    text-align: left;
+}
+
+table th {
+    background-color: #e9ecef; /* Slightly darker gray for headers, matching HR Dashboard */
+    color: #333;
+    font-weight: 700;
+    font-size: 1rem; /* Slightly larger font for headers */
+    border-bottom: 2px solid #d0d0d0; /* Thicker bottom border for headers */
+    text-transform: uppercase; /* Match HR Dashboard's header style */
+    letter-spacing: 0.5px; /* Add slight letter spacing for readability */
+}
+
+table td {
+    border-bottom: 1px solid #e0e0e0;
+    color: #6C757D; /* Muted text color for cells, matching HR Dashboard */
+    font-size: 0.9rem; /* Slightly smaller font for cell content */
+}
+
+table tr:nth-child(even) {
+    background-color: #f9f9f9; /* Alternating row color */
+}
+
+table tr:hover {
+    background-color: #f1f1f1; /* Hover effect */
+}
+
 #profile-update-form {
     display: none; /* Initially hidden */
     background: #ffffff;
@@ -161,32 +211,41 @@
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     width: 60%;
-    margin: auto;
-    position: relative;
-    top: 20px;
+    margin: 20px auto; /* Center within the content area */
 }
+
+#profile-update-form h2 {
+    color: #003087; /* Match HR Dashboard */
+    margin-bottom: 1rem;
+}
+
 #profile-update-form form {
     display: grid;
     gap: 10px;
 }
+
 #profile-update-form label {
     font-weight: bold;
+    color: #003087; /* Match HR Dashboard */
 }
+
 #profile-update-form input,
 #profile-update-form select {
     width: 100%;
-    padding: 8px;
+    padding: 0.75rem; /* Match HR Dashboard */
     border: 1px solid #ddd;
-    border-radius: 4px;
+    border-radius: 5px; /* Match HR Dashboard */
 }
+
 #profile-update-form button {
     background-color: #007BFF;
     color: white;
-    padding: 10px;
+    padding: 0.75rem 1.5rem; /* Match HR Dashboard */
     border: none;
-    border-radius: 4px;
+    border-radius: 5px; /* Match HR Dashboard */
     cursor: pointer;
 }
+
 #profile-update-form button:hover {
     background-color: #0056b3;
 }
@@ -200,14 +259,12 @@
 #profile-update-form .form-group.button-group button[type="submit"] {
     background-color: #6C757D; /* Grey color matching your website */
     color: #FFFFFF; /* White text */
-    font-size: 1.2rem; /* Larger font size for prominence */
-    padding: 12px 0; /* Vertical padding for height */
+    font-size: 1rem; /* Match HR Dashboard */
+    padding: 0.75rem 1.5rem; /* Match HR Dashboard */
     border: none;
-    border-radius: 5px; /* Rounded edges */
+    border-radius: 5px; /* Match HR Dashboard */
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
-    width: 100%;
-    max-width: 300px; /* Cap the width to avoid excessive stretching */
 }
 
 #profile-update-form .form-group.button-group button[type="submit"]:hover {
@@ -218,20 +275,19 @@
 #profile-update-form .form-group.button-group button[type="button"] {
     background-color: #D3D3D3; /* Lighter grey for Back button */
     color: #000000;
-    font-size: 1.2rem;
-    padding: 12px 0;
+    font-size: 1rem; /* Match HR Dashboard */
+    padding: 0.75rem 1.5rem; /* Match HR Dashboard */
     border: none;
-    border-radius: 5px;
+    border-radius: 5px; /* Match HR Dashboard */
     cursor: pointer;
     transition: background-color 0.3s ease, transform 0.2s ease;
-    width: 100%;
-    max-width: 300px;
 }
 
 #profile-update-form .form-group.button-group button[type="button"]:hover {
     background-color: #B0B0B0; /* Slightly darker light grey on hover */
     transform: translateY(-2px);
 }
+
 .alert {
     padding: 15px;
     border-radius: 5px;
@@ -249,4 +305,20 @@
     background-color: #f8d7da;
     color: #721c24;
     border: 1px solid #f5c6cb;
+}
+
+@media (max-width: 768px) {
+    .dashboard-container {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+    }
+    .content {
+        margin: 0;
+        border-radius: 0;
+    }
+    #profile-update-form {
+        width: 90%; /* Adjust for smaller screens */
+    }
 }

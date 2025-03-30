@@ -21,6 +21,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Use password_verify for hashed password comparison
             if (password_verify($password, $user['password_hash'])) {
                 $_SESSION['user_id'] = $user['user_id'];
+                $_SESSION['first_name'] = $user['first_name']; // Add this
+                $_SESSION['last_name'] = $user['last_name'];   // Add this
                 $_SESSION['user_name'] = $user['first_name'] . " " . $user['last_name'];
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['role'] = $user['role'];
