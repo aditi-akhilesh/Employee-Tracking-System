@@ -189,33 +189,33 @@ function showFeedbackHistory() {
         profileUpdateForm.style.display = 'block';
         let feedbackTableHTML = `
             <h2>Feedback History</h2>
-            <table>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px; box-sizing: border-box;">
                 <thead>
-                    <tr>
-                        <th>Employee</th>
-                        <th>Rating</th>
-                        <th>Type</th>
-                        <th>Feedback</th>
-                        <th>Date Submitted</th>
+                    <tr style="background-color: #003087; color: #FFFFFF;">
+                        <th style="padding: 10px; text-align: center; box-sizing: border-box;">Employee</th>
+                        <th style="padding: 10px; text-align: center; box-sizing: border-box;">Rating</th>
+                        <th style="padding: 10px; text-align: center; box-sizing: border-box;">Type</th>
+                        <th style="padding: 10px; text-align: center; box-sizing: border-box;">Feedback</th>
+                        <th style="padding: 10px; text-align: center; box-sizing: border-box;">Date Submitted</th>
                     </tr>
                 </thead>
                 <tbody>
         `;
         if (feedback.length === 0) {
             feedbackTableHTML += `
-                <tr>
-                    <td colspan="5">No feedback available.</td>
+                <tr style="border-bottom: 1px solid #ddd;">
+                    <td style="padding: 10px; text-align: center; box-sizing: border-box;" colspan="5">No feedback available.</td>
                 </tr>
             `;
         } else {
             feedback.forEach(f => {
                 feedbackTableHTML += `
-                    <tr>
-                        <td>${f.first_name} ${f.last_name}</td>
-                        <td>${f.rating || 'N/A'}</td>
-                        <td>${f.feedback_type || 'N/A'}</td>
-                        <td>${f.feedback_text || 'N/A'}</td>
-                        <td>${f.date_submitted || 'N/A'}</td>
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.first_name} ${f.last_name}</td>
+                        <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.rating || 'N/A'}</td>
+                        <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.feedback_type || 'N/A'}</td>
+                        <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.feedback_text || 'N/A'}</td>
+                        <td style="padding: 10px; text-align: center; box-sizing: border-box;">${f.date_submitted || 'N/A'}</td>
                     </tr>
                 `;
             });
@@ -223,8 +223,11 @@ function showFeedbackHistory() {
         feedbackTableHTML += `
                 </tbody>
             </table>
-            <div class="form-group button-group">
-                <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+            <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                        onmouseover="this.style.backgroundColor='#5a6268'" 
+                        onmouseout="this.style.backgroundColor='#6c757d'"
+                        onclick="showWelcomeMessage(event)">Back</button>
             </div>
         `;
         profileUpdateForm.innerHTML = feedbackTableHTML;
