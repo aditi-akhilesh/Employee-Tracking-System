@@ -322,3 +322,29 @@ table tr:hover {
         width: 90%; /* Adjust for smaller screens */
     }
 }
+
+
+.table-controls {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.pagination {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.pagination button {
+    padding: 5px 10px;
+    margin: 0 5px;
+}
+.pagination button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+.pagination button.active {
+    background-color: #003087;
+    color: white;
+}

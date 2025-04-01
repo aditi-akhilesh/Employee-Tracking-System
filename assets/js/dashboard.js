@@ -415,56 +415,305 @@ function validateProjectForm(form) {
 }
 
 function showAllEmployees() {
+    console.log('showAllEmployees called');
+    console.log('Employees array:', employees);
+    console.log('Departments array:', departments);
+
+    // Check if employees and departments are defined and not empty
+    if (!employees || !Array.isArray(employees) || employees.length === 0) {
+        console.error('Employees array is empty or undefined');
+        const mainContent = document.getElementById('main-content');
+        if (mainContent) {
+            mainContent.innerHTML = '<h2>All Employees/Managers</h2><p>No employees found.</p>';
+        }
+        return;
+    }
+    if (!departments || !Array.isArray(departments)) {
+        console.warn('Departments array is empty or undefined. Using default value.');
+        departments = [];
+    }
+
     const mainContent = document.getElementById('main-content');
     const profileUpdateForm = document.getElementById('profile-update-form');
     if (mainContent && profileUpdateForm) {
         mainContent.style.display = 'block';
         profileUpdateForm.style.display = 'none';
-        let html = `
-            <h2>All Employees/Managers</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                <thead>
-                    <tr style="background-color: #003087; color: #FFFFFF;">
-                        <th style="padding: 10px;">ID</th>
-                        <th style="padding: 10px;">Name</th>
-                        <th style="padding: 10px;">Email</th>
-                        <th style="padding: 10px;">Role</th>
-                        <th style="padding: 10px;">Department</th>
-                        <th style="padding: 10px;">Hire Date</th>
-                        <th style="padding: 10px;">Salary</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-        // Filter employees to only show 'User' or 'Manager' roles
-        const filteredEmployees = employees.filter(emp => (emp.role === 'User' || emp.role === 'Manager') && emp.emp_status != "Inactive");
-        filteredEmployees.forEach(emp => {
-            const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
-            const salary = isNaN(parseFloat(emp.salary)) ? 0 : parseFloat(emp.salary); // Fallback to 0 if NaN
-            html += `
-                <tr style="border-bottom: 1px solid #ddd;">
-                    <td style="padding: 10px;">${emp.employee_id}</td>
-                    <td style="padding: 10px;">${emp.first_name} ${emp.last_name}</td>
-                    <td style="padding: 10px;">${emp.email}</td>
-                    <td style="padding: 10px;">${emp.role}</td>
-                    <td style="padding: 10px;">${deptName}</td>
-                    <td style="padding: 10px;">${emp.emp_hire_date}</td>
-                    <td style="padding: 10px;">$${parseFloat(salary).toFixed(2)}</td>
-                </tr>
-            `;
-        });
-        html += `
-                </tbody>
-            </table>      
-               <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
-                <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
-                        onmouseover="this.style.backgroundColor='#5a6268'" 
-                        onmouseout="this.style.backgroundColor='#6c757d'"
-                        onclick="showWelcomeMessage()">Back</button>
-            </div>
 
-        `;
-        mainContent.innerHTML = html;
+        // State for pagination, search, sorting, and filtering
+        let currentPage = 1;
+        let recordsPerPage = 5; // Default to 5 records per page
+        let searchQuery = '';
+        let sortColumn = 'employee_id'; // Default sort by ID
+        let sortDirection = 'asc'; // Default sort direction
+        let filterDepartment = 'All'; // Default filter
+        let filterRole = 'All'; // Default filter
+
+        // Function to render the table
+        function renderTable() {
+            console.log('Rendering table with currentPage:', currentPage, 'recordsPerPage:', recordsPerPage);
+
+            // Filter employees by role and status
+            let filteredEmployees = employees.filter(emp => 
+                (emp.role === 'User' || emp.role === 'Manager') && emp.emp_status !== "Inactive"
+            );
+
+            // Apply search filter
+            if (searchQuery) {
+                filteredEmployees = filteredEmployees.filter(emp => 
+                    `${emp.first_name} ${emp.last_name}`.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                    emp.email.toLowerCase().includes(searchQuery.toLowerCase())
+                );
+            }
+
+            // Apply department filter
+            if (filterDepartment !== 'All') {
+                filteredEmployees = filteredEmployees.filter(emp => {
+                    const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
+                    return deptName === filterDepartment;
+                });
+            }
+
+            // Apply role filter
+            if (filterRole !== 'All') {
+                filteredEmployees = filteredEmployees.filter(emp => emp.role === filterRole);
+            }
+
+            // Sort employees
+            filteredEmployees.sort((a, b) => {
+                let valueA, valueB;
+                if (sortColumn === 'name') {
+                    valueA = `${a.first_name} ${a.last_name}`.toLowerCase();
+                    valueB = `${b.first_name} ${b.last_name}`.toLowerCase();
+                } else if (sortColumn === 'email') {
+                    valueA = a.email.toLowerCase();
+                    valueB = b.email.toLowerCase();
+                } else if (sortColumn === 'role') {
+                    valueA = a.role.toLowerCase();
+                    valueB = b.role.toLowerCase();
+                } else if (sortColumn === 'department') {
+                    valueA = (departments.find(d => d.department_id == a.department_id)?.department_name || 'N/A').toLowerCase();
+                    valueB = (departments.find(d => d.department_id == b.department_id)?.department_name || 'N/A').toLowerCase();
+                } else if (sortColumn === 'emp_hire_date') {
+                    valueA = new Date(a.emp_hire_date);
+                    valueB = new Date(b.emp_hire_date);
+                } else if (sortColumn === 'salary') {
+                    valueA = isNaN(parseFloat(a.salary)) ? 0 : parseFloat(a.salary);
+                    valueB = isNaN(parseFloat(b.salary)) ? 0 : parseFloat(b.salary);
+                } else {
+                    valueA = a.employee_id;
+                    valueB = b.employee_id;
+                }
+
+                if (sortDirection === 'asc') {
+                    return valueA > valueB ? 1 : -1;
+                } else {
+                    return valueA < valueB ? 1 : -1;
+                }
+            });
+
+            // Pagination logic
+            const totalRecords = filteredEmployees.length;
+            const totalPages = Math.ceil(totalRecords / recordsPerPage);
+            // Ensure currentPage is within valid range
+            currentPage = Math.min(currentPage, totalPages);
+            currentPage = Math.max(currentPage, 1);
+            const startIndex = (currentPage - 1) * recordsPerPage;
+            const endIndex = startIndex + recordsPerPage;
+            const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
+
+            console.log('Pagination details:', {
+                totalRecords,
+                totalPages,
+                currentPage,
+                recordsPerPage,
+                startIndex,
+                endIndex,
+                recordsOnPage: paginatedEmployees.length
+            });
+
+            // Build the HTML
+            let html = `
+                <h2>All Employees/Managers</h2>
+                <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <label>Show: </label>
+                        <select id="records-per-page" style="padding: 5px; margin-right: 10px;">
+                            <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
+                            <option value="10" ${recordsPerPage === 10 ? 'selected' : ''}>10</option>
+                            <option value="15" ${recordsPerPage === 15 ? 'selected' : ''}>15</option>
+                            <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
+                        </select>
+                        <label>Department: </label>
+                        <select id="filter-department" style="padding: 5px; margin-right: 10px;">
+                            <option value="All">All</option>
+                            ${departments.map(dept => `<option value="${dept.department_name}" ${filterDepartment === dept.department_name ? 'selected' : ''}>${dept.department_name}</option>`).join('')}
+                        </select>
+                        <label>Role: </label>
+                        <select id="filter-role" style="padding: 5px;">
+                            <option value="All">All</option>
+                            <option value="User" ${filterRole === 'User' ? 'selected' : ''}>User</option>
+                            <option value="Manager" ${filterRole === 'Manager' ? 'selected' : ''}>Manager</option>
+                        </select>
+                    </div>
+                    <div>
+                        <input type="text" id="search-input" placeholder="Search by name or email..." style="padding: 5px; width: 200px;" value="${searchQuery}">
+                    </div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                    <thead>
+                        <tr style="background-color: #003087; color: #FFFFFF;">
+                            <th style="padding: 10px; cursor: pointer;" onclick="sortTable('employee_id')">ID ${sortColumn === 'employee_id' ? (sortDirection === 'asc' ? '<i class="fas fa-sort-up"></i>' : '<i class="fas fa-sort-down"></i>') : ''}</th>
+                            <th style="padding: 10px; cursor: pointer;" onclick="sortTable('name')">Name ${sortColumn === 'name' ? (sortDirection === 'asc' ? '<i class="fas fa-sort-up"></i>' : '<i class="fas fa-sort-down"></i>') : ''}</th>
+                            <th style="padding: 10px; cursor: pointer;" onclick="sortTable('email')">Email ${sortColumn === 'email' ? (sortDirection === 'asc' ? '<i class="fas fa-sort-up"></i>' : '<i class="fas fa-sort-down"></i>') : ''}</th>
+                            <th style="padding: 10px; cursor: pointer;" onclick="sortTable('role')">Role ${sortColumn === 'role' ? (sortDirection === 'asc' ? '<i class="fas fa-sort-up"></i>' : '<i class="fas fa-sort-down"></i>') : ''}</th>
+                            <th style="padding: 10px; cursor: pointer;" onclick="sortTable('department')">Department ${sortColumn === 'department' ? (sortDirection === 'asc' ? '<i class="fas fa-sort-up"></i>' : '<i class="fas fa-sort-down"></i>') : ''}</th>
+                            <th style="padding: 10px; cursor: pointer;" onclick="sortTable('emp_hire_date')">Hire Date ${sortColumn === 'emp_hire_date' ? (sortDirection === 'asc' ? '<i class="fas fa-sort-up"></i>' : '<i class="fas fa-sort-down"></i>') : ''}</th>
+                            <th style="padding: 10px; cursor: pointer;" onclick="sortTable('salary')">Salary ${sortColumn === 'salary' ? (sortDirection === 'asc' ? '<i class="fas fa-sort-up"></i>' : '<i class="fas fa-sort-down"></i>') : ''}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            // Add table rows
+            paginatedEmployees.forEach((emp, index) => {
+                const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
+                const salary = isNaN(parseFloat(emp.salary)) ? 0 : parseFloat(emp.salary);
+                html += `
+                    <tr style="border-bottom: 1px solid #ddd; background-color: ${index % 2 === 0 ? '#f9f9f9' : '#ffffff'}; cursor: pointer;" onclick="viewEmployee(${emp.employee_id})">
+                        <td style="padding: 10px;">${emp.employee_id}</td>
+                        <td style="padding: 10px;">${emp.first_name} ${emp.last_name}</td>
+                        <td style="padding: 10px;">${emp.email}</td>
+                        <td style="padding: 10px;">${emp.role}</td>
+                        <td style="padding: 10px;">${deptName}</td>
+                        <td style="padding: 10px;">${emp.emp_hire_date}</td>
+                        <td style="padding: 10px;">$${salary.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+
+            html += `
+                    </tbody>
+                </table>
+                <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        Showing ${startIndex + 1} to ${Math.min(endIndex, totalRecords)} of ${totalRecords} employees
+                    </div>
+                    <div>
+                        <button style="padding: 5px 10px; margin: 0 5px; ${currentPage === 1 ? 'background-color: #ccc; cursor: not-allowed;' : ''}" 
+                                ${currentPage === 1 ? 'disabled' : ''} 
+                                onclick="changePage(${currentPage - 1})">Previous</button>
+            `;
+
+            // Add page numbers
+            const maxPagesToShow = 5;
+            let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+            let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+            if (endPage - startPage + 1 < maxPagesToShow) {
+                startPage = Math.max(1, endPage - maxPagesToShow + 1);
+            }
+
+            for (let i = startPage; i <= endPage; i++) {
+                html += `
+                    <button style="padding: 5px 10px; margin: 0 5px; ${i === currentPage ? 'background-color: #003087; color: white;' : ''}" 
+                            onclick="changePage(${i})">${i}</button>
+                `;
+            }
+
+            html += `
+                        <button style="padding: 5px 10px; margin: 0 5px; ${currentPage === totalPages ? 'background-color: #ccc; cursor: not-allowed;' : ''}" 
+                                ${currentPage === totalPages ? 'disabled' : ''} 
+                                onclick="changePage(${currentPage + 1})">Next</button>
+                    </div>
+                </div>
+                <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                    <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                            onmouseover="this.style.backgroundColor='#5a6268'" 
+                            onmouseout="this.style.backgroundColor='#6c757d'"
+                            onclick="showWelcomeMessage()">Back</button>
+                </div>
+            `;
+
+            mainContent.innerHTML = html;
+
+            // Add event listeners for search, filters, and records per page
+            const searchInput = document.getElementById('search-input');
+            const filterDepartmentSelect = document.getElementById('filter-department');
+            const filterRoleSelect = document.getElementById('filter-role');
+            const recordsPerPageSelect = document.getElementById('records-per-page');
+
+            if (searchInput) {
+                searchInput.addEventListener('input', (e) => {
+                    searchQuery = e.target.value;
+                    currentPage = 1; // Reset to first page on search
+                    console.log('Search query updated:', searchQuery);
+                    renderTable();
+                });
+            } else {
+                console.error('Search input not found');
+            }
+
+            if (filterDepartmentSelect) {
+                filterDepartmentSelect.addEventListener('change', (e) => {
+                    filterDepartment = e.target.value;
+                    currentPage = 1; // Reset to first page on filter change
+                    console.log('Department filter updated:', filterDepartment);
+                    renderTable();
+                });
+            } else {
+                console.error('Department filter not found');
+            }
+
+            if (filterRoleSelect) {
+                filterRoleSelect.addEventListener('change', (e) => {
+                    filterRole = e.target.value;
+                    currentPage = 1; // Reset to first page on filter change
+                    console.log('Role filter updated:', filterRole);
+                    renderTable();
+                });
+            } else {
+                console.error('Role filter not found');
+            }
+
+            if (recordsPerPageSelect) {
+                recordsPerPageSelect.addEventListener('change', (e) => {
+                    recordsPerPage = parseInt(e.target.value, 10);
+                    currentPage = 1; // Reset to first page when changing records per page
+                    console.log('Records per page updated:', recordsPerPage);
+                    renderTable();
+                });
+            } else {
+                console.error('Records per page select not found');
+            }
+        }
+
+        // Function to change page
+        window.changePage = function(page) {
+            console.log('changePage called with page:', page);
+            currentPage = page;
+            renderTable();
+        };
+
+        // Function to sort table
+        window.sortTable = function(column) {
+            console.log('sortTable called with column:', column);
+            if (sortColumn === column) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = column;
+                sortDirection = 'asc';
+            }
+            renderTable();
+        };
+
+        // Placeholder function for row click
+        window.viewEmployee = function(employeeId) {
+            console.log(`View employee with ID: ${employeeId}`);
+            // Add logic to view/edit employee details
+        };
+
+        // Initial render
+        console.log('Initial render of table');
+        renderTable();
     } else {
         console.error("main-content or profile-update-form not found");
     }

@@ -219,6 +219,15 @@ if (isset($_POST['action'])) {
         .form-group input, .form-group select { width: 100%; padding: 8px; box-sizing: border-box; }
         .button-group { text-align: right; }
         .button-group button { padding: 10px 20px; margin-left: 10px; }
+
+
+
+	/* Add styles for Font Awesome sort icons */
+    	th i.fas {
+        margin-left: 5px;
+        vertical-align: middle;
+        font-size: 0.9em;
+        color: #999999;
     </style>
 </head>
 <body>
@@ -243,6 +252,7 @@ if (isset($_POST['action'])) {
         ?>
     </div>
 </div>
+
 <script>
     const departments = <?php echo json_encode($departments ?: []); ?>;
     const projects = <?php echo json_encode($projects ?: []); ?>;
@@ -250,6 +260,14 @@ if (isset($_POST['action'])) {
     const employeeTrainings = <?php echo json_encode($employeeTrainings ?: []); ?>;
     const employees = <?php echo json_encode($employees ?: []); ?>;
     const userName = <?php echo json_encode(htmlspecialchars($_SESSION['user_name'])); ?>;
+
+    // Log the data for debugging
+    console.log('Departments:', departments);
+    console.log('Projects:', projects);
+    console.log('Trainings:', trainings);
+    console.log('Employee Trainings:', employeeTrainings);
+    console.log('Employees:', employees);
+    console.log('User Name:', userName);
 
     // Check if data is available
     if (!departments.length || !projects.length || !trainings.length || !employeeTrainings.length || !employees.length) {
@@ -265,6 +283,8 @@ if (isset($_POST['action'])) {
         });
     });
 </script>
+
+
 <script src="../assets/js/dashboard.js"></script>
 </body>
 </html>
