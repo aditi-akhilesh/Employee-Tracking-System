@@ -58,6 +58,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $department_id = trim($_POST['department_id']);
     $emp_hire_date = trim($_POST['emp_hire_date']);
     $salary = trim($_POST['salary']);
+    $manager_id = isset($_POST['manager_id']) && !empty($_POST['manager_id']) ? trim($_POST['manager_id']) : null;
 
     // Server-side validation for salary
     if (!is_numeric($salary) || floatval($salary) <= 0) {
@@ -108,6 +109,45 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit();
     }
 
+    // Validate manager_id and department_id for 'User' role
+    if ($role === 'User') {
+        if (!$manager_id) {
+            $_SESSION['error'] = "A manager must be selected for users with the 'User' role.";
+            header("Location: ../hr_dashboard.php");
+            exit();
+        }
+
+        try {
+            // Validate manager_id
+            $stmt_check_manager = $con->prepare("SELECT COUNT(*) FROM Employees e JOIN Users u ON e.user_id = u.user_id WHERE e.employee_id = :manager_id AND u.role = 'Manager'");
+            $stmt_check_manager->execute(['manager_id' => $manager_id]);
+            if ($stmt_check_manager->fetchColumn() == 0) {
+                $_SESSION['error'] = "Invalid manager ID. Please select a valid manager from the dropdown.";
+                header("Location: ../hr_dashboard.php");
+                exit();
+            }
+
+            // Get the manager's department_id
+            $stmt_manager_dept = $con->prepare("SELECT department_id FROM Employees WHERE employee_id = :manager_id");
+            $stmt_manager_dept->execute(['manager_id' => $manager_id]);
+            $manager_department_id = $stmt_manager_dept->fetchColumn();
+
+            // Ensure the submitted department_id matches the manager's department
+            if ($manager_department_id !== $department_id) {
+                $_SESSION['error'] = "Department ID does not match the selected manager's department.";
+                header("Location: ../hr_dashboard.php");
+                exit();
+            }
+        } catch (PDOException $e) {
+            $_SESSION['error'] = "Error validating manager or department: " . $e->getMessage();
+            header("Location: ../hr_dashboard.php");
+            exit();
+        }
+    } else {
+        // For 'Manager' role, ensure no manager_id is set
+        $manager_id = null;
+    }
+
     try {
         // Check if email already exists
         $stmt_check_email = $con->prepare("SELECT COUNT(*) FROM Users WHERE email = :email");
@@ -148,9 +188,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $is_hr = ($role === 'HR') ? 1 : 0;
         $is_manager = ($role === 'Manager') ? 1 : 0;
 
-        // Insert into Employees table with salary
-        $sql_employees = "INSERT INTO Employees (user_id, department_id, hr_id, DOB, emp_hire_date, salary, is_hr, is_manager) 
-                          VALUES (:user_id, :department_id, :hr_id, :dob, :emp_hire_date, :salary, :is_hr, :is_manager)";
+        // Insert into Employees table with salary and manager_id
+        $sql_employees = "INSERT INTO Employees (user_id, department_id, hr_id, DOB, emp_hire_date, salary, is_hr, is_manager, manager_id) 
+                          VALUES (:user_id, :department_id, :hr_id, :dob, :emp_hire_date, :salary, :is_hr, :is_manager, :manager_id)";
         $stmt_employees = $con->prepare($sql_employees);
         $stmt_employees->execute([
             'user_id' => $user_id,
@@ -160,7 +200,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             'emp_hire_date' => $emp_hire_date,
             'salary' => floatval($salary),
             'is_hr' => $is_hr,
-            'is_manager' => $is_manager
+            'is_manager' => $is_manager,
+            'manager_id' => $manager_id
         ]);
 
         $_SESSION['success'] = "User created successfully!";
