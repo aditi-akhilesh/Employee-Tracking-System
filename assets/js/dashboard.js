@@ -498,9 +498,19 @@ function showAllEmployees() {
     if (mainContent && profileUpdateForm) {
         mainContent.style.display = 'block';
         profileUpdateForm.style.display = 'none';
+
+        // Initial HTML with filter dropdown
         let html = `
             <h2>All Employees/Managers</h2>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <div style="margin-bottom: 20px;">
+                <label for="role-filter">Filter by Role: </label>
+                <select id="role-filter" style="padding: 5px; border-radius: 4px;">
+                    <option value="All">All</option>
+                    <option value="User">Employee</option>
+                    <option value="Manager">Manager</option>
+                </select>
+            </div>
+            <table id="employees-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
                 <thead>
                     <tr style="background-color: #003087; color: #FFFFFF;">
                         <th style="padding: 10px;">ID</th>
@@ -510,39 +520,67 @@ function showAllEmployees() {
                         <th style="padding: 10px;">Department</th>
                         <th style="padding: 10px;">Hire Date</th>
                         <th style="padding: 10px;">Salary</th>
-                    </tr>x
+                    </tr>
                 </thead>
-                <tbody>
-        `;
-        // Filter employees to only show 'User' or 'Manager' roles
-        const filteredEmployees = employees.filter(emp => (emp.role === 'User' || emp.role === 'Manager') && emp.emp_status != "Inactive");
-        filteredEmployees.forEach(emp => {
-            const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
-            const salary = isNaN(parseFloat(emp.salary)) ? 0 : parseFloat(emp.salary); // Fallback to 0 if NaN
-            html += `
-                <tr style="border-bottom: 1px solid #ddd;">
-                    <td style="padding: 10px;">${emp.employee_id}</td>
-                    <td style="padding: 10px;">${emp.first_name} ${emp.last_name}</td>
-                    <td style="padding: 10px;">${emp.email}</td>
-                    <td style="padding: 10px;">${emp.role}</td>
-                    <td style="padding: 10px;">${deptName}</td>
-                    <td style="padding: 10px;">${emp.emp_hire_date}</td>
-                    <td style="padding: 10px;">$${parseFloat(salary).toFixed(2)}</td>
-                </tr>
-            `;
-        });
-        html += `
+                <tbody id="employees-table-body">
                 </tbody>
-            </table>      
-               <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+            </table>
+            <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
                 <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
                         onmouseover="this.style.backgroundColor='#5a6268'" 
                         onmouseout="this.style.backgroundColor='#6c757d'"
                         onclick="showWelcomeMessage()">Back</button>
             </div>
-
         `;
+
         mainContent.innerHTML = html;
+
+        // Function to render the table based on the selected filter
+        function renderEmployeesTable(filterRole) {
+            const tableBody = document.getElementById('employees-table-body');
+            if (!tableBody) return;
+
+            // Filter employees based on the selected role
+            let filteredEmployees = employees.filter(emp => emp.emp_status !== "Inactive");
+            if (filterRole === 'User') {
+                filteredEmployees = filteredEmployees.filter(emp => emp.role === 'User');
+            } else if (filterRole === 'Manager') {
+                filteredEmployees = filteredEmployees.filter(emp => emp.role === 'Manager');
+            }
+
+            // Clear the table body
+            tableBody.innerHTML = '';
+
+            // Populate the table with filtered employees
+            filteredEmployees.forEach(emp => {
+                const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
+                const salary = isNaN(parseFloat(emp.salary)) ? 0 : parseFloat(emp.salary); // Fallback to 0 if NaN
+                tableBody.innerHTML += `
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 10px;">${emp.employee_id}</td>
+                        <td style="padding: 10px;">${emp.first_name} ${emp.last_name}</td>
+                        <td style="padding: 10px;">${emp.email}</td>
+                        <td style="padding: 10px;">${emp.role}</td>
+                        <td style="padding: 10px;">${deptName}</td>
+                        <td style="padding: 10px;">${emp.emp_hire_date}</td>
+                        <td style="padding: 10px;">$${parseFloat(salary).toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Initial render with "All" filter
+        renderEmployeesTable('All');
+
+        // Add event listener to the filter dropdown
+        const roleFilter = document.getElementById('role-filter');
+        if (roleFilter) {
+            roleFilter.addEventListener('change', function() {
+                renderEmployeesTable(this.value);
+            });
+        } else {
+            console.error("Role filter dropdown not found");
+        }
     } else {
         console.error("main-content or profile-update-form not found");
     }
@@ -554,10 +592,20 @@ function showUpdateRemoveUserForm() {
     if (mainContent && profileUpdateForm) {
         mainContent.style.display = 'block';
         profileUpdateForm.style.display = 'none';
+
+        // Initial HTML with filter dropdown
         let html = `
             <h2>Update or Remove Employee</h2>
             <p>Select an employee to update or remove:</p>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+            <div style="margin-bottom: 20px;">
+                <label for="role-filter">Filter by Role: </label>
+                <select id="role-filter" style="padding: 5px; border-radius: 4px;">
+                    <option value="All">All</option>
+                    <option value="User">Employee</option>
+                    <option value="Manager">Manager</option>
+                </select>
+            </div>
+            <table id="employees-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
                 <thead>
                     <tr style="background-color: #003087; color: #FFFFFF;">
                         <th style="padding: 10px;">ID</th>
@@ -566,41 +614,68 @@ function showUpdateRemoveUserForm() {
                         <th style="padding: 10px;">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
-        `;
-        // Filter employees to only show 'User' or 'Manager' roles
-        const filteredEmployees = employees.filter(emp => (emp.role === 'User' || emp.role === 'Manager') && emp.emp_status != "Inactive");
-        filteredEmployees.forEach(emp => {
-            const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
-            html += `
-                <tr style="border-bottom: 1px solid #ddd;">
-                    <td style="padding: 10px;">${emp.employee_id}</td>
-                    <td style="padding: 10px;">${emp.first_name} ${emp.last_name}</td>
-                    <td style="padding: 10px;">${emp.email}</td>
-                    <td style="padding: 10px;">
-                        <button onclick="showEmployeeUpdateForm(${emp.employee_id})" style="background-color: #007BFF; color: #FFFFFF; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer;">Update</button>
-                        <button onclick="removeEmployee(${emp.employee_id})" style="background-color: #dc3545; color: #FFFFFF; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; margin-left: 5px;">Remove</button>
-                    </td>
-                </tr>
-            `;
-        });
-        html += `
+                <tbody id="employees-table-body">
                 </tbody>
             </table>
-<div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+            <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
                 <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
                         onmouseover="this.style.backgroundColor='#5a6268'" 
                         onmouseout="this.style.backgroundColor='#6c757d'"
                         onclick="showWelcomeMessage()">Back</button>
             </div>
-
         `;
+
         mainContent.innerHTML = html;
+
+        // Function to render the table based on the selected filter
+        function renderEmployeesTable(filterRole) {
+            const tableBody = document.getElementById('employees-table-body');
+            if (!tableBody) return;
+
+            // Filter employees based on the selected role
+            let filteredEmployees = employees.filter(emp => emp.emp_status !== "Inactive");
+            if (filterRole === 'User') {
+                filteredEmployees = filteredEmployees.filter(emp => emp.role === 'User');
+            } else if (filterRole === 'Manager') {
+                filteredEmployees = filteredEmployees.filter(emp => emp.role === 'Manager');
+            }
+
+            // Clear the table body
+            tableBody.innerHTML = '';
+
+            // Populate the table with filtered employees
+            filteredEmployees.forEach(emp => {
+                const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
+                tableBody.innerHTML += `
+                    <tr style="border-bottom: 1px solid #ddd;">
+                        <td style="padding: 10px;">${emp.employee_id}</td>
+                                                       <td style="padding: 10px;">${emp.first_name} ${emp.last_name}</td>
+                        <td style="padding: 10px;">${emp.email}</td>
+                        <td style="padding: 10px;">
+                            <button onclick="showEmployeeUpdateForm(${emp.employee_id})" style="background-color: #007BFF; color: #FFFFFF; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer;">Update</button>
+                            <button onclick="removeEmployee(${emp.employee_id})" style="background-color: #dc3545; color: #FFFFFF; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; margin-left: 5px;">Remove</button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Initial render with "All" filter
+        renderEmployeesTable('All');
+
+        // Add event listener to the filter dropdown
+        const roleFilter = document.getElementById('role-filter');
+        if (roleFilter) {
+            roleFilter.addEventListener('change', function() {
+                renderEmployeesTable(this.value);
+            });
+        } else {
+            console.error("Role filter dropdown not found");
+        }
     } else {
         console.error("main-content or profile-update-form not found");
     }
 }
-
 function showEmployeeUpdateForm(employeeId) {
     const emp = employees.find(e => e.employee_id == employeeId);
     if (!emp) {
