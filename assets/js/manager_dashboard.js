@@ -721,11 +721,21 @@ function showSubtasksForm() {
     const form = document.getElementById('subtask-form');
     form.addEventListener('submit', function (event) {
       event.preventDefault();
+      const formData = new FormData(this);
+      console.log('Form Data:', Object.fromEntries(formData)); // Log form data for debugging
+
       fetch('../pages/features/manage_tasks.php', {
         method: 'POST',
-        body: new FormData(this),
+        body: formData,
       })
-        .then((response) => response.json())
+        .then((response) => {
+          console.log('Raw Response:', response); // Log raw response
+          return response.text(); // Get raw text first for debugging
+        })
+        .then((text) => {
+          console.log('Response Text:', text); // Log text response
+          return JSON.parse(text); // Parse JSON manually
+        })
         .then((data) => {
           if (data.success) {
             refreshData(showSubtasksForm);
@@ -734,9 +744,10 @@ function showSubtasksForm() {
             showError(data.error || 'Failed to save task', 'subtasks-section');
           }
         })
-        .catch((error) =>
-          showError('Network error: ' + error.message, 'subtasks-section')
-        );
+        .catch((error) => {
+          console.error('Fetch Error:', error); // Log detailed error
+          showError('Network error: ' + error.message, 'subtasks-section');
+        });
     });
   }
 }

@@ -54,30 +54,38 @@ function fetchData($con, $manager_id) {
     $stmt->execute(['manager_id' => $manager_id]);
     $data['report_feedback_types'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Projects where this manager is the reporting manager
+    // Get manager's department_id
+    $stmt = $con->prepare("
+        SELECT department_id 
+        FROM Employees 
+        WHERE employee_id = :manager_id
+    ");
+    $stmt->execute(['manager_id' => $manager_id]);
+    $manager_dept = $stmt->fetch(PDO::FETCH_ASSOC);
+    $department_id = $manager_dept['department_id'];
+
+    // Projects under the manager's department
     $stmt = $con->prepare("
         SELECT p.project_id, p.project_name, p.start_date, p.expected_end_date, p.actual_end_date, 
                p.client_name, p.client_contact_email, p.project_status, p.budget, p.actual_cost, p.department_id
         FROM Projects p
-        JOIN Assignment a ON p.project_id = a.project_id
-        WHERE a.reporting_manager_id = :manager_id AND p.project_status != 'Completed'
+        WHERE p.department_id = :department_id AND p.project_status != 'Completed'
     ");
-    $stmt->execute(['manager_id' => $manager_id]);
+    $stmt->execute(['department_id' => $department_id]);
     $data['projects'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Tasks and their assignments for this manager's projects
+    // Tasks and their assignments for projects in the manager's department
     $stmt = $con->prepare("
         SELECT t.task_id, t.task_description, t.status, t.project_id, p.project_name,
                at.employee_id, at.due_date, u.first_name, u.last_name
         FROM Task t
         JOIN Projects p ON t.project_id = p.project_id
-        JOIN Assignment a ON p.project_id = a.project_id
         LEFT JOIN Assignment_Task at ON t.task_id = at.task_id
         LEFT JOIN Employees e ON at.employee_id = e.employee_id
         LEFT JOIN Users u ON e.user_id = u.user_id
-        WHERE a.reporting_manager_id = :manager_id
+        WHERE p.department_id = :department_id
     ");
-    $stmt->execute(['manager_id' => $manager_id]);
+    $stmt->execute(['department_id' => $department_id]);
     $data['tasks'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     return $data;
