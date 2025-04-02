@@ -18,9 +18,9 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'project-dropdown')"><i class="fas fa-tasks"></i> Projects and Tasks</a>
             <ul id="project-dropdown" class="dropdown">
-                <li><a href="#">Assign project to employees</a></li>
-                <li><a href="#">Assign tasks to employee</a></li>
-                <li><a href="#">Track project status</a></li>
+                <li><a href="#" onclick="showAssignEmployees()">Assign Employees to Project</a></li>
+                <li><a href="#" onclick="showSubtasksForm()">Create/Update Subtasks</a></li>
+                <li><a href="#" onclick="showProjects()">View Project Status</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'feedback-dropdown')"><i class="fas fa-comment"></i> Feedback and Review</a>
