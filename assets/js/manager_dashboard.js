@@ -1,5 +1,4 @@
 // manager_dashboard.js
-// Refresh data from server
 function refreshData(callback) {
   fetch('manager_dashboard.php', {
     method: 'POST',
@@ -85,56 +84,49 @@ function showProfileForm() {
 
     if (employees.length === 0) {
       profileUpdateForm.innerHTML = `
-              <h2>Employees Assigned to Me</h2>
-              <p>No employees are currently assigned to you.</p>
-              <div class="form-group button-group">
-                  <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+              <div class="card">
+                  <h2>Employees Assigned to Me</h2>
+                  <p>No employees are currently assigned to you.</p>
+                  <div class="form-group button-group">
+                      <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                  </div>
               </div>
           `;
       return;
     }
 
     let employeesTableHTML = `
-          <h2>Employees Assigned to Me</h2>
-          <table style="width: 100%; border-collapse: collapse; margin-top: 20px; box-sizing: border-box;">
-              <thead>
-                  <tr style="background-color: #003087; color: #FFFFFF;">
-                      <th style="padding: 10px; text-align: center; box-sizing: border-box;">Employee Name</th>
-                      <th style="padding: 10px; text-align: center; box-sizing: border-box;">Job Title</th>
-                      <th style="padding: 10px; text-align: center; box-sizing: border-box;">Email</th>
-                      <th style="padding: 10px; text-align: center; box-sizing: border-box;">Status</th>
-                  </tr>
-              </thead>
-              <tbody>
+          <div class="card">
+              <h2>Employees Assigned to Me</h2>
+              <table class="report-table">
+                  <thead>
+                      <tr>
+                          <th>Employee Name</th>
+                          <th>Job Title</th>
+                          <th>Email</th>
+                          <th>Status</th>
+                      </tr>
+                  </thead>
+                  <tbody>
       `;
 
     employees.forEach((emp) => {
       employeesTableHTML += `
-              <tr style="border-bottom: 1px solid #ddd;">
-                  <td style="padding: 10px; text-align: center; box-sizing: border-box;">${
-                    emp.first_name
-                  } ${emp.last_name}</td>
-                  <td style="padding: 10px; text-align: center; box-sizing: border-box;">${
-                    emp.emp_job_title || 'N/A'
-                  }</td>
-                  <td style="padding: 10px; text-align: center; box-sizing: border-box;">${
-                    emp.email || 'N/A'
-                  }</td>
-                  <td style="padding: 10px; text-align: center; box-sizing: border-box;">${
-                    emp.emp_status || 'N/A'
-                  }</td>
+              <tr>
+                  <td>${emp.first_name} ${emp.last_name}</td>
+                  <td>${emp.emp_job_title || 'N/A'}</td>
+                  <td>${emp.email || 'N/A'}</td>
+                  <td>${emp.emp_status || 'N/A'}</td>
               </tr>
           `;
     });
 
     employeesTableHTML += `
-              </tbody>
-          </table>
-          <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
-              <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
-                      onmouseover="this.style.backgroundColor='#5a6268'" 
-                      onmouseout="this.style.backgroundColor='#6c757d'"
-                      onclick="showWelcomeMessage(event)">Back</button>
+                  </tbody>
+              </table>
+              <div class="form-group button-group">
+                  <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+              </div>
           </div>
       `;
 
@@ -170,51 +162,55 @@ function showFeedbackForm() {
     subtasksSection.style.display = 'none';
     if (employees.length === 0) {
       profileUpdateForm.innerHTML = `
-              <h2>Give Feedback to Employee</h2>
-              <p>No employees assigned to you.</p>
-              <div class="form-group button-group">
-                  <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+              <div class="card">
+                  <h2>Give Feedback to Employee</h2>
+                  <p>No employees assigned to you.</p>
+                  <div class="form-group button-group">
+                      <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                  </div>
               </div>
           `;
       return;
     }
     profileUpdateForm.innerHTML = `
-          <h2>Give Feedback to Employee</h2>
-          <form id="feedbackForm" method="POST">
-              <div class="form-group">
-                  <label for="employee_id">Employee:</label>
-                  <select id="employee_id" name="employee_id" required>
-                      <option value="">Select an employee</option>
-                      ${employees
-                        .map(
-                          (emp) =>
-                            `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name} (${emp.emp_job_title})</option>`
-                        )
-                        .join('')}
-                  </select>
-              </div>
-              <div class="form-group">
-                  <label for="rating">Rating (1-5):</label>
-                  <input type="number" id="rating" name="rating" min="1" max="5" required>
-              </div>
-              <div class="form-group">
-                  <label for="feedback_type">Feedback Type:</label>
-                  <select id="feedback_type" name="feedback_type" required>
-                      <option value="Performance">Performance</option>
-                      <option value="Behavior">Behavior</option>
-                      <option value="Project">Project</option>
-                      <option value="Other">Other</option>
-                  </select>
-              </div>
-              <div class="form-group">
-                  <label for="feedback_text">Feedback Details:</label>
-                  <textarea id="feedback_text" name="feedback_text" rows="4" required></textarea>
-              </div>
-              <div class="form-group button-group">
-                  <button type="submit">Submit Feedback</button>
-                  <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-              </div>
-          </form>
+          <div class="card">
+              <h2>Give Feedback to Employee</h2>
+              <form id="feedbackForm" method="POST">
+                  <div class="form-group">
+                      <label for="employee_id">Employee:</label>
+                      <select id="employee_id" name="employee_id" required>
+                          <option value="">Select an employee</option>
+                          ${employees
+                            .map(
+                              (emp) =>
+                                `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name} (${emp.emp_job_title})</option>`
+                            )
+                            .join('')}
+                      </select>
+                  </div>
+                  <div class="form-group">
+                      <label for="rating">Rating (1-5):</label>
+                      <input type="number" id="rating" name="rating" min="1" max="5" required>
+                  </div>
+                  <div class="form-group">
+                      <label for="feedback_type">Feedback Type:</label>
+                      <select id="feedback_type" name="feedback_type" required>
+                          <option value="Performance">Performance</option>
+                          <option value="Behavior">Behavior</option>
+                          <option value="Project">Project</option>
+                          <option value="Other">Other</option>
+                      </select>
+                  </div>
+                  <div class="form-group">
+                      <label for="feedback_text">Feedback Details:</label>
+                      <textarea id="feedback_text" name="feedback_text" rows="4" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px;"></textarea>
+                  </div>
+                  <div class="form-group button-group">
+                      <button type="submit">Submit Feedback</button>
+                      <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                  </div>
+              </form>
+          </div>
       `;
     const form = document.getElementById('feedbackForm');
     if (form) {
@@ -259,14 +255,14 @@ function renderFeedbackTable(selectedEmployeeId) {
   }
 
   let tableHTML = `
-      <table style="width: 100%; border-collapse: collapse; margin-top: 20px; box-sizing: border-box;">
+      <table class="report-table">
           <thead>
-              <tr style="background-color: #003087; color: #FFFFFF;">
-                  <th style="padding: 10px; text-align: center; box-sizing: border-box;">Employee</th>
-                  <th style="padding: 10px; text-align: center; box-sizing: border-box;">Rating</th>
-                  <th style="padding: 10px; text-align: center; box-sizing: border-box;">Type</th>
-                  <th style="padding: 10px; text-align: center; box-sizing: border-box;">Feedback</th>
-                  <th style="padding: 10px; text-align: center; box-sizing: border-box;">Date Submitted</th>
+              <tr>
+                  <th>Employee</th>
+                  <th>Rating</th>
+                  <th>Type</th>
+                  <th>Feedback</th>
+                  <th>Date Submitted</th>
               </tr>
           </thead>
           <tbody>
@@ -274,29 +270,19 @@ function renderFeedbackTable(selectedEmployeeId) {
 
   if (filteredFeedback.length === 0) {
     tableHTML += `
-          <tr style="border-bottom: 1px solid #ddd;">
-              <td style="padding: 10px; text-align: center; box-sizing: border-box;" colspan="5">No feedback available.</td>
+          <tr>
+              <td colspan="5">No feedback available.</td>
           </tr>
       `;
   } else {
     filteredFeedback.forEach((f) => {
       tableHTML += `
-              <tr style="border-bottom: 1px solid #ddd;">
-                  <td style="padding: 10px; text-align: center; box-sizing: border-box;">${
-                    f.first_name
-                  } ${f.last_name}</td>
-                  <td style="padding: 10px; text-align: center; box-sizing: border-box;">${
-                    f.rating || 'N/A'
-                  }</td>
-                  <td style="padding: 10px; text-align: center; box-sizing: border-box;">${
-                    f.feedback_type || 'N/A'
-                  }</td>
-                  <td style="padding: 10px; text-align: center; box-sizing: border-box;">${
-                    f.feedback_text || 'N/A'
-                  }</td>
-                  <td style="padding: 10px; text-align: center; box-sizing: border-box;">${
-                    f.date_submitted || 'N/A'
-                  }</td>
+              <tr>
+                  <td>${f.first_name} ${f.last_name}</td>
+                  <td>${f.rating || 'N/A'}</td>
+                  <td>${f.feedback_type || 'N/A'}</td>
+                  <td>${f.feedback_text || 'N/A'}</td>
+                  <td>${f.date_submitted || 'N/A'}</td>
               </tr>
           `;
     });
@@ -334,27 +320,26 @@ function showFeedbackHistory() {
     subtasksSection.style.display = 'none';
 
     let feedbackTableHTML = `
-          <h2>Feedback History</h2>
-          <div class="form-group">
-              <label for="employee-filter">Filter by Employee:</label>
-              <select id="employee-filter" style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box;">
-                  <option value="">All Employees</option>
-                  ${employees
-                    .map(
-                      (emp) =>
-                        `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`
-                    )
-                    .join('')}
-              </select>
-          </div>
-          <div id="feedback-table-container">
-              ${renderFeedbackTable('')}
-          </div>
-          <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
-              <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
-                      onmouseover="this.style.backgroundColor='#5a6268'" 
-                      onmouseout="this.style.backgroundColor='#6c757d'"
-                      onclick="showWelcomeMessage(event)">Back</button>
+          <div class="card">
+              <h2>Feedback History</h2>
+              <div class="form-group">
+                  <label for="employee-filter">Filter by Employee:</label>
+                  <select id="employee-filter">
+                      <option value="">All Employees</option>
+                      ${employees
+                        .map(
+                          (emp) =>
+                            `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`
+                        )
+                        .join('')}
+                  </select>
+              </div>
+              <div id="feedback-table-container">
+                  ${renderFeedbackTable('')}
+              </div>
+              <div class="form-group button-group">
+                  <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+              </div>
           </div>
       `;
 
@@ -433,7 +418,7 @@ function showReportsAnalytics() {
         const avgRatingsTable = document.getElementById('avg-ratings-table');
         avgRatingsTable.innerHTML = '';
         if (filteredAvgRatings.length === 0) {
-          avgRatingsTable.innerHTML = `<tr><td colspan="3" style="padding: 10px; text-align: center;">No feedback data available for this employee.</td></tr>`;
+          avgRatingsTable.innerHTML = `<tr><td colspan="3">No feedback data available for this employee.</td></tr>`;
         } else {
           filteredAvgRatings.forEach((report) => {
             const row = document.createElement('tr');
@@ -451,7 +436,7 @@ function showReportsAnalytics() {
         );
         feedbackTypesTable.innerHTML = '';
         if (filteredFeedbackTypes.length === 0) {
-          feedbackTypesTable.innerHTML = `<tr><td colspan="2" style="padding: 10px; text-align: center;">No feedback data available for this employee.</td></tr>`;
+          feedbackTypesTable.innerHTML = `<tr><td colspan="2">No feedback data available for this employee.</td></tr>`;
         } else {
           filteredFeedbackTypes.forEach((report) => {
             const row = document.createElement('tr');
@@ -468,7 +453,7 @@ function showReportsAnalytics() {
         );
         feedbackSummaryTable.innerHTML = '';
         if (filteredFeedback.length === 0) {
-          feedbackSummaryTable.innerHTML = `<tr><td colspan="5" style="padding: 10px; text-align: center;">No feedback data available for this employee.</td></tr>`;
+          feedbackSummaryTable.innerHTML = `<tr><td colspan="5">No feedback data available for this employee.</td></tr>`;
         } else {
           filteredFeedback.forEach((fb) => {
             const row = document.createElement('tr');
@@ -626,7 +611,7 @@ function showProjects() {
     const projectsTable = document.getElementById('projects-table');
     projectsTable.innerHTML = '';
     if (projects.length === 0) {
-      projectsTable.innerHTML = `<tr><td colspan="8" style="padding: 10px; text-align: center;">No active projects found.</td></tr>`;
+      projectsTable.innerHTML = `<tr><td colspan="8">No active projects found.</td></tr>`;
     } else {
       projects.forEach((p) => {
         const row = document.createElement('tr');
