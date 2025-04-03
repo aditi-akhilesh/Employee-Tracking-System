@@ -541,7 +541,7 @@ function showAllEmployees() {
             if (!tableBody) return;
 
             // Filter employees based on the selected role
-            let filteredEmployees = employees.filter(emp => emp.emp_status !== "Inactive");
+            let filteredEmployees = employees.filter(emp => (emp.role === 'User' || emp.role === 'Manager') && emp.emp_status != "Inactive");
             if (filterRole === 'User') {
                 filteredEmployees = filteredEmployees.filter(emp => emp.role === 'User');
             } else if (filterRole === 'Manager') {
@@ -551,7 +551,7 @@ function showAllEmployees() {
             // Clear the table body
             tableBody.innerHTML = '';
 
-            // Populate the table with filtered employees
+             
             filteredEmployees.forEach(emp => {
                 const deptName = departments.find(d => d.department_id == emp.department_id)?.department_name || 'N/A';
                 const salary = isNaN(parseFloat(emp.salary)) ? 0 : parseFloat(emp.salary); // Fallback to 0 if NaN
