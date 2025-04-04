@@ -593,6 +593,14 @@ function showUpdateRemoveUserForm() {
         mainContent.style.display = 'block';
         profileUpdateForm.style.display = 'none';
 
+        // Get the current filter value (if any) before re-rendering
+        const roleFilter = document.getElementById('role-filter');
+        const currentFilter = roleFilter ? roleFilter.value : 'All';
+
+        // Debug: Log the employees array and their roles
+        console.log('Employees array:', employees);
+        console.log('Roles in employees:', employees.map(emp => emp.role));
+
         // Initial HTML with filter dropdown
         let html = `
             <h2>Update or Remove User</h2>
@@ -600,9 +608,9 @@ function showUpdateRemoveUserForm() {
             <div style="margin-bottom: 20px;">
                 <label for="role-filter">Filter by Role: </label>
                 <select id="role-filter" style="padding: 5px; border-radius: 4px;">
-                    <option value="All">All</option>
-                    <option value="User">Employee</option>
-                    <option value="Manager">Manager</option>
+                    <option value="All" ${currentFilter === 'All' ? 'selected' : ''}>All</option>
+                    <option value="User" ${currentFilter === 'User' ? 'selected' : ''}>Employee</option>
+                    <option value="Manager" ${currentFilter === 'Manager' ? 'selected' : ''}>Manager</option>
                 </select>
             </div>
             <table id="employees-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
@@ -632,13 +640,20 @@ function showUpdateRemoveUserForm() {
             const tableBody = document.getElementById('employees-table-body');
             if (!tableBody) return;
 
-            // Filter employees based on the selected role
-            let filteredEmployees = employees.filter(emp => emp.emp_status !== "Inactive");
+            // Normalize roles and filter employees
+            let filteredEmployees = employees.filter(emp => {
+                const role = emp.role ? emp.role.trim().toLowerCase() : '';
+                return (role === 'user' || role === 'manager') && emp.emp_status?.toLowerCase() !== 'inactive';
+            });
+
             if (filterRole === 'User') {
-                filteredEmployees = filteredEmployees.filter(emp => emp.role === 'User');
+                filteredEmployees = filteredEmployees.filter(emp => emp.role.trim().toLowerCase() === 'user');
             } else if (filterRole === 'Manager') {
-                filteredEmployees = filteredEmployees.filter(emp => emp.role === 'Manager');
+                filteredEmployees = filteredEmployees.filter(emp => emp.role.trim().toLowerCase() === 'manager');
             }
+
+            // Debug: Log the filtered employees
+            console.log('Filtered employees:', filteredEmployees);
 
             // Clear the table body
             tableBody.innerHTML = '';
@@ -649,7 +664,7 @@ function showUpdateRemoveUserForm() {
                 tableBody.innerHTML += `
                     <tr style="border-bottom: 1px solid #ddd;">
                         <td style="padding: 10px;">${emp.employee_id}</td>
-                                                       <td style="padding: 10px;">${emp.first_name} ${emp.last_name}</td>
+                        <td style="padding: 10px;">${emp.first_name} ${emp.last_name}</td>
                         <td style="padding: 10px;">${emp.email}</td>
                         <td style="padding: 10px;">
                             <button onclick="showEmployeeUpdateForm(${emp.employee_id})" style="background-color: #007BFF; color: #FFFFFF; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer;">Update</button>
@@ -660,13 +675,13 @@ function showUpdateRemoveUserForm() {
             });
         }
 
-        // Initial render with "All" filter
-        renderEmployeesTable('All');
+        // Initial render with the retained filter
+        renderEmployeesTable(currentFilter);
 
         // Add event listener to the filter dropdown
-        const roleFilter = document.getElementById('role-filter');
-        if (roleFilter) {
-            roleFilter.addEventListener('change', function() {
+        const newRoleFilter = document.getElementById('role-filter');
+        if (newRoleFilter) {
+            newRoleFilter.addEventListener('change', function() {
                 renderEmployeesTable(this.value);
             });
         } else {
@@ -676,6 +691,7 @@ function showUpdateRemoveUserForm() {
         console.error("main-content or profile-update-form not found");
     }
 }
+
 function showEmployeeUpdateForm(employeeId) {
     const emp = employees.find(e => e.employee_id == employeeId);
     if (!emp) {
