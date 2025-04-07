@@ -4,20 +4,16 @@ ini_set('display_errors', 0);
 ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
 
-// Start output buffering to catch any unexpected output
 ob_start();
 
 session_start();
 require_once '../../auth/dbconnect.php';
 
-// Function to safely log messages
 function safeLog($message) {
-    $logFile = '/home/students/vkondoju/public_html/Employee-Tracking-System_working_old/pages/features/update_employee_debug.log';
-    // Check if the file is writable before attempting to write
-    if (is_writable($logFile) || (!file_exists($logFile) && is_writable(dirname($logFile)))) {
-        file_put_contents($logFile, $message, FILE_APPEND);
-    } else {
-        // Fallback: Log to PHP error log if file writing fails
+    $logFile = __DIR__ . '/update_employee_debug.log';
+    $timestamp = date('Y-m-d H:i:s');
+    $formattedMessage = "[$timestamp] $message\n";
+    if (file_put_contents($logFile, $formattedMessage, FILE_APPEND) === false) {
         error_log("Failed to write to $logFile: $message");
     }
 }
@@ -27,11 +23,9 @@ try {
         throw new Exception("Invalid request method");
     }
 
-    // Log the received POST data for debugging
-    safeLog("Starting update_employee.php\n");
-    safeLog("Received POST data: " . print_r($_POST, true) . "\n");
+    // safeLog("Starting update_employee.php");
+    // safeLog("Received POST data: " . json_encode($_POST));
 
-    // Sanitize and validate input
     $employee_id = filter_var($_POST['employee_id'] ?? '', FILTER_SANITIZE_NUMBER_INT);
     $first_name = htmlspecialchars(trim($_POST['first_name'] ?? ''), ENT_QUOTES, 'UTF-8');
     $last_name = htmlspecialchars(trim($_POST['last_name'] ?? ''), ENT_QUOTES, 'UTF-8');
@@ -40,46 +34,94 @@ try {
     $department_id = htmlspecialchars(trim($_POST['department_id'] ?? ''), ENT_QUOTES, 'UTF-8');
     $emp_hire_date = htmlspecialchars(trim($_POST['emp_hire_date'] ?? ''), ENT_QUOTES, 'UTF-8');
     $salary = filter_var($_POST['salary'] ?? '', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
-    $manager_id = isset($_POST['manager_id']) ? htmlspecialchars(trim($_POST['manager_id'] ?? ''), ENT_QUOTES, 'UTF-8') : null;
+    $manager_id = isset($_POST['manager_id']) && $_POST['manager_id'] !== '' ? htmlspecialchars(trim($_POST['manager_id']), ENT_QUOTES, 'UTF-8') : '';
+    $is_manager = filter_var($_POST['is_manager'] ?? '0', FILTER_SANITIZE_NUMBER_INT);
 
-    // Validate required fields
-    if (empty($employee_id) || empty($first_name) || empty($last_name) || empty($email) || empty($role) || empty($department_id) || empty($emp_hire_date) || empty($salary)) {
+    if (empty($employee_id) || empty($first_name) || empty($last_name) || empty($email) || empty($role) || empty($emp_hire_date)) {
         throw new Exception("Required fields are missing");
     }
 
-    // Validate email format
-    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        throw new Exception("Invalid email format");
+    $stmt = $con->prepare("SELECT e.*, u.first_name, u.last_name, u.email, u.role 
+                           FROM Employees e 
+                           JOIN Users u ON e.user_id = u.user_id 
+                           WHERE e.employee_id = :employee_id");
+    $stmt->execute([':employee_id' => $employee_id]);
+    $currentEmployee = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if (!$currentEmployee) {
+        throw new Exception("Employee not found.");
     }
 
-    // Validate salary (must be a positive number)
-    if ($salary <= 0) {
-        throw new Exception("Salary must be a positive number");
+    $department_id = $department_id ?: $currentEmployee['department_id'];
+
+    $currentValues = [
+        'first_name' => trim((string)$currentEmployee['first_name']),
+        'last_name' => trim((string)$currentEmployee['last_name']),
+        'email' => trim((string)$currentEmployee['email']),
+        'role' => trim((string)$currentEmployee['role']),
+        'department_id' => trim((string)$currentEmployee['department_id']),
+        'emp_hire_date' => trim((string)$currentEmployee['emp_hire_date']),
+        'salary' => number_format((float)$currentEmployee['salary'], 2, '.', ''),
+        'manager_id' => $currentEmployee['manager_id'] ? trim((string)$currentEmployee['manager_id']) : '',
+        'is_manager' => trim((string)$currentEmployee['is_manager'])
+    ];
+
+    $submittedValues = [
+        'first_name' => trim($first_name),
+        'last_name' => trim($last_name),
+        'email' => trim($email),
+        'role' => trim($role),
+        'department_id' => trim($department_id),
+        'emp_hire_date' => trim($emp_hire_date),
+        'salary' => number_format((float)$salary, 2, '.', ''),
+        'manager_id' => trim($manager_id),
+        'is_manager' => trim((string)$is_manager)
+    ];
+
+    // safeLog("Current values: " . json_encode($currentValues));
+    // safeLog("Submitted values: " . json_encode($submittedValues));
+
+    $hasChanges = false;
+    foreach ($currentValues as $key => $currentValue) {
+        $submittedValue = $submittedValues[$key];
+        if ($currentValue !== $submittedValue) {
+            // safeLog("Change detected in $key: '$currentValue' vs '$submittedValue'");
+            $hasChanges = true;
+            break;
+        }
     }
 
-    // Validate hire date (must be a valid date and not in the future)
-    $hireDate = DateTime::createFromFormat('Y-m-d', $emp_hire_date);
-    $today = new DateTime();
-    if (!$hireDate || $hireDate > $today) {
-        throw new Exception("Hire date must be a valid date and not in the future");
+    if (!$hasChanges) {
+        // safeLog("No changes detected");
+        ob_end_clean();
+        header('Content-Type: application/json');
+        echo json_encode(['success' => false, 'message' => 'No changes detected']);
+        exit();
     }
 
-    // Validate department_id exists
+    // Check if changing from Manager to User and has subordinates
+    if ($currentValues['role'] === 'Manager' && $submittedValues['role'] === 'User') {
+        $checkSubordinates = $con->prepare("SELECT COUNT(*) FROM Employees WHERE manager_id = :manager_id AND employee_id != :employee_id");
+        $checkSubordinates->execute([':manager_id' => $employee_id, ':employee_id' => $employee_id]);
+        $subordinateCount = $checkSubordinates->fetchColumn();
+        if ($subordinateCount > 0) {
+            throw new Exception("Cannot change role to User: This manager has $subordinateCount employee(s) assigned.");
+        }
+    }
+
     $checkDept = $con->prepare("SELECT COUNT(*) FROM Department WHERE department_id = :department_id");
     $checkDept->execute([':department_id' => $department_id]);
     if ($checkDept->fetchColumn() == 0) {
         throw new Exception("Invalid department ID: $department_id does not exist");
     }
 
-    // Validate manager_id if provided (for Users)
-    if ($role === 'User' && !empty($manager_id)) {
+    if ($role === 'User' && $manager_id !== '') {
         $checkManager = $con->prepare("SELECT COUNT(*) FROM Employees e JOIN Users u ON e.user_id = u.user_id WHERE e.employee_id = :manager_id AND u.role = 'Manager'");
         $checkManager->execute([':manager_id' => $manager_id]);
         if ($checkManager->fetchColumn() == 0) {
             throw new Exception("Invalid manager ID: $manager_id does not exist or is not a Manager");
         }
 
-        // Ensure the department_id matches the manager's department
         $stmtManagerDept = $con->prepare("SELECT department_id FROM Employees WHERE employee_id = :manager_id");
         $stmtManagerDept->execute([':manager_id' => $manager_id]);
         $manager_department_id = $stmtManagerDept->fetchColumn();
@@ -88,32 +130,11 @@ try {
         }
     }
 
-    if (!$con) {
-        throw new Exception("Database connection failed");
-    }
-
-    // Begin transaction
     $con->beginTransaction();
 
-    // Step 1: Get the user_id from Employees table
-    $stmt = $con->prepare("SELECT user_id FROM Employees WHERE employee_id = :employee_id");
-    $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
-    $stmt->execute();
-    $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+    $user_id = $currentEmployee['user_id'];
 
-    if (!$employee) {
-        throw new Exception("Employee not found.");
-    }
-    $user_id = $employee['user_id'];
-
-    // Step 2: Update Users table
-    $sqlUser = "UPDATE Users 
-                SET 
-                    first_name = :first_name,
-                    last_name = :last_name,
-                    email = :email,
-                    role = :role
-                WHERE user_id = :user_id";
+    $sqlUser = "UPDATE Users SET first_name = :first_name, last_name = :last_name, email = :email, role = :role WHERE user_id = :user_id";
     $stmtUser = $con->prepare($sqlUser);
     $stmtUser->execute([
         ':first_name' => $first_name,
@@ -123,35 +144,21 @@ try {
         ':user_id' => $user_id
     ]);
 
-    // Step 3: Update Employees table
-    $is_manager = ($role === 'Manager') ? 1 : 0;
-    $manager_id = ($role === 'Manager') ? null : $manager_id; // Set manager_id to NULL if role is Manager
-
-    $sqlEmployee = "UPDATE Employees 
-                    SET 
-                        department_id = :department_id,
-                        emp_hire_date = :emp_hire_date,
-                        salary = :salary,
-                        manager_id = :manager_id,
-                        is_manager = :is_manager
-                    WHERE employee_id = :employee_id";
+    $sqlEmployee = "UPDATE Employees SET department_id = :department_id, emp_hire_date = :emp_hire_date, salary = :salary, manager_id = :manager_id, is_manager = :is_manager WHERE employee_id = :employee_id";
     $stmtEmployee = $con->prepare($sqlEmployee);
     $stmtEmployee->execute([
         ':department_id' => $department_id,
         ':emp_hire_date' => $emp_hire_date,
         ':salary' => $salary,
-        ':manager_id' => $manager_id,
+        ':manager_id' => $manager_id === '' ? null : $manager_id,
         ':is_manager' => $is_manager,
         ':employee_id' => $employee_id
     ]);
 
-    // Commit the transaction
     $con->commit();
 
-    // Log success
-    safeLog("Employee updated successfully\n");
+    // safeLog("Employee updated successfully");
 
-    // Clear output buffer and return JSON response
     ob_end_clean();
     header('Content-Type: application/json');
     echo json_encode(['success' => true, 'message' => 'Employee updated successfully']);
@@ -161,9 +168,7 @@ try {
     if ($con->inTransaction()) {
         $con->rollBack();
     }
-    // Log the error for debugging
-    safeLog("Error in update_employee.php: " . $e->getMessage() . "\n");
-    // Clear output buffer and return JSON error response
+    // safeLog("Error: " . $e->getMessage());
     ob_end_clean();
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'error' => "Error: " . $e->getMessage()]);

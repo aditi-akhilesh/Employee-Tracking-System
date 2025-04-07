@@ -4,20 +4,16 @@ ini_set('display_errors', 0);
 ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
 
-// Start output buffering to catch any unexpected output
 ob_start();
 
 session_start();
 require_once '../../auth/dbconnect.php';
 
-// Function to safely log messages
 function safeLog($message) {
-    $logFile = '/home/students/vkondoju/public_html/Employee-Tracking-System_working_old/pages/features/remove_employee_debug.log';
-    // Check if the file is writable before attempting to write
-    if (is_writable($logFile) || (!file_exists($logFile) && is_writable(dirname($logFile)))) {
-        file_put_contents($logFile, $message, FILE_APPEND);
-    } else {
-        // Fallback: Log to PHP error log if file writing fails
+    $logFile = __DIR__ . '/remove_employee_debug.log'; // Updated to relative path for consistency
+    $timestamp = date('Y-m-d H:i:s');
+    $formattedMessage = "[$timestamp] $message\n";
+    if (file_put_contents($logFile, $formattedMessage, FILE_APPEND) === false) {
         error_log("Failed to write to $logFile: $message");
     }
 }
@@ -27,9 +23,8 @@ try {
         throw new Exception("Invalid request");
     }
 
-    // Log the request
-    safeLog("Starting remove_employee.php\n");
-    safeLog("Received POST data: " . print_r($_POST, true) . "\n");
+    // safeLog("Starting remove_employee.php");
+    // safeLog("Received POST data: " . print_r($_POST, true));
 
     $employee_id = filter_var($_POST['employee_id'], FILTER_SANITIZE_NUMBER_INT);
 
@@ -40,10 +35,12 @@ try {
     // Begin transaction
     $con->beginTransaction();
 
-    // Step 1: Get the user_id from Employees table
-    $stmt = $con->prepare("SELECT user_id FROM Employees WHERE employee_id = :employee_id");
-    $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
-    $stmt->execute();
+    // Step 1: Get the employee details including role and user_id
+    $stmt = $con->prepare("SELECT e.user_id, e.employee_id, u.role 
+                           FROM Employees e 
+                           JOIN Users u ON e.user_id = u.user_id 
+                           WHERE e.employee_id = :employee_id");
+    $stmt->execute([':employee_id' => $employee_id]);
     $employee = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if (!$employee) {
@@ -51,23 +48,29 @@ try {
     }
     $user_id = $employee['user_id'];
 
-    // Step 2: Update is_active to 0 in Users table
-    $stmt = $con->prepare("UPDATE Users SET is_active = 0 WHERE user_id = :user_id");
-    $stmt->bindParam(':user_id', $user_id, PDO::PARAM_INT);
-    $stmt->execute();
+    // Step 2: Check if the employee is a Manager with subordinates
+    if ($employee['role'] === 'Manager') {
+        $checkSubordinates = $con->prepare("SELECT COUNT(*) FROM Employees WHERE manager_id = :manager_id AND employee_id != :employee_id AND emp_status = 'Active'");
+        $checkSubordinates->execute([':manager_id' => $employee_id, ':employee_id' => $employee_id]);
+        $subordinateCount = $checkSubordinates->fetchColumn();
+        if ($subordinateCount > 0) {
+            throw new Exception("Cannot deactivate this manager: They have $subordinateCount active employee(s) assigned.");
+        }
+    }
 
-    // Step 3: Update emp_status to 'inactive' in Employees table
+    // Step 3: Update is_active to 0 in Users table
+    $stmt = $con->prepare("UPDATE Users SET is_active = 0 WHERE user_id = :user_id");
+    $stmt->execute([':user_id' => $user_id]);
+
+    // Step 4: Update emp_status to 'inactive' in Employees table
     $stmt = $con->prepare("UPDATE Employees SET emp_status = 'inactive' WHERE employee_id = :employee_id");
-    $stmt->bindParam(':employee_id', $employee_id, PDO::PARAM_INT);
-    $stmt->execute();
+    $stmt->execute([':employee_id' => $employee_id]);
 
     // Commit the transaction
     $con->commit();
 
-    // Log success
-    safeLog("Employee deactivated successfully\n");
+    // safeLog("Employee deactivated successfully");
 
-    // Clear output buffer and return JSON response
     ob_end_clean();
     header('Content-Type: application/json');
     echo json_encode(['success' => true, 'message' => 'Employee successfully deactivated']);
@@ -77,9 +80,7 @@ try {
     if ($con->inTransaction()) {
         $con->rollBack();
     }
-    // Log the error for debugging
-    safeLog("Error in remove_employee.php: " . $e->getMessage() . "\n");
-    // Clear output buffer and return JSON error response
+    // safeLog("Error in remove_employee.php: " . $e->getMessage());
     ob_end_clean();
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'error' => "Error: " . $e->getMessage()]);

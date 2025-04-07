@@ -66,7 +66,7 @@ try {
     $stmt = $con->query("
         SELECT 
             e.employee_id, u.first_name, u.last_name, u.email, u.role, 
-            e.department_id, e.emp_hire_date, e.salary, e.emp_status
+            e.department_id, e.emp_hire_date, e.salary, e.emp_status,e.manager_id,e.is_manager
         FROM Employees e
         JOIN Users u ON e.user_id = u.user_id
     ");

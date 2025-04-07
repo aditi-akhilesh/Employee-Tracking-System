@@ -909,31 +909,26 @@ function showEmployeeUpdateForm(employeeId) {
         alert('Employee not found!');
         return;
     }
+
     const mainContent = document.getElementById('main-content');
     const profileUpdateForm = document.getElementById('profile-update-form');
     if (mainContent && profileUpdateForm) {
         mainContent.style.display = 'none';
         profileUpdateForm.style.display = 'block';
 
-        // Log the emp object to debug
-        console.log('Employee data:', emp);
-
-        // Ensure salary has a fallback value
-        const salary = emp.salary !== undefined && emp.salary !== null ? emp.salary : 0;
-
-        // Store original values for comparison
+        const salary = emp.salary !== undefined && emp.salary !== null ? parseFloat(emp.salary) : 0;
         const originalValues = {
-            first_name: emp.first_name || '',
-            last_name: emp.last_name || '',
-            email: emp.email || '',
-            role: emp.role || '',
-            department_id: emp.department_id || '',
-            emp_hire_date: emp.emp_hire_date || '',
-            salary: salary,
-            manager_id: emp.manager_id || ''
+            first_name: (emp.first_name || '').trim(),
+            last_name: (emp.last_name || '').trim(),
+            email: (emp.email || '').trim(),
+            role: (emp.role || '').trim(),
+            department_id: (emp.department_id || '').toString().trim(),
+            emp_hire_date: (emp.emp_hire_date || '').trim(),
+            salary: salary.toFixed(2),
+            manager_id: (emp.manager_id || '').toString().trim(),
+            is_manager: (emp.is_manager || '0').toString().trim()
         };
 
-        // Filter managers for the "Assign to Manager" dropdown
         const managers = employees.filter(emp => emp.role === 'Manager' && emp.emp_status !== "Inactive");
 
         const deptOptions = departments.map(d => `
@@ -946,6 +941,7 @@ function showEmployeeUpdateForm(employeeId) {
             <h2>Update Employee</h2>
             <form method="POST" action="../pages/features/update_employee.php" id="updateUserForm">
                 <input type="hidden" name="employee_id" value="${emp.employee_id}">
+                <input type="hidden" name="is_manager" value="${emp.is_manager || '0'}">
                 <div class="form-group">
                     <label>First Name</label>
                     <input type="text" name="first_name" value="${emp.first_name || ''}" required>
@@ -969,7 +965,12 @@ function showEmployeeUpdateForm(employeeId) {
                     <label for="manager_id">Assign to Manager:</label>
                     <select id="manager_id" name="manager_id">
                         <option value="">Select a Manager</option>
-                        ${managers.map(manager => `<option value="${manager.employee_id}" data-department-id="${manager.department_id}" ${emp.manager_id == manager.employee_id ? 'selected' : ''}>${manager.first_name} ${manager.last_name} (ID: ${manager.employee_id})</option>`).join('')}
+                        ${managers.map(manager => {
+                            const empManagerId = emp.manager_id ? String(emp.manager_id).trim() : '';
+                            const managerEmployeeId = manager.employee_id ? String(manager.employee_id).trim() : '';
+                            const isSelected = empManagerId === managerEmployeeId;
+                            return `<option value="${manager.employee_id}" data-department-id="${manager.department_id}" ${isSelected ? 'selected' : ''}>${manager.first_name} ${manager.last_name} (ID: ${manager.employee_id})</option>`;
+                        }).join('')}
                     </select>
                 </div>
                 <div class="form-group">
@@ -984,7 +985,7 @@ function showEmployeeUpdateForm(employeeId) {
                 </div>
                 <div class="form-group">
                     <label>Salary</label>
-                    <input type="number" name="salary" value="${parseFloat(salary).toFixed(2)}" step="0.01" required>
+                    <input type="number" name="salary" value="${salary.toFixed(2)}" step="0.01" required>
                 </div>
                 <div class="form-group button-group">
                     <button type="submit">Save Changes</button>
@@ -1000,87 +1001,83 @@ function showEmployeeUpdateForm(employeeId) {
         const managerSelect = document.getElementById('manager_id');
 
         if (form && roleSelect && assignManagerGroup && departmentSelect && managerSelect) {
-            // Handle role selection
             roleSelect.addEventListener('change', function() {
-                // Reset states
-                assignManagerGroup.style.display = 'none';
-                managerSelect.value = ''; // Reset manager selection
-                departmentSelect.disabled = false; // Enable department by default
-
-                if (this.value === 'User') {
-                    // Show "Assign to Manager" dropdown for User role
-                    assignManagerGroup.style.display = 'block';
-                    departmentSelect.disabled = true; // Disable department selection until a manager is selected
-                    departmentSelect.value = ''; // Reset department selection
-                } else if (this.value === 'Manager') {
-                    // For Manager role, hide "Assign to Manager" and enable department selection
-                    assignManagerGroup.style.display = 'none';
-                    departmentSelect.disabled = false;
-                    departmentSelect.value = emp.department_id || ''; // Retain original department if unchanged
-                }
+                assignManagerGroup.style.display = this.value === 'User' ? 'block' : 'none';
+                managerSelect.value = this.value === 'User' ? originalValues.manager_id : '';
+                departmentSelect.disabled = this.value === 'User';
+                departmentSelect.value = emp.department_id || '';
             });
 
-            // Handle manager selection to auto-set the department
             managerSelect.addEventListener('change', function() {
                 const selectedOption = this.options[this.selectedIndex];
                 const managerDepartmentId = selectedOption.getAttribute('data-department-id');
                 if (managerDepartmentId) {
-                    departmentSelect.value = managerDepartmentId; // Set the department to the manager's department
-                    departmentSelect.disabled = true; // Keep department disabled
+                    departmentSelect.value = managerDepartmentId;
+                    departmentSelect.disabled = true;
                 } else {
-                    departmentSelect.value = ''; // Reset if no manager is selected
+                    departmentSelect.value = emp.department_id || '';
                     departmentSelect.disabled = true;
                 }
             });
 
-            // Handle form submission
             form.addEventListener('submit', function(event) {
                 event.preventDefault();
 
-                // Get current form values
                 const formData = new FormData(form);
                 const currentValues = {
-                    first_name: formData.get('first_name'),
-                    last_name: formData.get('last_name'),
-                    email: formData.get('email'),
-                    role: formData.get('role'),
-                    department_id: formData.get('department_id'),
-                    emp_hire_date: formData.get('emp_hire_date'),
-                    salary: formData.get('salary'),
-                    manager_id: formData.get('manager_id') || ''
+                    first_name: (formData.get('first_name') || '').trim(),
+                    last_name: (formData.get('last_name') || '').trim(),
+                    email: (formData.get('email') || '').trim(),
+                    role: (formData.get('role') || '').trim(),
+                    department_id: departmentSelect.disabled ? originalValues.department_id : (formData.get('department_id') || '').trim(),
+                    emp_hire_date: (formData.get('emp_hire_date') || '').trim(),
+                    salary: parseFloat(formData.get('salary') || '0').toFixed(2),
+                    manager_id: (formData.get('manager_id') || '').toString().trim(),
+                    is_manager: (formData.get('is_manager') || '0').toString().trim()
                 };
 
-                // Client-side validation
                 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
                 if (!emailRegex.test(currentValues.email)) {
                     alert("Please enter a valid email address");
                     return;
                 }
-
                 if (parseFloat(currentValues.salary) <= 0) {
                     alert("Salary must be a positive number");
                     return;
                 }
-
                 const today = new Date().toISOString().split('T')[0];
                 if (currentValues.emp_hire_date > today) {
                     alert("Hire date cannot be in the future");
                     return;
                 }
 
-                // Compare current values with original values
-                const hasChanges = Object.keys(originalValues).some(key => {
-                    const originalValue = String(originalValues[key]);
-                    const currentValue = String(currentValues[key]);
-                    return originalValue !== currentValue;
-                });
-
-                if (!hasChanges) {
-                    alert("No data updated");
-                    return; // Stay on the form
+                let hasChanges = false;
+                for (const key in originalValues) {
+                    const originalValue = String(originalValues[key]).trim();
+                    const currentValue = String(currentValues[key]).trim();
+                    if (originalValue !== currentValue) {
+                        hasChanges = true;
+                        break;
+                    }
                 }
 
-                // For User role, ensure a manager is selected and department_id matches
+                if (!hasChanges) {
+                    alert("No changes detected");
+                    return;
+                }
+
+                // Check if changing from Manager to User and has subordinates
+                if (originalValues.role === 'Manager' && currentValues.role === 'User') {
+                    const subordinates = employees.filter(e => 
+                        e.manager_id && String(e.manager_id).trim() === String(emp.employee_id).trim() && 
+                        e.employee_id !== emp.employee_id // Exclude self
+                    );
+                    if (subordinates.length > 0) {
+                        alert("Cannot change role to User: This manager has " + subordinates.length + " employee(s) assigned.");
+                        return;
+                    }
+                }
+
                 if (roleSelect.value === 'User') {
                     if (!managerSelect.value) {
                         alert('Please select a manager for the user.');
@@ -1089,12 +1086,13 @@ function showEmployeeUpdateForm(employeeId) {
                     const selectedOption = managerSelect.options[managerSelect.selectedIndex];
                     const managerDepartmentId = selectedOption.getAttribute('data-department-id');
                     if (managerDepartmentId) {
-                        departmentSelect.value = managerDepartmentId; // Ensure department_id is set before submission
-                        formData.set('department_id', managerDepartmentId); // Update formData with the correct department_id
+                        formData.set('department_id', managerDepartmentId);
                     }
+                } else {
+                    formData.set('manager_id', '');
+                    formData.set('is_manager', '1');
                 }
 
-                // Submit the form
                 fetch(form.action, {
                     method: 'POST',
                     body: formData
@@ -1103,46 +1101,69 @@ function showEmployeeUpdateForm(employeeId) {
                         if (!response.ok) {
                             throw new Error(`HTTP error! Status: ${response.status}`);
                         }
-                        const contentType = response.headers.get('content-type');
-                        if (!contentType || !contentType.includes('application/json')) {
-                            return response.text().then(text => {
-                                throw new Error(`Server returned non-JSON response: ${text}`);
-                            });
-                        }
-                        return response.json();
+                        return response.text().then(text => ({ text, headers: response.headers }));
                     })
-                    .then(data => {
+                    .then(({ text, headers }) => {
+                        const contentType = headers.get('content-type');
+                        if (!contentType || !contentType.includes('application/json')) {
+                            throw new Error('Server returned non-JSON response');
+                        }
+                        const data = JSON.parse(text);
                         if (data.success) {
                             alert(data.message || "Employee updated successfully");
-                            // Update the local employees array
-                            const index = employees.findIndex(e => e.employee_id == employeeId);
-                            if (index !== -1) {
-                                employees[index] = {
-                                    ...employees[index],
-                                    ...currentValues
-                                };
-                            }
-                            showUpdateRemoveUserForm();
+                            fetch('../pages/features/fetch_employees.php?ts=' + new Date().getTime(), {
+                                method: 'GET',
+                                headers: { 'Cache-Control': 'no-cache' }
+                            })
+                                .then(response => response.json())
+                                .then(updatedEmployees => {
+                                    employees.length = 0;
+                                    updatedEmployees.forEach(emp => employees.push(emp));
+                                    showUpdateRemoveUserForm();
+                                })
+                                .catch(error => {
+                                    alert("Error fetching updated employee list: " + error.message);
+                                });
                         } else {
-                            alert(data.error || "Error updating employee");
+                            alert(data.message || data.error || "Error updating employee");
                         }
                     })
                     .catch(error => {
-                        console.error('Fetch error:', error);
                         alert("Error updating employee: " + error.message);
                     });
             });
         } else {
-            console.error("updateUserForm, role select, assign-manager-group, department select, or manager select not found after rendering");
+            // Handle form elements not found
         }
     } else {
-        console.error("main-content or profile-update-form not found");
+        // Handle main-content or profile-update-form not found
     }
 }
+
+
 function removeEmployee(employeeId) {
     // Show confirmation alert
     if (!confirm('Are you sure you want to deactivate this employee?')) {
         return; // If user clicks "Cancel", do nothing
+    }
+
+    // Find the employee in the employees array
+    const employee = employees.find(emp => emp.employee_id == employeeId);
+    if (!employee) {
+        alert("Employee not found in local data.");
+        return;
+    }
+
+    // Check if the employee is a Manager with subordinates
+    if (employee.role === 'Manager') {
+        const subordinates = employees.filter(e => 
+            e.manager_id && String(e.manager_id).trim() === String(employeeId).trim() && 
+            e.employee_id !== employeeId // Exclude self
+        );
+        if (subordinates.length > 0) {
+            alert(`Cannot deactivate this manager: They have ${subordinates.length} employee(s) assigned.`);
+            return;
+        }
     }
 
     const formData = new FormData();
@@ -1176,16 +1197,13 @@ function removeEmployee(employeeId) {
                         return response.json();
                     })
                     .then(updatedEmployees => {
-                        // Clear the existing employees array and repopulate it
                         employees.length = 0; // Clear the array
                         updatedEmployees.forEach(emp => employees.push(emp)); // Repopulate with updated data
-                        // Redirect back to the "Update or Remove Employee" form
                         showUpdateRemoveUserForm();
                     })
                     .catch(error => {
-                        console.error('Error fetching updated employees:', error);
+                        // console.error('Error fetching updated employees:', error);
                         alert("Error fetching updated employee list: " + error.message);
-                        // Fallback: Redirect anyway
                         showUpdateRemoveUserForm();
                     });
             } else {
@@ -1193,7 +1211,7 @@ function removeEmployee(employeeId) {
             }
         })
         .catch(error => {
-            console.error('Fetch error:', error);
+            // console.error('Fetch error:', error);
             alert("Error deactivating employee: " + error.message);
         });
 }
