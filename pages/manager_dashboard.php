@@ -125,42 +125,7 @@ $tasks = $data['tasks'];
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <style>
-        .dashboard-container { display: flex; min-height: 100vh; background: #f4f7fa; }
-        .content { flex: 1; padding: 30px; }
-        .card { background: #fff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 25px; margin-bottom: 30px; }
-        h2 { color: #003087; font-size: 24px; margin-bottom: 20px; }
-        .form-group { margin-bottom: 20px; }
-        .form-group label { display: block; font-weight: 500; color: #333; margin-bottom: 8px; }
-        .form-group input, .form-group select { 
-            width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; 
-            font-size: 16px; transition: border-color 0.3s, box-shadow 0.3s; }
-        .form-group input:focus, .form-group select:focus { 
-            border-color: #003087; box-shadow: 0 0 5px rgba(0,48,135,0.3); outline: none; }
-        .button-group { display: flex; gap: 15px; justify-content: flex-end; }
-        .button-group button { 
-            padding: 12px 25px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; 
-            transition: background 0.3s, transform 0.2s; }
-        .button-group button[type="submit"] { 
-            background: linear-gradient(90deg, #003087, #0052cc); color: #fff; }
-        .button-group button[type="submit"]:hover { background: linear-gradient(90deg, #00205b, #003087); transform: translateY(-2px); }
-        .button-group button[type="button"] { background: #6c757d; color: #fff; }
-        .button-group button[type="button"]:hover { background: #5a6268; transform: translateY(-2px); }
-        .button-group button#delete-task-btn { background: linear-gradient(90deg, #dc3545, #c82333); }
-        .button-group button#delete-task-btn:hover { background: linear-gradient(90deg, #c82333, #b21f2d); }
-        .report-table { 
-            width: 100%; border-collapse: separate; border-spacing: 0; background: #fff; 
-            border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .report-table th { 
-            background: #003087; color: #fff; padding: 15px; text-align: left; font-weight: 600; }
-        .report-table td { padding: 15px; border-bottom: 1px solid #eee; }
-        .report-table tr:nth-child(even) { background: #f9fbfc; }
-        .report-table tr:hover { background: #e9ecef; cursor: pointer; transition: background 0.2s; }
-        .alert { padding: 15px; border-radius: 6px; margin-bottom: 20px; }
-        .alert-success { background: #d4edda; color: #155724; }
-        .alert-error { background: #f8d7da; color: #721c24; }
-    </style>
-</head>
+    </head>
 <body>
 <?php include '../includes/header.php'; ?>
 <div class="dashboard-container">
