@@ -7,13 +7,13 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'attendance-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-clock" style="margin-right: 10px;"></i> Attendance and Leave</a>
             <ul id="attendance-dropdown" class="dropdown" style="display: none; padding-left: 20px;">
-                <li><a href="#" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">View attendance records</a></li>
-                <li><a href="#" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Approve/reject leave requests</a></li>
+                <li><a href="#" onclick="showAttendanceRecords()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">View attendance records</a></li>
+                <li><a href="#" onclick="showLeaveRequests()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Approve/reject leave requests</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'department-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-building" style="margin-right: 10px;"></i> Department Management</a>
             <ul id="department-dropdown" class="dropdown" style="display: none; padding-left: 20px;">
-                <li><a href="#" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Track department information</a></li>
+                <li><a href="#" onclick="showDepartmentInfo()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Track department information</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'project-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-tasks" style="margin-right: 10px;"></i> Projects and Tasks</a>
