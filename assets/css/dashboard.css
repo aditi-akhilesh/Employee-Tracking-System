@@ -348,3 +348,57 @@ table tr:hover {
     background-color: #003087;
     color: white;
 }
+
+/* Shared styling for exit interview forms */
+.exit-interview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+    background-color: transparent;
+    box-shadow: none;
+    border-radius: 0;
+}
+.exit-interview-table thead {
+    background-color: #f4f4f4;
+    color: #333;
+}
+.exit-interview-table th,
+.exit-interview-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    border: none;
+}
+.exit-interview-table th {
+    font-weight: bold;
+    text-transform: uppercase;
+    border-bottom: 2px solid #ddd;
+}
+.exit-interview-table tbody tr:hover {
+    background-color: #f9f9f9;
+}
+.exit-interview-table td {
+    color: #555;
+}
+.exit-interview-table .update-exit-interview-btn {
+    padding: 8px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+.exit-interview-table .update-exit-interview-btn:hover {
+    background-color: #0056b3;
+}
+@media (max-width: 768px) {
+    .update-form {
+        grid-template-columns: 1fr !important; /* Stack fields vertically */
+    }
+    form#updateExitInterviewForm {
+        grid-template-columns: 1fr !important; /* Stack fields vertically */
+    }
+}

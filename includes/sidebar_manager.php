@@ -23,10 +23,12 @@
                 <li><a href="#" onclick="showProjects()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">View Project Status</a></li>
             </ul>
         </li>
-        <li><a href="#" onclick="toggleDropdown(event, 'feedback-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-comment" style="margin-right: 10px;"></i> Feedback and Review</a>
+        <li><a href="#" onclick="toggleDropdown(event, 'feedback-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-comment" style="margin-right: 10px;"></i> Feedback and Exit interview</a>
             <ul id="feedback-dropdown" class="dropdown" style="display: none; padding-left: 20px;">
                 <li><a href="#" onclick="showFeedbackForm()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Give feedback to employees</a></li>
                 <li><a href="#" onclick="showFeedbackHistory()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">View employee feedback history</a></li>
+                <li><a href="#" onclick="addexitinterview()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Request exit interview to the employee</a></li>
+                <li><a href="#" onclick="updateExitInterview()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">update exit interview</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'reports-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-chart-bar" style="margin-right: 10px;"></i> Reports & Analytics</a>

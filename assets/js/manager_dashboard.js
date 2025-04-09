@@ -22,7 +22,13 @@ function refreshData(callback) {
     })
     .catch((error) => showError('Network error: ' + error.message));
 }
+document.addEventListener('DOMContentLoaded', function() {
+    refreshData();
+});
 
+function showError(message) {
+    alert(message); // Replace with your preferred error display method
+}
 function showWelcomeMessage(event) {
   if (event) event.preventDefault();
   const mainContent = document.getElementById('content-area');
@@ -135,107 +141,126 @@ function showProfileForm() {
 }
 
 function showFeedbackForm() {
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'block';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-    if (employees.length === 0) {
-      profileUpdateForm.innerHTML = `
-              <div class="card">
-                  <h2>Give Feedback to Employee</h2>
-                  <p>No employees assigned to you.</p>
-                  <div class="form-group button-group">
-                      <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-                  </div>
-              </div>
-          `;
-      return;
-    }
-    profileUpdateForm.innerHTML = `
-          <div class="card">
-              <h2>Give Feedback to Employee</h2>
-              <form id="feedbackForm" method="POST">
-                  <div class="form-group">
-                      <label for="employee_id">Employee:</label>
-                      <select id="employee_id" name="employee_id" required>
-                          <option value="">Select an employee</option>
-                          ${employees
-                            .map(
-                              (emp) =>
-                                `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name} (${emp.emp_job_title})</option>`
-                            )
-                            .join('')}
-                      </select>
-                  </div>
-                  <div class="form-group">
-                      <label for="rating">Rating (1-5):</label>
-                      <input type="number" id="rating" name="rating" min="1" max="5" required>
-                  </div>
-                  <div class="form-group">
-                      <label for="feedback_type">Feedback Type:</label>
-                      <select id="feedback_type" name="feedback_type" required>
-                          <option value="Performance">Performance</option>
-                          <option value="Behavior">Behavior</option>
-                          <option value="Project">Project</option>
-                          <option value="Other">Other</option>
-                      </select>
-                  </div>
-                  <div class="form-group">
-                      <label for="feedback_text">Feedback Details:</label>
-                      <textarea id="feedback_text" name="feedback_text" rows="4" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px;"></textarea>
-                  </div>
-                  <div class="form-group button-group">
-                      <button type="submit">Submit Feedback</button>
-                      <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-                  </div>
-              </form>
-          </div>
-      `;
-    const form = document.getElementById('feedbackForm');
-    if (form) {
-      form.addEventListener('submit', function (event) {
-        event.preventDefault();
-        if (!validateFeedbackForm(this)) return;
+    const mainContent = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    const innerMainContent = document.getElementById('main-content');
+    const reportsAnalytics = document.getElementById('reports-analytics');
+    const projectsSection = document.getElementById('projects-section');
+    const assignEmployeesSection = document.getElementById('assign-employees-section');
+    const subtasksSection = document.getElementById('subtasks-section');
 
-        fetch('../pages/features/manage_feedback.php', {
-          method: 'POST',
-          body: new FormData(this),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              refreshData(showFeedbackHistory);
-            } else {
-              showError(data.error || 'Failed to submit feedback');
-            }
-          })
-          .catch((error) => showError('Network error: ' + error.message));
-      });
+    if (
+        mainContent &&
+        profileUpdateForm &&
+        innerMainContent &&
+        reportsAnalytics &&
+        projectsSection &&
+        assignEmployeesSection &&
+        subtasksSection
+    ) {
+        mainContent.style.display = 'block';
+        innerMainContent.style.display = 'none';
+        profileUpdateForm.style.display = 'block';
+        reportsAnalytics.style.display = 'none';
+        projectsSection.style.display = 'none';
+        assignEmployeesSection.style.display = 'none';
+        subtasksSection.style.display = 'none';
+
+        if (employees.length === 0) {
+            profileUpdateForm.innerHTML = `
+                <div class="card">
+                    <h2>Give Feedback to Employee</h2>
+                    <p>No employees assigned to you.</p>
+                    <div class="form-group button-group">
+                        <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        // Filter employees assigned to the current manager (assuming manager_id check is handled server-side)
+        profileUpdateForm.innerHTML = `
+            <div class="card">
+                <h2>Give Feedback to Employee</h2>
+                <form id="feedbackForm" method="POST">
+                    <div class="form-group">
+                        <label for="employee_id">Employee:</label>
+                        <select id="employee_id" name="employee_id" required>
+                            <option value="">Select an employee</option>
+                            ${employees
+                                .filter(emp => emp.manager_id == sessionStorage.getItem('employee_id')) // Assuming manager's employee_id is stored
+                                .map(emp => 
+                                    `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name} (${emp.emp_job_title})</option>`
+                                )
+                                .join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="rating">Rating (1-5):</label>
+                        <input type="number" id="rating" name="rating" min="1" max="5" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="feedback_type">Feedback Type:</label>
+                        <select id="feedback_type" name="feedback_type" required>
+                            <option value="Performance">Performance</option>
+                            <option value="Behavior">Behavior</option>
+                            <option value="Project">Project</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="feedback_text">Feedback Details:</label>
+                        <textarea id="feedback_text" name="feedback_text" rows="4" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px;"></textarea>
+                    </div>
+                    <div class="form-group button-group">
+                        <button type="submit">Submit Feedback</button>
+                        <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        const form = document.getElementById('feedbackForm');
+        if (form) {
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                if (!validateFeedbackForm(this)) return;
+
+                fetch('../pages/features/manage_feedback.php', {
+                    method: 'POST',
+                    body: new FormData(this),
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update feedback data without refreshing
+                        fetch('../pages/features/fetch_feedback.php')
+                            .then(response => response.json())
+                            .then(updatedFeedback => {
+                                feedback.length = 0;
+                                updatedFeedback.forEach(fb => feedback.push(fb));
+                                
+                                // Show confirmation with View/No options
+                                if (confirm('Feedback submitted successfully! Would you like to view the feedback history?')) {
+                                    showFeedbackHistory(); // Navigate to feedback history
+                                } else {
+                                    // Clear form and stay on page
+                                    form.reset();
+                                    // Optionally, keep the form populated with the same employee
+                                    // form.querySelector('#employee_id').value = ''; // Uncomment to reset employee selection
+                                }
+                            })
+                            .catch(error => showError('Error updating feedback data: ' + error.message));
+                    } else {
+                        showError(data.error || 'Failed to submit feedback');
+                    }
+                })
+                .catch(error => showError('Network error: ' + error.message));
+            });
+        }
     }
-  }
 }
-
 function validateFeedbackForm(form) {
   const rating = form.querySelector('#rating').value;
   if (rating < 1 || rating > 5) {
@@ -246,114 +271,111 @@ function validateFeedbackForm(form) {
 }
 
 function renderFeedbackTable(selectedEmployeeId) {
-  const selectedId = selectedEmployeeId ? String(selectedEmployeeId) : '';
-  let filteredFeedback = feedback;
-  if (selectedId) {
-    filteredFeedback = feedback.filter(
-      (f) => String(f.employee_id) === selectedId
-    );
-  }
-
-  let tableHTML = `
-      <table class="report-table">
-          <thead>
-              <tr>
-                  <th>Employee</th>
-                  <th>Rating</th>
-                  <th>Type</th>
-                  <th>Feedback</th>
-                  <th>Date Submitted</th>
-              </tr>
-          </thead>
-          <tbody>
-  `;
-
-  if (filteredFeedback.length === 0) {
-    tableHTML += `
-          <tr>
-              <td colspan="5">No feedback available.</td>
-          </tr>
-      `;
-  } else {
-    filteredFeedback.forEach((f) => {
-      tableHTML += `
-              <tr>
-                  <td>${f.first_name} ${f.last_name}</td>
-                  <td>${f.rating || 'N/A'}</td>
-                  <td>${f.feedback_type || 'N/A'}</td>
-                  <td>${f.feedback_text || 'N/A'}</td>
-                  <td>${f.date_submitted || 'N/A'}</td>
-              </tr>
-          `;
-    });
-  }
-
-  tableHTML += `</tbody></table>`;
-  return tableHTML;
-}
-
-function showFeedbackHistory() {
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'block';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-
-    let feedbackTableHTML = `
-          <div class="card">
-              <h2>Feedback History</h2>
-              <div class="form-group">
-                  <label for="employee-filter">Filter by Employee:</label>
-                  <select id="employee-filter">
-                      <option value="">All Employees</option>
-                      ${employees
-                        .map(
-                          (emp) =>
-                            `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`
-                        )
-                        .join('')}
-                  </select>
-              </div>
-              <div id="feedback-table-container">
-                  ${renderFeedbackTable('')}
-              </div>
-              <div class="form-group button-group">
-                  <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-              </div>
-          </div>
-      `;
-
-    profileUpdateForm.innerHTML = feedbackTableHTML;
-
-    const employeeFilter = document.getElementById('employee-filter');
-    const tableContainer = document.getElementById('feedback-table-container');
-    if (employeeFilter && tableContainer) {
-      employeeFilter.addEventListener('change', function () {
-        tableContainer.innerHTML = renderFeedbackTable(this.value);
-      });
+    const selectedId = selectedEmployeeId ? String(selectedEmployeeId) : '';
+    let filteredFeedback = feedback;
+    if (selectedId) {
+        filteredFeedback = feedback.filter(f => String(f.employee_id) === selectedId);
     }
-  }
+
+    let tableHTML = `
+        <table class="report-table">
+            <thead>
+                <tr>
+                    <th>Employee</th>
+                    <th>Rating</th>
+                    <th>Type</th>
+                    <th>Feedback</th>
+                    <th>Date Submitted</th>
+                </tr>
+            </thead>
+            <tbody>
+    `;
+
+    if (filteredFeedback.length === 0) {
+        tableHTML += `
+            <tr>
+                <td colspan="5">No feedback available.</td>
+            </tr>
+        `;
+    } else {
+        filteredFeedback.forEach(f => {
+            tableHTML += `
+                <tr>
+                    <td>${f.first_name} ${f.last_name}</td>
+                    <td>${f.rating || 'N/A'}</td>
+                    <td>${f.feedback_type || 'N/A'}</td>
+                    <td>${f.feedback_text || 'N/A'}</td>
+                    <td>${f.date_submitted || 'N/A'}</td>
+                </tr>
+            `;
+        });
+    }
+
+    tableHTML += `</tbody></table>`;
+    return tableHTML;
 }
+function showFeedbackHistory() {
+    const mainContent = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    const innerMainContent = document.getElementById('main-content');
+    const reportsAnalytics = document.getElementById('reports-analytics');
+    const projectsSection = document.getElementById('projects-section');
+    const assignEmployeesSection = document.getElementById('assign-employees-section');
+    const subtasksSection = document.getElementById('subtasks-section');
+
+    if (
+        mainContent &&
+        profileUpdateForm &&
+        innerMainContent &&
+        reportsAnalytics &&
+        projectsSection &&
+        assignEmployeesSection &&
+        subtasksSection
+    ) {
+        mainContent.style.display = 'block';
+        innerMainContent.style.display = 'none';
+        profileUpdateForm.style.display = 'block';
+        reportsAnalytics.style.display = 'none';
+        projectsSection.style.display = 'none';
+        assignEmployeesSection.style.display = 'none';
+        subtasksSection.style.display = 'none';
+
+        let feedbackTableHTML = `
+            <div class="card">
+                <h2>Feedback History</h2>
+                <div class="form-group">
+                    <label for="employee-filter">Filter by Employee:</label>
+                    <select id="employee-filter">
+                        <option value="">All Employees</option>
+                        ${employees
+                            .filter(emp => emp.manager_id == sessionStorage.getItem('employee_id'))
+                            .map(emp => 
+                                `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`
+                            )
+                            .join('')}
+                    </select>
+                </div>
+                <div id="feedback-table-container">
+                    ${renderFeedbackTable('')}
+                </div>
+                <div class="form-group button-group">
+                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                </div>
+            </div>
+        `;
+
+        profileUpdateForm.innerHTML = feedbackTableHTML;
+
+        const employeeFilter = document.getElementById('employee-filter');
+        const tableContainer = document.getElementById('feedback-table-container');
+        if (employeeFilter && tableContainer) {
+            employeeFilter.addEventListener('change', function() {
+                tableContainer.innerHTML = renderFeedbackTable(this.value);
+            });
+        }
+    }
+}
+
 
 function showReportsAnalytics() {
   const mainContent = document.getElementById('content-area');
@@ -822,4 +844,389 @@ function deleteTask() {
         showError('Network error: ' + error.message, 'subtasks-section')
       );
   }
+}
+
+
+function addexitinterview() {
+    const mainContent = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    const innerMainContent = document.getElementById('main-content');
+    const reportsAnalytics = document.getElementById('reports-analytics');
+    const projectsSection = document.getElementById('projects-section');
+    const assignEmployeesSection = document.getElementById('assign-employees-section');
+    const subtasksSection = document.getElementById('subtasks-section');
+
+    if (
+        mainContent &&
+        profileUpdateForm &&
+        innerMainContent &&
+        reportsAnalytics &&
+        projectsSection &&
+        assignEmployeesSection &&
+        subtasksSection
+    ) {
+        mainContent.style.display = 'block';
+        innerMainContent.style.display = 'none';
+        profileUpdateForm.style.display = 'block';
+        reportsAnalytics.style.display = 'none';
+        projectsSection.style.display = 'none';
+        assignEmployeesSection.style.display = 'none';
+        subtasksSection.style.display = 'none';
+
+        const managerId = sessionStorage.getItem('employee_id');
+        const assignedEmployees = employees.filter(emp => emp.manager_id == managerId);
+
+        if (assignedEmployees.length === 0) {
+            profileUpdateForm.innerHTML = `
+                <div class="card">
+                    <h2>Request Exit Interview</h2>
+                    <p>No employees assigned to you.</p>
+                    <div class="form-group button-group">
+                        <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+
+        profileUpdateForm.innerHTML = `
+            <div class="card">
+                <h2>Request Exit Interview</h2>
+                <form id="exitInterviewForm" method="POST">
+                    <div class="form-group">
+                        <label for="employee_id">Employee:</label>
+                        <select id="employee_id" name="employee_id" required>
+                            <option value="">Select an employee</option>
+                            ${assignedEmployees
+                                .map(emp => 
+                                    `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name} (${emp.emp_job_title})</option>`
+                                )
+                                .join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="last_working_date">Last Working Date:</label>
+                        <input type="date" id="last_working_date" name="last_working_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="manager_rating">Manager Rating (calculated):</label>
+                        <input type="number" id="manager_rating" name="manager_rating" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="eligible_for_rehire">Eligible for Rehire:</label>
+                        <select id="eligible_for_rehire" name="eligible_for_rehire" >
+                            <option value="1" >Yes</option>
+                            <option value="0" >No</option>
+                        </select>
+                    </div>
+                    <div class="form-group button-group">
+                        <button type="submit">Submit Request</button>
+                        <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        const form = document.getElementById('exitInterviewForm');
+        const employeeSelect = document.getElementById('employee_id');
+        const managerRatingInput = document.getElementById('manager_rating');
+        const eligible = document.getElementById('eligible_for_rehire');
+
+
+        if (form && employeeSelect && managerRatingInput) {
+            employeeSelect.addEventListener('change', function() {
+                const selectedEmployeeId = this.value;
+                const ratingData = reportAvgRatings.find(r => r.employee_id == selectedEmployeeId);
+                managerRatingInput.value = ratingData && ratingData.avg_rating ? parseFloat(ratingData.avg_rating).toFixed(1) : 'N/A';
+            });
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const lastWorkingDate = form.querySelector('#last_working_date').value;
+                const today = new Date().toISOString().split('T')[0];
+                if (lastWorkingDate < today) {
+                    alert('Last working date cannot be in the past.');
+                    return;
+                }
+               
+
+                const managerRating = managerRatingInput.value === 'N/A' ? null : managerRatingInput.value;
+                const formData = new FormData(this);
+                if (managerRating !== null) {
+                    formData.set('manager_rating', managerRating);
+                }
+ const eligibleSelect = form.querySelector('#eligible_for_rehire');
+    const eligibleValue = eligibleSelect.value;
+
+    console.log("Eligible for rehire value:", eligibleValue);
+
+    if (eligibleValue !== '0' && eligibleValue !== '1') {
+        alert('Please select Yes or No for Eligible for Rehire.');
+        return;
+    }
+
+    formData.set('eligible_for_rehire', eligibleValue);
+                fetch('../pages/features/request_exit_interview.php', {
+                    method: 'POST',
+                    body: formData,
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Requested exit interview successfully!');
+                        form.reset(); // Clear the form
+                        managerRatingInput.value = ''; // Reset the manager rating field
+                        // Stay on the form (no redirect)
+                    } else {
+                        alert(data.error || 'Failed to submit exit interview request');
+                    }
+                })
+                .catch(error => alert('Network error: ' + error.message));
+            });
+        }
+    }
+}
+
+function updateExitInterview(selectedInterviewId = null) {
+    const mainContent = document.getElementById('content-area');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    const innerMainContent = document.getElementById('main-content');
+    const reportsAnalytics = document.getElementById('reports-analytics');
+    const projectsSection = document.getElementById('projects-section');
+    const assignEmployeesSection = document.getElementById('assign-employees-section');
+    const subtasksSection = document.getElementById('subtasks-section');
+
+    if (
+        mainContent &&
+        profileUpdateForm &&
+        innerMainContent &&
+        reportsAnalytics &&
+        projectsSection &&
+        assignEmployeesSection &&
+        subtasksSection
+    ) {
+        mainContent.style.display = 'block';
+        innerMainContent.style.display = 'none';
+        profileUpdateForm.style.display = 'block';
+        reportsAnalytics.style.display = 'none';
+        projectsSection.style.display = 'none';
+        assignEmployeesSection.style.display = 'none';
+        subtasksSection.style.display = 'none';
+
+        // Override #profile-update-form styles specifically for this section
+        profileUpdateForm.style.width = '100%';
+        profileUpdateForm.style.margin = '0';
+        profileUpdateForm.style.padding = '20px';
+        profileUpdateForm.style.boxShadow = 'none';
+        profileUpdateForm.style.borderRadius = '0';
+
+        let exitInterviews = [];
+
+        // Fetch exit interviews if not already populated
+        const fetchExitInterviews = () => {
+            return fetch('../pages/features/fetch_exit_interviews.php')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.text();
+                })
+                .then(text => {
+                    console.log('Raw response from fetch_exit_interviews.php:', text);
+                    try {
+                        const data = JSON.parse(text);
+                        console.log('Parsed data:', data);
+                        return data;
+                    } catch (error) {
+                        console.error('Invalid JSON response:', text);
+                        throw new Error('Failed to parse JSON: ' + error.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching exit interviews:', error);
+                    throw error;
+                });
+        };
+
+        (exitInterviews.length > 0 ? Promise.resolve(exitInterviews) : fetchExitInterviews())
+            .then(data => {
+                // Check if the response indicates an error
+                if (!Array.isArray(data)) {
+                    if (data.error) {
+                        alert('Error: ' + data.error);
+                        profileUpdateForm.innerHTML = `
+                            <div style="padding: 20px;">
+                                <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Exit Interview Requests</h2>
+                                <p style="color: #555; font-size: 16px; margin-bottom: 20px;">${data.error}</p>
+                                <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                                </div>
+                            </div>
+                        `;
+                        return;
+                    } else {
+                        throw new Error('Response is not an array: ' + JSON.stringify(data));
+                    }
+                }
+
+                // Update the local exitInterviews array
+                exitInterviews = data;
+
+                // If a specific interview ID is provided, show the update form for that interview
+                if (selectedInterviewId) {
+                    const interview = data.find(ei => ei.interview_id == selectedInterviewId);
+                    if (!interview) {
+                        alert('Exit interview request not found.');
+                        return;
+                    }
+
+                 profileUpdateForm.innerHTML = `
+    <div class="card">
+        <h2>Update Exit Interview Request</h2>
+        <form id="updateExitInterviewForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+            <input type="hidden" name="interview_id" value="${interview.interview_id}">
+            <div class="form-group">
+                <label for="employee_id">Employee:</label>
+                <input type="text" value="${interview.first_name} ${interview.last_name}" readonly>
+                <input type="hidden" name="employee_id" value="${interview.employee_id}">
+            </div>
+            <div class="form-group">
+                <label for="last_working_date">Last Working Date:</label>
+                <input type="date" id="last_working_date" name="last_working_date" value="${interview.last_working_date}" required>
+            </div>
+            <div class="form-group">
+                <label for="manager_rating">Manager Rating:</label>
+                <input type="number" id="manager_rating" name="manager_rating" value="${interview.manager_rating || ''}" step="0.1" min="1" max="5">
+            </div>
+            <div class="form-group">
+                <label for="eligible_for_rehire">Eligible for Rehire:</label>
+                <select id="eligible_for_rehire" name="eligible_for_rehire" required>
+                    <option value="1" ${interview.eligible_for_rehire === '1' ? 'selected' : ''}>Yes</option>
+                    <option value="0" ${interview.eligible_for_rehire === '0' ? 'selected' : ''}>No</option>
+                </select>
+            </div>
+            <div class="form-group button-group" style="grid-column: span 2;">
+                <button type="submit">Update Request</button>
+                <button type="button" onclick="updateExitInterview()">Back to List</button>
+            </div>
+        </form>
+    </div>
+`;
+                    const form = document.getElementById('updateExitInterviewForm');
+                    if (form) {
+                        form.addEventListener('submit', function(event) {
+                            event.preventDefault();
+
+                            const lastWorkingDate = form.querySelector('#last_working_date').value;
+                            const today = new Date().toISOString().split('T')[0];
+                            if (lastWorkingDate < today) {
+                                alert('Last working date cannot be in the past.');
+                                return;
+                            }
+
+                            const managerRating = form.querySelector('#manager_rating').value;
+                            if (managerRating && (managerRating < 1 || managerRating > 5)) {
+                                alert('Manager rating must be between 1 and 5.');
+                                return;
+                            }
+
+                            const formData = new FormData(this);
+                            const eligibleForRehire = formData.get('eligible_for_rehire');
+                            console.log('Form data before submission:', {
+                                interview_id: formData.get('interview_id'),
+                                employee_id: formData.get('employee_id'),
+                                last_working_date: lastWorkingDate,
+                                manager_rating: managerRating,
+                                eligible_for_rehire: eligibleForRehire
+                            });
+
+                            fetch('../pages/features/update_exit_interview.php', {
+                                method: 'POST',
+                                body: formData,
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    alert('Exit interview request updated successfully!');
+                                    fetch('../pages/features/fetch_exit_interviews.php')
+                                        .then(response => response.json())
+                                        .then(updatedData => {
+                                            exitInterviews = updatedData;
+                                            updateExitInterview(); // Go back to the list
+                                        });
+                                } else {
+                                    alert(data.error || 'Failed to update exit interview request');
+                                }
+                            })
+                            .catch(error => alert('Network error: ' + error.message));
+                        });
+                    }
+                } else {
+                    // Otherwise, show the list of all exit interview requests
+                    let tableHTML = `
+                        <div style="width: 100%;">
+                            <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Exit Interview Requests</h2>
+                            <div style="overflow-x: auto;">
+                                <table class="exit-interview-table" style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 16px;">
+                                    <thead style="background-color: #f4f4f4; color: #333;">
+                                        <tr>
+                                            <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Employee</th>
+                                            <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Interview Date</th>
+                                            <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Last Working Date</th>
+                                            <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Manager Rating</th>
+                                            <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Eligible for Rehire</th>
+                                            <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                    `;
+
+                    if (data.length === 0) {
+                        tableHTML += `
+                            <tr>
+                                <td colspan="6" style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">No exit interview requests found.</td>
+                            </tr>
+                        `;
+                    } else {
+                        data.forEach(ei => {
+                            tableHTML += `
+                                <tr style="transition: background-color 0.3s;"
+                                    onmouseover="this.style.backgroundColor='#f9f9f9'"
+                                    onmouseout="this.style.backgroundColor='transparent'">
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.first_name} ${ei.last_name}</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.interview_date || 'N/A'}</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.last_working_date || 'N/A'}</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.manager_rating || 'N/A'}</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.eligible_for_rehire == 1 ? 'Yes' : 'No'}</td>
+                                    <td style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd;">
+                                        <button class="update-exit-interview-btn" data-interview-id="${ei.interview_id}">Update</button>
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    tableHTML += `
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                                <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                            </div>
+                        </div>
+                    `;
+
+                    profileUpdateForm.innerHTML = tableHTML;
+
+                    const updateButtons = profileUpdateForm.querySelectorAll('.update-exit-interview-btn');
+                    updateButtons.forEach(button => {
+                        button.addEventListener('click', function() {
+                            const interviewId = this.getAttribute('data-interview-id');
+                            updateExitInterview(interviewId);
+                        });
+                    });
+                }
+            })
+            .catch(error => alert('Error fetching exit interviews: ' + error.message));
+    }
 }
