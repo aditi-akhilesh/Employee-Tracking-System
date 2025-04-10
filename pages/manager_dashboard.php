@@ -144,7 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     } elseif ($_POST['action'] === 'update_assignment') {
         $assignment_id = $_POST['assignment_id'];
         $role_in_project = $_POST['role_in_project'];
-    
+
         // Validate inputs
         if (empty($assignment_id) || !is_numeric($assignment_id)) {
             $response['error'] = 'Invalid assignment ID';
@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             echo json_encode($response);
             exit();
         }
-    
+
         try {
             $stmt = $con->prepare("
                 UPDATE Assignment 
@@ -167,7 +167,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 'role_in_project' => $role_in_project,
                 'assignment_id' => $assignment_id
             ]);
-    
+
             if ($success && $stmt->rowCount() > 0) {
                 $response['success'] = true;
                 $data = fetchData($con, $manager_id, ['projects', 'project_assignments']);
@@ -178,29 +178,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } catch (PDOException $e) {
             $response['error'] = 'Database error: ' . $e->getMessage();
         }
-    
+
         echo json_encode($response);
         exit();
     } elseif ($_POST['action'] === 'remove_assignment') {
         $assignment_id = $_POST['assignment_id'];
-    
+
         // Validate assignment_id
         if (empty($assignment_id) || !is_numeric($assignment_id)) {
             $response['error'] = 'Invalid assignment ID';
             echo json_encode($response);
             exit();
         }
-    
+
         try {
             $stmt = $con->prepare("
                 DELETE FROM Assignment 
                 WHERE assignment_id = :assignment_id
             ");
             $success = $stmt->execute(['assignment_id' => $assignment_id]);
-    
+
             if ($success && $stmt->rowCount() > 0) {
                 $response['success'] = true;
-                // Fetch updated projects and project assignments
                 $data = fetchData($con, $manager_id, ['projects', 'project_assignments']);
                 $response = array_merge($response, $data);
             } else {
@@ -209,10 +208,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } catch (PDOException $e) {
             $response['error'] = 'Database error: ' . $e->getMessage();
         }
-    
+
         echo json_encode($response);
         exit();
     }
+
     echo json_encode($response);
     exit();
 }
@@ -402,29 +402,6 @@ $project_assignments = $data['project_assignments'];
             <div class="form-group button-group">
                 <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
             </div>
-        </div>
-        <!-- Edit Assignment Section -->
-        <div id="edit-assignment-section" style="display: none;" class="card">
-            <h2>Edit Assignment</h2>
-            <form id="edit-assignment-form">
-                <div class="form-group">
-                    <label for="edit_employee_name">Employee:</label>
-                    <input type="text" id="edit_employee_name" name="employee_name" readonly>
-                    <input type="hidden" id="edit_assignment_id" name="assignment_id">
-                </div>
-                <div class="form-group">
-                    <label for="edit_project_name">Project:</label>
-                    <input type="text" id="edit_project_name" name="project_name" readonly>
-                </div>
-                <div class="form-group">
-                    <label for="edit_role_in_project">Role in Project:</label>
-                    <input type="text" id="edit_role_in_project" name="role_in_project" required>
-                </div>
-                <div class="form-group button-group">
-                    <button type="submit" style="margin: 10px;">Update</button>
-                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
-                </div>
-            </form>
         </div>
         <!-- Subtasks Section -->
         <div id="subtasks-section" style="display: none;" class="card">
