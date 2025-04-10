@@ -181,7 +181,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     } elseif ($_POST['action'] === 'update_assignment') {
         $assignment_id = $_POST['assignment_id'];
         $role_in_project = $_POST['role_in_project'];
+<<<<<<< HEAD
     
+=======
+
+        // Validate inputs
+>>>>>>> 47e277482714c5c810e7bd65e366d0df6a12c67d
         if (empty($assignment_id) || !is_numeric($assignment_id)) {
             $response['error'] = 'Invalid assignment ID';
             echo json_encode($response);
@@ -192,7 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             echo json_encode($response);
             exit();
         }
-    
+
         try {
             $stmt = $con->prepare("
                 UPDATE Assignment 
@@ -203,7 +208,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 'role_in_project' => $role_in_project,
                 'assignment_id' => $assignment_id
             ]);
-    
+
             if ($success && $stmt->rowCount() > 0) {
                 $response['success'] = true;
                 $data = fetchData($con, $manager_id, ['projects', 'project_assignments']);
@@ -214,22 +219,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } catch (PDOException $e) {
             $response['error'] = 'Database error: ' . $e->getMessage();
         }
+<<<<<<< HEAD
     } elseif ($_POST['action'] === 'remove_assignment') {
         $assignment_id = $_POST['assignment_id'];
     
+=======
+
+        echo json_encode($response);
+        exit();
+    } elseif ($_POST['action'] === 'remove_assignment') {
+        $assignment_id = $_POST['assignment_id'];
+
+        // Validate assignment_id
+>>>>>>> 47e277482714c5c810e7bd65e366d0df6a12c67d
         if (empty($assignment_id) || !is_numeric($assignment_id)) {
             $response['error'] = 'Invalid assignment ID';
             echo json_encode($response);
             exit();
         }
-    
+
         try {
             $stmt = $con->prepare("
                 DELETE FROM Assignment 
                 WHERE assignment_id = :assignment_id
             ");
             $success = $stmt->execute(['assignment_id' => $assignment_id]);
-    
+
             if ($success && $stmt->rowCount() > 0) {
                 $response['success'] = true;
                 $data = fetchData($con, $manager_id, ['projects', 'project_assignments']);
@@ -240,7 +255,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } catch (PDOException $e) {
             $response['error'] = 'Database error: ' . $e->getMessage();
         }
+<<<<<<< HEAD
+=======
+
+        echo json_encode($response);
+        exit();
+>>>>>>> 47e277482714c5c810e7bd65e366d0df6a12c67d
     }
+
     echo json_encode($response);
     exit();
 }
@@ -555,6 +577,82 @@ $work_summary = $data['work_summary'] ?? [];
                     <tbody id="tasks-table"></tbody>
                 </table>
             </div>
+<<<<<<< HEAD
+=======
+            <div class="form-group button-group">
+                <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+            </div>
+        </div>
+        <!-- Subtasks Section -->
+        <div id="subtasks-section" style="display: none;" class="card">
+            <h2>Create/Update Subtasks</h2>
+            <form id="subtask-form" method="POST">
+                <div class="form-group">
+                    <label for="project_id_subtask">Project:</label>
+                    <select id="project_id_subtask" name="project_id" required onchange="loadTasks()">
+                        <option value="">Select a project</option>
+                        <?php foreach ($projects as $project): ?>
+                            <option value="<?php echo htmlspecialchars($project['project_id']); ?>">
+                                <?php echo htmlspecialchars($project['project_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="task_id">Task (Optional):</label>
+                    <select id="task_id" name="task_id">
+                        <option value="">Create new task</option>
+                        <!-- Populated dynamically by JS -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="task_description">Task Description:</label>
+                    <input type="text" id="task_description" name="task_description" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee_id_subtask">Assignee:</label>
+                    <select id="employee_id_subtask" name="employee_id">
+                        <option value="">Unassigned</option>
+                        <?php foreach ($employees as $emp): ?>
+                            <option value="<?php echo htmlspecialchars($emp['employee_id']); ?>">
+                                <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="due_date">Due Date:</label>
+                    <input type="date" id="due_date" name="due_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="task_status">Status:</label>
+                    <select id="task_status" name="status" required>
+                        <option value="To Do">To Do</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Done">Done</option>
+                    </select>
+                </div>
+                <div class="form-group button-group">
+                    <button type="submit" id="save-task-btn" style="margin: 10px;">Save Task</button>
+                    <button type="button" id="delete-task-btn" style="display: none;" onclick="deleteTask()" style="margin: 10px;">Delete Task</button>
+                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+                </div>
+            </form>
+            <h3>Existing Subtasks</h3>
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Description</th>
+                        <th>Project</th>
+                        <th>Assignee</th>
+                        <th>Due Date</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="tasks-table"></tbody>
+            </table>
+        </div>
+>>>>>>> 47e277482714c5c810e7bd65e366d0df6a12c67d
         <?php
         if (isset($_SESSION['success'])) {
             echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';

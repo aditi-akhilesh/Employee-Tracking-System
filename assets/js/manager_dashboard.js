@@ -33,8 +33,21 @@ document.addEventListener('DOMContentLoaded', function () {
 function showError(message, containerId = 'profile-update-form') {
   const container = document.getElementById(containerId);
   if (container) {
-    container.innerHTML =
-      `<div class="alert alert-error">${message}</div>` + container.innerHTML;
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'alert alert-error';
+    errorDiv.innerHTML = message;
+    container.insertBefore(errorDiv, container.firstChild);
+
+    // Remove after 10 seconds
+    setTimeout(() => {
+      if (errorDiv.parentElement) errorDiv.remove();
+    }, 10000);
+
+    // Remove on click anywhere on the page
+    document.addEventListener('click', function handler(event) {
+      if (errorDiv.parentElement) errorDiv.remove();
+      document.removeEventListener('click', handler); // Remove listener after use
+    });
   }
 }
 
@@ -779,11 +792,15 @@ function showAssignEmployees() {
         })
         .then((data) => {
           if (data.success) {
-            form.reset(); // Reset the form immediately
-            // Pass the success message to the target page
-            fetchUpdatedAssignmentsAfterAssignment(
-              'Employee assigned to project successfully!'
+            showSuccess(
+              'Employee assigned to project successfully!',
+              'assign-employees-section'
             );
+            form.reset();
+            // Wait 5 seconds before redirecting
+            setTimeout(() => {
+              fetchUpdatedAssignmentsAfterAssignment();
+            }, 3000);
           } else {
             showError(
               data.error || 'Failed to assign employee',
@@ -801,11 +818,11 @@ function showAssignEmployees() {
   }
 }
 
-function fetchUpdatedAssignmentsAfterAssignment(successMessage) {
+function fetchUpdatedAssignmentsAfterAssignment() {
   fetch('manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data§ion=project_assignments',
+    body: 'action=refresh_data&section=project_assignments', // Fix: Replace § with &
   })
     .then((response) => {
       if (!response.ok) {
@@ -816,14 +833,11 @@ function fetchUpdatedAssignmentsAfterAssignment(successMessage) {
     .then((data) => {
       if (data.success) {
         window.projectAssignments = data.project_assignments || [];
-        showAssignedEmployeesSection(); // Redirect to the target page
+        console.log('Updated projectAssignments:', window.projectAssignments);
+        showAssignedEmployeesSection();
         const projectSelect = document.getElementById('project_id_view');
         const selectedProjectId = projectSelect ? projectSelect.value : '';
-        renderAssignmentsTable(selectedProjectId); // Render the updated table
-        if (successMessage) {
-          // Show the success message in the target section
-          showSuccess(successMessage, 'project-assignments-section');
-        }
+        renderAssignmentsTable(selectedProjectId);
       } else {
         showError(
           data.error || 'Failed to fetch updated assignments',
@@ -984,146 +998,53 @@ function loadAssignments() {
 
 // Function to show the Edit Assignment section and populate the form
 function editAssignment(assignmentId) {
-  const assignment = window.projectAssignments.find(
-    (a) => a.assignment_id == assignmentId
+  const row = document.querySelector(
+    `tr[data-assignment-id="${assignmentId}"]`
   );
-  if (!assignment) {
-    showError('Assignment not found', 'project-assignments-section');
-    return;
-  }
+  if (!row) return;
 
-  // Show the Edit Assignment section
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-  const editAssignmentSection = document.getElementById(
-    'edit-assignment-section'
-  );
+  const roleCell = row.querySelector('.role-cell');
+  const editButton = row.querySelector('.edit-btn');
 
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection &&
-    editAssignmentSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'none';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-    projectAssignmentsSection.style.display = 'none';
-    editAssignmentSection.style.display = 'block';
+  // Get the current role
+  const currentRole =
+    roleCell.textContent === 'N/A' ? '' : roleCell.textContent;
 
-    // Populate the form with assignment data
-    document.getElementById('edit_assignment_id').value =
-      assignment.assignment_id;
-    document.getElementById(
-      'edit_employee_name'
-    ).value = `${assignment.first_name} ${assignment.last_name}`;
-    document.getElementById('edit_project_name').value =
-      assignment.project_name;
-    document.getElementById('edit_role_in_project').value =
-      assignment.role_in_project || '';
-  }
+  // Replace the role cell with an input field
+  roleCell.innerHTML = `<input type="text" class="role-input" value="${currentRole}" />`;
 
-  // Add form submission handler
-  const form = document.getElementById('edit-assignment-form');
-  form.addEventListener(
-    'submit',
-    function (event) {
-      event.preventDefault();
-      const formData = new FormData(this);
-      formData.append('action', 'update_assignment');
-
-      fetch('manager_dashboard.php', {
-        method: 'POST',
-        body: formData,
-      })
-        .then((response) => {
-          if (!response.ok)
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          return response.json();
-        })
-        .then((data) => {
-          if (data.success) {
-            fetchUpdatedAssignments('Assignment updated successfully!');
-          } else {
-            showError(
-              data.error || 'Failed to update assignment',
-              'edit-assignment-section'
-            );
-          }
-        })
-        .catch((error) =>
-          showError(
-            'Network error: ' + error.message,
-            'edit-assignment-section'
-          )
-        );
-    },
-    { once: true }
-  ); // Ensure the listener is added only once
+  // Replace the Edit button with an Update button
+  editButton.textContent = 'Update';
+  editButton.onclick = () => updateAssignment(assignmentId);
 }
 
 function deleteAssignment(assignmentId) {
-  if (confirm('Are you sure you want to delete this assignment?')) {
-    const formData = new FormData();
-    formData.append('action', 'remove_assignment');
-    formData.append('assignment_id', assignmentId);
-
-    fetch('manager_dashboard.php', {
-      method: 'POST',
-      body: formData,
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.text();
-      })
-      .then((text) => {
-        try {
-          const data = JSON.parse(text);
-          if (data.success) {
-            showSuccess(
-              'Assignment deleted successfully!',
-              'project-assignments-section'
-            );
-            fetchUpdatedAssignments(); // Fetch and update table
-          } else {
-            showError(
-              data.error || 'Failed to delete assignment',
-              'project-assignments-section'
-            );
-          }
-        } catch (e) {
-          console.error('Raw response:', text);
-          throw new Error('Invalid JSON response: ' + e.message);
-        }
-      })
-      .catch((error) => {
-        showError(
-          'Network error: ' + error.message,
+  fetch('manager_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `action=remove_assignment&assignment_id=${assignmentId}`,
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        fetchUpdatedAssignmentsAfterAssignment(); // Fetch fresh data
+        showSuccess(
+          'Assignment deleted successfully!',
           'project-assignments-section'
         );
-      });
-  }
+      } else {
+        showError(
+          data.error || 'Failed to delete assignment',
+          'project-assignments-section'
+        );
+      }
+    })
+    .catch((error) =>
+      showError(
+        'Network error: ' + error.message,
+        'project-assignments-section'
+      )
+    );
 }
 
 function fetchUpdatedAssignments() {
@@ -1181,22 +1102,83 @@ function renderAssignmentsTable(selectedProjectId) {
   } else {
     filteredAssignments.forEach((assignment) => {
       const row = document.createElement('tr');
+      row.setAttribute('data-assignment-id', assignment.assignment_id);
       row.innerHTML = `
-        <td>${assignment.project_name}</td>
-        <td>${assignment.first_name} ${assignment.last_name}</td>
-        <td>${assignment.role_in_project || 'N/A'}</td>
-        <td>
-          <button onclick="editAssignment(${
-            assignment.assignment_id
-          })">Edit</button>
-          <button onclick="deleteAssignment(${
-            assignment.assignment_id
-          })">Delete</button>
-        </td>
-      `;
+              <td>${assignment.project_name}</td>
+              <td>${assignment.first_name} ${assignment.last_name}</td>
+              <td class="role-cell">${assignment.role_in_project || 'N/A'}</td>
+              <td>
+                  <button class="edit-btn" onclick="editAssignment(${
+                    assignment.assignment_id
+                  })">Edit</button>
+                  <button onclick="deleteAssignment(${
+                    assignment.assignment_id
+                  })">Delete</button>
+              </td>
+          `;
       assignmentsTable.appendChild(row);
     });
   }
+}
+
+function updateAssignment(assignmentId) {
+  const row = document.querySelector(
+    `tr[data-assignment-id="${assignmentId}"]`
+  );
+  if (!row) return;
+
+  const roleInput = row.querySelector('.role-input');
+  const newRole = roleInput.value.trim();
+  const roleCell = row.querySelector('.role-cell');
+  const editButton = row.querySelector('.edit-btn');
+
+  // Validate input
+  if (!newRole) {
+    showError('Role in project is required', 'project-assignments-section');
+    return;
+  }
+
+  // Send update request to the server
+  const formData = new FormData();
+  formData.append('action', 'update_assignment');
+  formData.append('assignment_id', assignmentId);
+  formData.append('role_in_project', newRole);
+
+  fetch('manager_dashboard.php', {
+    method: 'POST',
+    body: formData,
+  })
+    .then((response) => {
+      if (!response.ok)
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      return response.json();
+    })
+    .then((data) => {
+      if (data.success) {
+        // Update the table cell
+        roleCell.textContent = newRole || 'N/A';
+        // Restore the Edit button
+        editButton.textContent = 'Edit';
+        editButton.onclick = () => editAssignment(assignmentId);
+        // Refresh the table data
+        fetchUpdatedAssignmentsAfterAssignment();
+        showSuccess(
+          'Assignment updated successfully!',
+          'project-assignments-section'
+        );
+      } else {
+        showError(
+          data.error || 'Failed to update assignment',
+          'project-assignments-section'
+        );
+      }
+    })
+    .catch((error) => {
+      showError(
+        'Network error: ' + error.message,
+        'project-assignments-section'
+      );
+    });
 }
 
 function loadTasks() {
