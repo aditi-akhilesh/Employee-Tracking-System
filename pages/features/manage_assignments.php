@@ -21,6 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $response['error'] = 'Employee is already assigned to this project';
         echo json_encode($response);
         exit;
+    } else {
+        $response['success'] = "Employee Successfully Assigned to Project";
     }
 
     // Insert into Assignment

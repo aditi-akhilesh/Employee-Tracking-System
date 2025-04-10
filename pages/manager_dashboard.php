@@ -5,54 +5,68 @@ require_once '../auth/dbconnect.php';
 $page_title = "Manager Dashboard";
 
 $manager_id = $_SESSION['employee_id'];
-function fetchData($con, $manager_id) {
+
+function fetchData($con, $manager_id, $sections = ['all']) {
     $data = [];
 
+    // Helper function to check if a section should be fetched
+    $shouldFetch = function($section) use ($sections) {
+        return in_array('all', $sections) || in_array($section, $sections);
+    };
+
     // Employees assigned to this manager
-    $stmt = $con->prepare("
-        SELECT e.employee_id, e.user_id, e.emp_job_title, e.emp_status, u.first_name, u.last_name, u.email 
-        FROM Employees e 
-        JOIN Users u ON e.user_id = u.user_id 
-        WHERE e.manager_id = :manager_id AND e.emp_status != 'inactive' AND u.is_active = 1
-    ");
-    $stmt->execute(['manager_id' => $manager_id]);
-    $data['employees'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    error_log("Employees for manager_id $manager_id: " . print_r($data['employees'], true));
+    if ($shouldFetch('employees')) {
+        $stmt = $con->prepare("
+            SELECT e.employee_id, e.user_id, e.emp_job_title, e.emp_status, u.first_name, u.last_name, u.email 
+            FROM Employees e 
+            JOIN Users u ON e.user_id = u.user_id 
+            WHERE e.manager_id = :manager_id AND e.emp_status != 'inactive' AND u.is_active = 1
+        ");
+        $stmt->execute(['manager_id' => $manager_id]);
+        $data['employees'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        error_log("Employees for manager_id $manager_id: " . print_r($data['employees'], true) . "\n");
+    }
 
     // Feedback given by this manager
-    $stmt = $con->prepare("
-        SELECT f.feedback_id, f.employee_id, f.rating, f.feedback_type, f.feedback_text, f.date_submitted, 
-               u.first_name, u.last_name 
-        FROM Feedback f 
-        JOIN Employees e ON f.employee_id = e.employee_id 
-        JOIN Users u ON e.user_id = u.user_id 
-        WHERE f.reviewer_id = :manager_id
-    ");
-    $stmt->execute(['manager_id' => $manager_id]);
-    $data['feedback'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if ($shouldFetch('feedback')) {
+        $stmt = $con->prepare("
+            SELECT f.feedback_id, f.employee_id, f.rating, f.feedback_type, f.feedback_text, f.date_submitted, 
+                   u.first_name, u.last_name 
+            FROM Feedback f 
+            JOIN Employees e ON f.employee_id = e.employee_id 
+            JOIN Users u ON e.user_id = u.user_id 
+            WHERE f.reviewer_id = :manager_id
+        ");
+        $stmt->execute(['manager_id' => $manager_id]);
+        $data['feedback'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     // Report data: Average rating per employee
-    $stmt = $con->prepare("
-        SELECT e.employee_id, u.first_name, u.last_name, AVG(f.rating) as avg_rating, COUNT(f.feedback_id) as feedback_count
-        FROM Feedback f 
-        JOIN Employees e ON f.employee_id = e.employee_id 
-        JOIN Users u ON e.user_id = u.user_id 
-        WHERE f.reviewer_id = :manager_id
-        GROUP BY e.employee_id, u.first_name, u.last_name
-    ");
-    $stmt->execute(['manager_id' => $manager_id]);
-    $data['report_avg_ratings'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if ($shouldFetch('report_avg_ratings')) {
+        $stmt = $con->prepare("
+            SELECT e.employee_id, u.first_name, u.last_name, AVG(f.rating) as avg_rating, COUNT(f.feedback_id) as feedback_count
+            FROM Feedback f 
+            JOIN Employees e ON f.employee_id = e.employee_id 
+            JOIN Users u ON e.user_id = u.user_id 
+            WHERE f.reviewer_id = :manager_id
+            GROUP BY e.employee_id, u.first_name, u.last_name
+        ");
+        $stmt->execute(['manager_id' => $manager_id]);
+        $data['report_avg_ratings'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     // Report data: Feedback type distribution
-    $stmt = $con->prepare("
-        SELECT f.feedback_type, COUNT(f.feedback_id) as type_count
-        FROM Feedback f 
-        JOIN Employees e ON f.employee_id = e.employee_id 
-        WHERE f.reviewer_id = :manager_id
-        GROUP BY f.feedback_type
-    ");
-    $stmt->execute(['manager_id' => $manager_id]);
-    $data['report_feedback_types'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if ($shouldFetch('report_feedback_types')) {
+        $stmt = $con->prepare("
+            SELECT f.feedback_type, COUNT(f.feedback_id) as type_count
+            FROM Feedback f 
+            JOIN Employees e ON f.employee_id = e.employee_id 
+            WHERE f.reviewer_id = :manager_id
+            GROUP BY f.feedback_type
+        ");
+        $stmt->execute(['manager_id' => $manager_id]);
+        $data['report_feedback_types'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     // Get manager's department_id
     $stmt = $con->prepare("
@@ -65,28 +79,47 @@ function fetchData($con, $manager_id) {
     $department_id = $manager_dept['department_id'];
 
     // Projects under the manager's department
-    $stmt = $con->prepare("
-        SELECT p.project_id, p.project_name, p.start_date, p.expected_end_date, p.actual_end_date, 
-               p.client_name, p.client_contact_email, p.project_status, p.budget, p.actual_cost, p.department_id
-        FROM Projects p
-        WHERE p.department_id = :department_id AND p.project_status != 'Completed'
-    ");
-    $stmt->execute(['department_id' => $department_id]);
-    $data['projects'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if ($shouldFetch('projects')) {
+        $stmt = $con->prepare("
+            SELECT p.project_id, p.project_name, p.start_date, p.expected_end_date, p.actual_end_date, 
+                   p.client_name, p.client_contact_email, p.project_status, p.budget, p.actual_cost, p.department_id
+            FROM Projects p
+            WHERE p.department_id = :department_id AND p.project_status != 'Completed'
+        ");
+        $stmt->execute(['department_id' => $department_id]);
+        $data['projects'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     // Tasks and their assignments for projects in the manager's department
-    $stmt = $con->prepare("
-        SELECT t.task_id, t.task_description, t.status, t.project_id, p.project_name,
-               at.employee_id, at.due_date, u.first_name, u.last_name
-        FROM Task t
-        JOIN Projects p ON t.project_id = p.project_id
-        LEFT JOIN Assignment_Task at ON t.task_id = at.task_id
-        LEFT JOIN Employees e ON at.employee_id = e.employee_id
-        LEFT JOIN Users u ON e.user_id = u.user_id
-        WHERE p.department_id = :department_id
-    ");
-    $stmt->execute(['department_id' => $department_id]);
-    $data['tasks'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    if ($shouldFetch('tasks')) {
+        $stmt = $con->prepare("
+            SELECT t.task_id, t.task_description, t.status, t.project_id, p.project_name,
+                   at.employee_id, at.due_date, u.first_name, u.last_name
+            FROM Task t
+            JOIN Projects p ON t.project_id = p.project_id
+            LEFT JOIN Assignment_Task at ON t.task_id = at.task_id
+            LEFT JOIN Employees e ON at.employee_id = e.employee_id
+            LEFT JOIN Users u ON e.user_id = u.user_id
+            WHERE p.department_id = :department_id
+        ");
+        $stmt->execute(['department_id' => $department_id]);
+        $data['tasks'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Fetch employees assigned to projects in the manager's department
+    if ($shouldFetch('project_assignments')) {
+        $stmt = $con->prepare("
+            SELECT a.assignment_id, a.project_id, a.employee_id, a.role_in_project, 
+                p.project_name, u.first_name, u.last_name
+            FROM Assignment a
+            JOIN Projects p ON a.project_id = p.project_id
+            JOIN Employees e ON a.employee_id = e.employee_id
+            JOIN Users u ON e.user_id = u.user_id
+            WHERE p.department_id = :department_id AND p.project_status != 'Completed'
+        ");
+        $stmt->execute(['department_id' => $department_id]);
+        $data['project_assignments'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     return $data;
 }
@@ -96,9 +129,89 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     $response = ['success' => false];
 
     if ($_POST['action'] === 'refresh_data') {
-        $data = fetchData($con, $manager_id);
+        $sections = isset($_POST['section']) && $_POST['section'] === 'project_assignments'
+            ? ['projects', 'project_assignments']
+            : (isset($_POST['section']) && $_POST['section'] === 'reports'
+                ? ['feedback', 'report_avg_ratings', 'report_feedback_types']
+                : (isset($_POST['section']) && $_POST['section'] === 'projects'
+                    ? ['projects']
+                    : (isset($_POST['section']) && $_POST['section'] === 'tasks'
+                        ? ['tasks']
+                        : ['all'])));
+        $data = fetchData($con, $manager_id, $sections);
         $response['success'] = true;
         $response = array_merge($response, $data);
+    } elseif ($_POST['action'] === 'update_assignment') {
+        $assignment_id = $_POST['assignment_id'];
+        $role_in_project = $_POST['role_in_project'];
+    
+        // Validate inputs
+        if (empty($assignment_id) || !is_numeric($assignment_id)) {
+            $response['error'] = 'Invalid assignment ID';
+            echo json_encode($response);
+            exit();
+        }
+        if (empty($role_in_project)) {
+            $response['error'] = 'Role in project is required';
+            echo json_encode($response);
+            exit();
+        }
+    
+        try {
+            $stmt = $con->prepare("
+                UPDATE Assignment 
+                SET role_in_project = :role_in_project
+                WHERE assignment_id = :assignment_id
+            ");
+            $success = $stmt->execute([
+                'role_in_project' => $role_in_project,
+                'assignment_id' => $assignment_id
+            ]);
+    
+            if ($success && $stmt->rowCount() > 0) {
+                $response['success'] = true;
+                $data = fetchData($con, $manager_id, ['projects', 'project_assignments']);
+                $response = array_merge($response, $data);
+            } else {
+                $response['error'] = 'Assignment not found or no changes made';
+            }
+        } catch (PDOException $e) {
+            $response['error'] = 'Database error: ' . $e->getMessage();
+        }
+    
+        echo json_encode($response);
+        exit();
+    } elseif ($_POST['action'] === 'remove_assignment') {
+        $assignment_id = $_POST['assignment_id'];
+    
+        // Validate assignment_id
+        if (empty($assignment_id) || !is_numeric($assignment_id)) {
+            $response['error'] = 'Invalid assignment ID';
+            echo json_encode($response);
+            exit();
+        }
+    
+        try {
+            $stmt = $con->prepare("
+                DELETE FROM Assignment 
+                WHERE assignment_id = :assignment_id
+            ");
+            $success = $stmt->execute(['assignment_id' => $assignment_id]);
+    
+            if ($success && $stmt->rowCount() > 0) {
+                $response['success'] = true;
+                // Fetch updated projects and project assignments
+                $data = fetchData($con, $manager_id, ['projects', 'project_assignments']);
+                $response = array_merge($response, $data);
+            } else {
+                $response['error'] = 'Assignment not found or already deleted';
+            }
+        } catch (PDOException $e) {
+            $response['error'] = 'Database error: ' . $e->getMessage();
+        }
+    
+        echo json_encode($response);
+        exit();
     }
     echo json_encode($response);
     exit();
@@ -111,6 +224,7 @@ $report_avg_ratings = $data['report_avg_ratings'];
 $report_feedback_types = $data['report_feedback_types'];
 $projects = $data['projects'];
 $tasks = $data['tasks'];
+$project_assignments = $data['project_assignments'];
 ?>
 
 <!DOCTYPE html>
@@ -125,7 +239,7 @@ $tasks = $data['tasks'];
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    </head>
+</head>
 <body>
 <?php include '../includes/header.php'; ?>
 <div class="dashboard-container">
@@ -219,7 +333,7 @@ $tasks = $data['tasks'];
                 <tbody id="projects-table"></tbody>
             </table>
             <div class="form-group button-group">
-                <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
             </div>
         </div>
         <!-- Assign Employees Section -->
@@ -253,8 +367,62 @@ $tasks = $data['tasks'];
                     <input type="text" id="role_in_project" name="role_in_project" required>
                 </div>
                 <div class="form-group button-group">
-                    <button type="submit">Assign Employee</button>
-                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                    <button type="submit" style="margin: 10px;">Assign Employee</button>
+                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+                </div>
+            </form>
+        </div>
+        <!-- View/Edit Project Assignments Section -->
+        <div id="project-assignments-section" style="display: none;" class="card">
+            <h2>View/Edit Project Assignments</h2>
+            <div class="form-group">
+                <label for="project_id_view">Select Project:</label>
+                <select id="project_id_view" name="project_id" onchange="loadAssignments()">
+                    <option value="">Select a project</option>
+                    <?php foreach ($projects as $project): ?>
+                        <option value="<?php echo htmlspecialchars($project['project_id']); ?>">
+                            <?php echo htmlspecialchars($project['project_name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div id="assignments-content">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Project Name</th>
+                            <th>Employee Name</th>
+                            <th>Role in Project</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assignments-table"></tbody>
+                </table>
+            </div>
+            <div class="form-group button-group">
+                <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+            </div>
+        </div>
+        <!-- Edit Assignment Section -->
+        <div id="edit-assignment-section" style="display: none;" class="card">
+            <h2>Edit Assignment</h2>
+            <form id="edit-assignment-form">
+                <div class="form-group">
+                    <label for="edit_employee_name">Employee:</label>
+                    <input type="text" id="edit_employee_name" name="employee_name" readonly>
+                    <input type="hidden" id="edit_assignment_id" name="assignment_id">
+                </div>
+                <div class="form-group">
+                    <label for="edit_project_name">Project:</label>
+                    <input type="text" id="edit_project_name" name="project_name" readonly>
+                </div>
+                <div class="form-group">
+                    <label for="edit_role_in_project">Role in Project:</label>
+                    <input type="text" id="edit_role_in_project" name="role_in_project" required>
+                </div>
+                <div class="form-group button-group">
+                    <button type="submit" style="margin: 10px;">Update</button>
+                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
                 </div>
             </form>
         </div>
@@ -308,9 +476,9 @@ $tasks = $data['tasks'];
                     </select>
                 </div>
                 <div class="form-group button-group">
-                    <button type="submit" id="save-task-btn">Save Task</button>
-                    <button type="button" id="delete-task-btn" style="display: none;" onclick="deleteTask()">Delete Task</button>
-                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                    <button type="submit" id="save-task-btn" style="margin: 10px;">Save Task</button>
+                    <button type="button" id="delete-task-btn" style="display: none;" onclick="deleteTask()" style="margin: 10px;">Delete Task</button>
+                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
                 </div>
             </form>
             <h3>Existing Subtasks</h3>
@@ -346,6 +514,7 @@ $tasks = $data['tasks'];
     const reportFeedbackTypes = <?php echo json_encode($report_feedback_types); ?>;
     const projects = <?php echo json_encode($projects); ?>;
     const tasks = <?php echo json_encode($tasks); ?>;
+    const projectAssignments = <?php echo json_encode($project_assignments); ?>;
     const userName = "<?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Manager'); ?>";
     const managerId = <?php echo json_encode($manager_id); ?>;
 
