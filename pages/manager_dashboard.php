@@ -270,6 +270,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         }
     
         try {
+            $con->beginTransaction(); // Start transaction for atomicity
+    
             if ($task_id) {
                 // Update existing task
                 $stmt = $con->prepare("
@@ -284,19 +286,48 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     'task_id' => $task_id
                 ]);
     
-                // Update or insert assignment
+                if ($stmt->rowCount() == 0) {
+                    $response['error'] = 'Task not found or no changes made';
+                    $con->rollBack();
+                    echo json_encode($response);
+                    exit();
+                }
+    
+                // Check if an assignment exists for this task
+                $stmt = $con->prepare("
+                    SELECT COUNT(*) as count 
+                    FROM Assignment_Task 
+                    WHERE task_id = :task_id
+                ");
+                $stmt->execute(['task_id' => $task_id]);
+                $assignmentExists = $stmt->fetch(PDO::FETCH_ASSOC)['count'] > 0;
+    
                 if ($employee_id) {
-                    $stmt = $con->prepare("
-                        INSERT INTO Assignment_Task (task_id, employee_id, due_date)
-                        VALUES (:task_id, :employee_id, :due_date)
-                        ON DUPLICATE KEY UPDATE employee_id = :employee_id, due_date = :due_date
-                    ");
-                    $stmt->execute([
-                        'task_id' => $task_id,
-                        'employee_id' => $employee_id,
-                        'due_date' => $due_date
-                    ]);
-                } else {
+                    if ($assignmentExists) {
+                        // Update existing assignment
+                        $stmt = $con->prepare("
+                            UPDATE Assignment_Task 
+                            SET employee_id = :employee_id, due_date = :due_date
+                            WHERE task_id = :task_id
+                        ");
+                        $stmt->execute([
+                            'employee_id' => $employee_id,
+                            'due_date' => $due_date,
+                            'task_id' => $task_id
+                        ]);
+                    } else {
+                        // Insert new assignment
+                        $stmt = $con->prepare("
+                            INSERT INTO Assignment_Task (task_id, employee_id, due_date)
+                            VALUES (:task_id, :employee_id, :due_date)
+                        ");
+                        $stmt->execute([
+                            'task_id' => $task_id,
+                            'employee_id' => $employee_id,
+                            'due_date' => $due_date
+                        ]);
+                    }
+                } else if ($assignmentExists) {
                     // Remove assignment if unassigned
                     $stmt = $con->prepare("DELETE FROM Assignment_Task WHERE task_id = :task_id");
                     $stmt->execute(['task_id' => $task_id]);
@@ -328,10 +359,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 }
             }
     
+            $con->commit(); // Commit transaction
             $response['success'] = true;
             $data = fetchData($con, $manager_id, ['tasks']);
             $response = array_merge($response, $data);
         } catch (PDOException $e) {
+            $con->rollBack(); // Roll back on error
             $response['error'] = 'Database error: ' . $e->getMessage();
         }
     
@@ -339,65 +372,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         exit();
     } elseif ($_POST['action'] === 'delete_subtask') {
         $task_id = $_POST['task_id'];
-        $employee_id = $_POST['employee_id'];
-    
-        // Validate task_id
         if (empty($task_id) || !is_numeric($task_id)) {
             $response['error'] = 'Invalid task ID';
             echo json_encode($response);
             exit();
         }
-    
         try {
-            // Begin transaction to ensure data consistency
-            $con->beginTransaction();
-    
-            if ($employee_id) {
-                // Delete the specific task assignment for the employee
-                $stmt = $con->prepare("
-                    DELETE FROM Assignment_Task 
-                    WHERE task_id = :task_id AND employee_id = :employee_id
-                ");
-                $stmt->execute([
-                    'task_id' => $task_id,
-                    'employee_id' => $employee_id
-                ]);
-    
-                // Check if the task has any remaining assignments
-                $stmt = $con->prepare("
-                    SELECT COUNT(*) as assignment_count 
-                    FROM Assignment_Task 
-                    WHERE task_id = :task_id
-                ");
-                $stmt->execute(['task_id' => $task_id]);
-                $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    
-                // If no remaining assignments, delete the task from the Task table
-                if ($result['assignment_count'] == 0) {
-                    $stmt = $con->prepare("DELETE FROM Task WHERE task_id = :task_id");
-                    $stmt->execute(['task_id' => $task_id]);
-                }
+            // Delete task assignments first
+            $stmt = $con->prepare("DELETE FROM Assignment_Task WHERE task_id = :task_id");
+            $stmt->execute(['task_id' => $task_id]);
+            // Delete the task
+            $stmt = $con->prepare("DELETE FROM Task WHERE task_id = :task_id");
+            $success = $stmt->execute(['task_id' => $task_id]);
+            if ($success) {
+                $response['success'] = true;
+                $data = fetchData($con, $manager_id, ['tasks']);
+                $response = array_merge($response, $data);
             } else {
-                // If no employee_id is provided (unassigned task), delete all assignments and the task
-                $stmt = $con->prepare("DELETE FROM Assignment_Task WHERE task_id = :task_id");
-                $stmt->execute(['task_id' => $task_id]);
-    
-                $stmt = $con->prepare("DELETE FROM Task WHERE task_id = :task_id");
-                $stmt->execute(['task_id' => $task_id]);
+                $response['error'] = 'Task not found or already deleted';
             }
-    
-            // Commit the transaction
-            $con->commit();
-    
-            $response['success'] = true;
-            $data = fetchData($con, $manager_id, ['tasks']);
-            $response = array_merge($response, $data);
         } catch (PDOException $e) {
-            // Roll back the transaction on error
-            $con->rollBack();
             $response['error'] = 'Database error: ' . $e->getMessage();
         }
-    
         echo json_encode($response);
         exit();
     }
@@ -596,7 +592,6 @@ $project_assignments = $data['project_assignments'];
         <div id="subtasks-section" style="display: none;" class="card">
             <h2>Create/Update Subtasks</h2>
             <form id="subtask-form" method="POST">
-                <!-- Form fields remain unchanged -->
                 <div class="form-group">
                     <label for="project_id_subtask">Project:</label>
                     <select id="project_id_subtask" name="project_id" required onchange="loadTasks()">
@@ -612,6 +607,7 @@ $project_assignments = $data['project_assignments'];
                     <label for="task_id">Task (Optional):</label>
                     <select id="task_id" name="task_id">
                         <option value="">Create new task</option>
+                        <!-- Populated dynamically by JS -->
                     </select>
                 </div>
                 <div class="form-group">
@@ -622,6 +618,11 @@ $project_assignments = $data['project_assignments'];
                     <label for="employee_id_subtask">Assignee:</label>
                     <select id="employee_id_subtask" name="employee_id">
                         <option value="">Unassigned</option>
+                        <?php foreach ($employees as $emp): ?>
+                            <option value="<?php echo htmlspecialchars($emp['employee_id']); ?>">
+                                <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="form-group">
@@ -638,7 +639,6 @@ $project_assignments = $data['project_assignments'];
                 </div>
                 <div class="form-group button-group">
                     <button type="submit" id="save-task-btn" style="margin: 10px;">Save Task</button>
-                    <button type="button" id="delete-task-btn" style="display: none;" onclick="deleteTask()" style="margin: 10px;">Delete Task</button>
                     <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
                 </div>
             </form>
@@ -651,7 +651,7 @@ $project_assignments = $data['project_assignments'];
                         <th>Assignee</th>
                         <th>Due Date</th>
                         <th>Status</th>
-                        <th>Actions</th> <!-- Added Actions header -->
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody id="tasks-table"></tbody>
