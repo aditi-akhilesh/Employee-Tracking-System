@@ -59,7 +59,7 @@ function showSuccess(message, containerId = 'profile-update-form') {
     setTimeout(() => {
       const successDiv = container.querySelector('.alert-success');
       if (successDiv) successDiv.remove();
-    }, 5000);
+    }, 1000);
   }
 }
 
@@ -784,10 +784,10 @@ function showAssignEmployees() {
               'assign-employees-section'
             );
             form.reset();
-            // Wait 5 seconds before redirecting
+            // Wait 1 second before redirecting
             setTimeout(() => {
               fetchUpdatedAssignmentsAfterAssignment();
-            }, 3000);
+            }, 1000);
           } else {
             showError(
               data.error || 'Failed to assign employee',
@@ -908,7 +908,7 @@ function showSubtasksForm() {
               employeeSelect.innerHTML = '<option value="">Unassigned</option>';
               document.getElementById('delete-task-btn').style.display = 'none';
               loadTasks();
-            }, 3000); // Show success message for 3 seconds
+            }, 1000); // Show success message for 1 second
           } else {
             showError(
               data.error || 'Failed to save subtask',
