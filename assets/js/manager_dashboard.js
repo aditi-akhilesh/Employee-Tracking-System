@@ -441,9 +441,13 @@ function showReportsAnalytics() {
   const reportsAnalytics = document.getElementById('reports-analytics');
   const reportContent = document.getElementById('report-content');
   const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById('assign-employees-section');
+  const assignEmployeesSection = document.getElementById(
+    'assign-employees-section'
+  );
   const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById('project-assignments-section');
+  const projectAssignmentsSection = document.getElementById(
+    'project-assignments-section'
+  );
 
   if (
     mainContent &&
@@ -495,14 +499,7 @@ function showReportsAnalytics() {
               (fb) => fb.feedback_type === type.feedback_type
             ).length,
           }));
-        const filteredWorkSummary = workSummary.filter(
-          (ws) => String(ws.employee_id) === selectedEmployeeId
-        );
-        const filteredTrainings = employeeTrainings.filter(
-          (et) => String(et.employee_id) === selectedEmployeeId
-        );
 
-        // Average Ratings Table
         const avgRatingsTable = document.getElementById('avg-ratings-table');
         avgRatingsTable.innerHTML = '';
         if (filteredAvgRatings.length === 0) {
@@ -511,16 +508,17 @@ function showReportsAnalytics() {
           filteredAvgRatings.forEach((report) => {
             const row = document.createElement('tr');
             row.innerHTML = `
-              <td>${report.first_name} ${report.last_name}</td>
-              <td>${parseFloat(report.avg_rating).toFixed(2)}</td>
-              <td>${report.feedback_count}</td>
-            `;
+                          <td>${report.first_name} ${report.last_name}</td>
+                          <td>${parseFloat(report.avg_rating).toFixed(2)}</td>
+                          <td>${report.feedback_count}</td>
+                      `;
             avgRatingsTable.appendChild(row);
           });
         }
 
-        // Feedback Types Table
-        const feedbackTypesTable = document.getElementById('feedback-types-table');
+        const feedbackTypesTable = document.getElementById(
+          'feedback-types-table'
+        );
         feedbackTypesTable.innerHTML = '';
         if (filteredFeedbackTypes.length === 0) {
           feedbackTypesTable.innerHTML = `<tr><td colspan="2">No feedback data available for this employee.</td></tr>`;
@@ -528,15 +526,16 @@ function showReportsAnalytics() {
           filteredFeedbackTypes.forEach((report) => {
             const row = document.createElement('tr');
             row.innerHTML = `
-              <td>${report.feedback_type}</td>
-              <td>${report.type_count}</td>
-            `;
+                          <td>${report.feedback_type}</td>
+                          <td>${report.type_count}</td>
+                      `;
             feedbackTypesTable.appendChild(row);
           });
         }
 
-        // Feedback Summary Table
-        const feedbackSummaryTable = document.getElementById('feedback-summary-table');
+        const feedbackSummaryTable = document.getElementById(
+          'feedback-summary-table'
+        );
         feedbackSummaryTable.innerHTML = '';
         if (filteredFeedback.length === 0) {
           feedbackSummaryTable.innerHTML = `<tr><td colspan="5">No feedback data available for this employee.</td></tr>`;
@@ -544,51 +543,13 @@ function showReportsAnalytics() {
           filteredFeedback.forEach((fb) => {
             const row = document.createElement('tr');
             row.innerHTML = `
-              <td>${fb.first_name} ${fb.last_name}</td>
-              <td>${fb.rating}</td>
-              <td>${fb.feedback_type}</td>
-              <td>${fb.feedback_text}</td>
-              <td>${fb.date_submitted}</td>
-            `;
+                          <td>${fb.first_name} ${fb.last_name}</td>
+                          <td>${fb.rating}</td>
+                          <td>${fb.feedback_type}</td>
+                          <td>${fb.feedback_text}</td>
+                          <td>${fb.date_submitted}</td>
+                      `;
             feedbackSummaryTable.appendChild(row);
-          });
-        }
-
-        // Work Summary Table
-        const workSummaryTable = document.getElementById('work-summary-table');
-        workSummaryTable.innerHTML = '';
-        if (filteredWorkSummary.length === 0) {
-          workSummaryTable.innerHTML = `<tr><td colspan="5">No work summary available for this employee.</td></tr>`;
-        } else {
-          filteredWorkSummary.forEach((ws) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${ws.first_name} ${ws.last_name}</td>
-              <td>${ws.assigned_projects || 'None'}</td>
-              <td>${ws.project_count}</td>
-              <td>${ws.task_count}</td>
-              <td>${ws.completed_tasks}</td>
-            `;
-            workSummaryTable.appendChild(row);
-          });
-        }
-
-        // Training and Certifications Table
-        const trainingTable = document.getElementById('training-table');
-        trainingTable.innerHTML = '';
-        if (filteredTrainings.length === 0) {
-          trainingTable.innerHTML = `<tr><td colspan="5">No training data available for this employee.</td></tr>`;
-        } else {
-          filteredTrainings.forEach((et) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${et.training_name}</td>
-              <td>${et.training_date}</td>
-              <td>${et.certificate || 'N/A'}</td>
-              <td>${et.completion_status}</td>
-              <td>${et.score || 'N/A'}</td>
-            `;
-            trainingTable.appendChild(row);
           });
         }
 
@@ -602,11 +563,16 @@ function showReportsAnalytics() {
         downloadPdfBtn.addEventListener('click', function () {
           const reportContent = document.getElementById('report-content');
           if (!reportContent) {
-            showError('Report content not found. Please generate the report first.');
+            showError(
+              'Report content not found. Please generate the report first.'
+            );
             return;
           }
 
-          if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+          if (
+            typeof html2canvas === 'undefined' ||
+            typeof window.jspdf === 'undefined'
+          ) {
             showError('PDF libraries not loaded.');
             return;
           }
@@ -629,11 +595,23 @@ function showReportsAnalytics() {
                 pdf.addPage();
                 position = 10;
                 remainingHeight -= pageHeight - 20;
-                pdf.addImage(imgData, 'PNG', 10, position - remainingHeight, imgWidth, imgHeight);
+                pdf.addImage(
+                  imgData,
+                  'PNG',
+                  10,
+                  position - remainingHeight,
+                  imgWidth,
+                  imgHeight
+                );
               }
 
-              const selectedEmployee = employeeSearch.options[employeeSearch.selectedIndex].text;
-              pdf.save(`Employee_Report_${selectedEmployee}_${new Date().toISOString().split('T')[0]}.pdf`);
+              const selectedEmployee =
+                employeeSearch.options[employeeSearch.selectedIndex].text;
+              pdf.save(
+                `Employee_Report_${selectedEmployee}_${
+                  new Date().toISOString().split('T')[0]
+                }.pdf`
+              );
               downloadPdfBtn.style.display = 'block';
             })
             .catch((error) => {
@@ -644,20 +622,29 @@ function showReportsAnalytics() {
       }
     };
 
-    if (typeof html2canvas !== 'undefined' && typeof window.jspdf !== 'undefined') {
+    if (
+      typeof html2canvas !== 'undefined' &&
+      typeof window.jspdf !== 'undefined'
+    ) {
       initializeDownloadPdf();
     } else {
       const loadHtml2Canvas = new Promise((resolve, reject) => {
         if (typeof html2canvas !== 'undefined') return resolve();
-        loadScript('../assets/js/html2canvas.min.js', (error) => error ? reject(error) : resolve());
+        loadScript('../assets/js/html2canvas.min.js', (error) =>
+          error ? reject(error) : resolve()
+        );
       });
       const loadJsPDF = new Promise((resolve, reject) => {
         if (typeof window.jspdf !== 'undefined') return resolve();
-        loadScript('../assets/js/jspdf.umd.min.js', (error) => error ? reject(error) : resolve());
+        loadScript('../assets/js/jspdf.umd.min.js', (error) =>
+          error ? reject(error) : resolve()
+        );
       });
       Promise.all([loadHtml2Canvas, loadJsPDF])
         .then(initializeDownloadPdf)
-        .catch((error) => showError('Failed to load PDF libraries: ' + error.message));
+        .catch((error) =>
+          showError('Failed to load PDF libraries: ' + error.message)
+        );
     }
   }
 }
