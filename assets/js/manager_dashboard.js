@@ -809,7 +809,7 @@ function fetchUpdatedAssignmentsAfterAssignment() {
   fetch('manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data&section=project_assignments', // Fix: Replace § with &
+    body: 'action=refresh_data&section=project_assignments',
   })
     .then((response) => {
       if (!response.ok) {
@@ -873,30 +873,59 @@ function showSubtasksForm() {
     subtasksSection.style.display = 'block';
     projectAssignmentsSection.style.display = 'none';
 
-    loadTasks();
     const form = document.getElementById('subtask-form');
-    form.addEventListener('submit', function (event) {
-      event.preventDefault();
-      const formData = new FormData(this);
-      fetch('../pages/features/manage_tasks.php', {
-        method: 'POST',
-        body: formData,
-      })
-        .then((response) => response.text())
-        .then((text) => JSON.parse(text))
-        .then((data) => {
-          if (data.success) {
-            refreshData();
-            resetSubtaskForm();
-          } else {
-            showError(data.error || 'Failed to save task', 'subtasks-section');
-          }
+    form.addEventListener(
+      'submit',
+      function (event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        formData.append('action', 'save_subtask');
+
+        // Check if this is a new subtask or an update
+        const taskId = formData.get('task_id');
+        const isNewSubtask = !taskId || taskId === '';
+
+        fetch('manager_dashboard.php', {
+          method: 'POST',
+          body: formData,
         })
-        .catch((error) => {
-          console.error('Fetch Error:', error);
-          showError('Network error: ' + error.message, 'subtasks-section');
-        });
-    });
+          .then((response) => {
+            if (!response.ok)
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            return response.json();
+          })
+          .then((data) => {
+            if (data.success) {
+              // Show appropriate success message based on action
+              const successMessage = isNewSubtask
+                ? 'Subtask created successfully!'
+                : 'Subtask updated successfully!';
+              showSuccess(successMessage, 'subtasks-section');
+              window.tasks = data.tasks || [];
+              setTimeout(() => {
+                form.reset();
+                const employeeSelect = document.getElementById(
+                  'employee_id_subtask'
+                );
+                employeeSelect.innerHTML =
+                  '<option value="">Unassigned</option>';
+                document.getElementById('delete-task-btn').style.display =
+                  'none';
+                loadTasks();
+              }, 3000); // Show success message for 3 seconds
+            } else {
+              showError(
+                data.error || 'Failed to save subtask',
+                'subtasks-section'
+              );
+            }
+          })
+          .catch((error) =>
+            showError('Network error: ' + error.message, 'subtasks-section')
+          );
+      },
+      { once: true }
+    );
   }
 }
 
@@ -1169,29 +1198,80 @@ function updateAssignment(assignmentId) {
 }
 
 function loadTasks() {
-  const projectId = document.getElementById('project_id_subtask').value;
+  const projectSelect = document.getElementById('project_id_subtask');
   const taskSelect = document.getElementById('task_id');
+  const employeeSelect = document.getElementById('employee_id_subtask');
   const tasksTable = document.getElementById('tasks-table');
-  taskSelect.innerHTML = '<option value="">Create new task</option>';
+
+  if (!projectSelect || !taskSelect || !employeeSelect || !tasksTable) return;
+
+  const projectId = projectSelect.value;
   tasksTable.innerHTML = '';
+  taskSelect.innerHTML = '<option value="">Create new task</option>';
+
+  // Clear the employee dropdown except for the "Unassigned" option
+  employeeSelect.innerHTML = '<option value="">Unassigned</option>';
 
   if (projectId) {
-    const projectTasks = tasks.filter((t) => t.project_id == projectId);
-    projectTasks.forEach((t) => {
-      taskSelect.innerHTML += `<option value="${t.task_id}">${t.task_description}</option>`;
+    // Fetch tasks for the selected project
+    const filteredTasks = window.tasks.filter(
+      (task) => task.project_id == projectId
+    );
+    filteredTasks.forEach((task) => {
+      const option = document.createElement('option');
+      option.value = task.task_id;
+      option.textContent = task.task_description;
+      taskSelect.appendChild(option);
+
       const row = document.createElement('tr');
       row.innerHTML = `
-              <td>${t.task_description}</td>
-              <td>${t.project_name}</td>
+              <td>${task.task_description}</td>
+              <td>${task.project_name}</td>
               <td>${
-                t.first_name ? t.first_name + ' ' + t.last_name : 'Unassigned'
+                task.first_name
+                  ? task.first_name + ' ' + task.last_name
+                  : 'Unassigned'
               }</td>
-              <td>${t.due_date || 'N/A'}</td>
-              <td>${t.status}</td>
+              <td>${task.due_date || 'N/A'}</td>
+              <td>${task.status}</td>
+              <td>
+                  <button onclick="populateTaskForm(${JSON.stringify(
+                    task
+                  )})">Edit</button>
+                  <button onclick="deleteTask(${task.task_id}, '${
+        task.employee_id || ''
+      }')">Delete</button>
+              </td>
           `;
-      row.onclick = () => populateTaskForm(t);
       tasksTable.appendChild(row);
     });
+
+    // Fetch employees assigned to the selected project
+    fetch('manager_dashboard.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `action=fetch_project_employees&project_id=${projectId}`,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          const employees = data.employees || [];
+          employees.forEach((emp) => {
+            const option = document.createElement('option');
+            option.value = emp.employee_id;
+            option.textContent = `${emp.first_name} ${emp.last_name}`;
+            employeeSelect.appendChild(option);
+          });
+        } else {
+          showError(
+            data.error || 'Failed to fetch employees for project',
+            'subtasks-section'
+          );
+        }
+      })
+      .catch((error) =>
+        showError('Network error: ' + error.message, 'subtasks-section')
+      );
   }
 }
 
@@ -1203,6 +1283,9 @@ function populateTaskForm(task) {
   document.getElementById('due_date').value = task.due_date || '';
   document.getElementById('task_status').value = task.status;
   document.getElementById('delete-task-btn').style.display = 'block';
+
+  // Ensure the project dropdown triggers the employee list update
+  loadTasks(); // This will repopulate the employee dropdown for the selected project
 }
 
 function resetSubtaskForm() {
@@ -1212,24 +1295,30 @@ function resetSubtaskForm() {
   loadTasks();
 }
 
-function deleteTask() {
-  const taskId = document.getElementById('task_id').value;
+function deleteTask(taskId, employeeId) {
   if (!taskId) {
     showError('No task selected to delete', 'subtasks-section');
     return;
   }
 
   if (confirm('Are you sure you want to delete this task?')) {
-    fetch('../pages/features/manage_tasks.php', {
+    fetch('manager_dashboard.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `action=delete&task_id=${taskId}`,
+      body: `action=delete_subtask&task_id=${taskId}&employee_id=${
+        employeeId || ''
+      }`,
     })
       .then((response) => response.json())
       .then((data) => {
         if (data.success) {
-          refreshData();
-          resetSubtaskForm();
+          showSuccess('Subtask deleted successfully!', 'subtasks-section');
+          window.tasks = data.tasks || [];
+          setTimeout(() => {
+            const projectSelect = document.getElementById('project_id_subtask');
+            const selectedProjectId = projectSelect ? projectSelect.value : '';
+            loadTasks();
+          }, 1000);
         } else {
           showError(data.error || 'Failed to delete task', 'subtasks-section');
         }
