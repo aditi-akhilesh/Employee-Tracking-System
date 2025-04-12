@@ -1,1814 +1,591 @@
-// manager_dashboard.js
-function refreshData(callback) {
-  fetch('manager_dashboard.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data',
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        window.employees = data.employees || employees;
-        window.feedback = data.feedback || feedback;
-        window.reportAvgRatings = data.report_avg_ratings || reportAvgRatings;
-        window.reportFeedbackTypes =
-          data.report_feedback_types || reportFeedbackTypes;
-        window.projects = data.projects || projects;
-        window.tasks = data.tasks || tasks;
-        window.projectAssignments =
-          data.project_assignments || projectAssignments;
-        window.employeeTrainings = data.employee_trainings || employeeTrainings;
-        console.log('Project Assignments:', window.projectAssignments);
-        console.log('Employee Trainings:', window.employeeTrainings);
-        if (callback) callback();
-      } else {
-        showError(data.error || 'Failed to refresh data');
-      }
-    })
-    .catch((error) => showError('Network error: ' + error.message));
-}
+<?php
+require_once '../includes/auth_check.php';
+require_once '../auth/dbconnect.php';
 
-document.addEventListener('DOMContentLoaded', function () {
-  refreshData();
-});
+$page_title = "Manager Dashboard";
 
-function showError(message, containerId = 'profile-update-form') {
-  const container = document.getElementById(containerId);
-  if (container) {
-    container.innerHTML =
-      `<div class="alert alert-error">${message}</div>` + container.innerHTML;
-  }
-}
+$manager_id = $_SESSION['employee_id'];
 
-function showSuccess(message, containerId = 'profile-update-form') {
-  const container = document.getElementById(containerId);
-  if (container) {
-    container.innerHTML =
-      `<div class="alert alert-success">${message}</div>` + container.innerHTML;
-    setTimeout(() => {
-      const successDiv = container.querySelector('.alert-success');
-      if (successDiv) successDiv.remove();
-    }, 5000);
-  }
-}
+function fetchData($con, $manager_id, $sections = ['all']) {
+    $data = [];
 
-function showWelcomeMessage(event) {
-  if (event) event.preventDefault();
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'block';
-    profileUpdateForm.style.display = 'none';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-    projectAssignmentsSection.style.display = 'none';
-    profileUpdateForm.innerHTML = '';
-  }
-}
-
-function showProfileForm() {
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'block';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-    projectAssignmentsSection.style.display = 'none';
-
-    if (employees.length === 0) {
-      profileUpdateForm.innerHTML = `
-              <div class="card">
-                  <h2>Employees Assigned to Me</h2>
-                  <p>No employees are currently assigned to you.</p>
-                  <div class="form-group button-group">
-                      <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-                  </div>
-              </div>
-          `;
-      return;
+    // Helper function to check if a section should be fetched
+    $shouldFetch = function($section) use ($sections) {
+        return in_array('all', $sections) || in_array($section, $sections);
+    };
+    // Employees assigned to this manager
+    if ($shouldFetch('employees')) {
+        $stmt = $con->prepare("
+            SELECT e.employee_id, e.user_id, e.emp_job_title, e.emp_status, u.first_name, u.last_name, u.email 
+            FROM Employees e 
+            JOIN Users u ON e.user_id = u.user_id 
+            WHERE e.manager_id = :manager_id AND e.emp_status != 'inactive' AND u.is_active = 1
+        ");
+        $stmt->execute(['manager_id' => $manager_id]);
+        $data['employees'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        error_log("Employees for manager_id $manager_id: " . print_r($data['employees'], true) . "\n");
     }
 
-    let employeesTableHTML = `
-          <div class="card">
-              <h2>Employees Assigned to Me</h2>
-              <table class="report-table">
-                  <thead>
-                      <tr>
-                          <th>Employee Name</th>
-                          <th>Job Title</th>
-                          <th>Email</th>
-                          <th>Status</th>
-                      </tr>
-                  </thead>
-                  <tbody>
-      `;
-
-    employees.forEach((emp) => {
-      employeesTableHTML += `
-              <tr>
-                  <td>${emp.first_name} ${emp.last_name}</td>
-                  <td>${emp.emp_job_title || 'N/A'}</td>
-                  <td>${emp.email || 'N/A'}</td>
-                  <td>${emp.emp_status || 'N/A'}</td>
-              </tr>
-          `;
-    });
-
-    employeesTableHTML += `
-                  </tbody>
-              </table>
-              <div class="form-group button-group">
-                  <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-              </div>
-          </div>
-      `;
-
-    profileUpdateForm.innerHTML = employeesTableHTML;
-  }
-}
-
-function showFeedbackForm() {
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'block';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-    projectAssignmentsSection.style.display = 'none';
-
-    if (employees.length === 0) {
-      profileUpdateForm.innerHTML = `
-                <div class="card">
-                    <h2>Give Feedback to Employee</h2>
-                    <p>No employees assigned to you.</p>
-                    <div class="form-group button-group">
-                        <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-                    </div>
-                </div>
-            `;
-      return;
+    // Feedback given by this manager
+    if ($shouldFetch('feedback')) {
+        $stmt = $con->prepare("
+            SELECT f.feedback_id, f.employee_id, f.rating, f.feedback_type, f.feedback_text, f.date_submitted, 
+                   u.first_name, u.last_name 
+            FROM Feedback f 
+            JOIN Employees e ON f.employee_id = e.employee_id 
+            JOIN Users u ON e.user_id = u.user_id 
+            WHERE f.reviewer_id = :manager_id
+        ");
+        $stmt->execute(['manager_id' => $manager_id]);
+        $data['feedback'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    profileUpdateForm.innerHTML = `
-            <div class="card">
-                <h2>Give Feedback to Employee</h2>
-                <form id="feedbackForm" method="POST">
-                    <div class="form-group">
-                        <label for="employee_id">Employee:</label>
-                        <select id="employee_id" name="employee_id" required>
-                            <option value="">Select an employee</option>
-                            ${employees
-                              .filter(
-                                (emp) =>
-                                  emp.manager_id ==
-                                  sessionStorage.getItem('employee_id')
-                              )
-                              .map(
-                                (emp) =>
-                                  `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name} (${emp.emp_job_title})</option>`
-                              )
-                              .join('')}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="rating">Rating (1-5):</label>
-                        <input type="number" id="rating" name="rating" min="1" max="5" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="feedback_type">Feedback Type:</label>
-                        <select id="feedback_type" name="feedback_type" required>
-                            <option value="Performance">Performance</option>
-                            <option value="Behavior">Behavior</option>
-                            <option value="Project">Project</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="feedback_text">Feedback Details:</label>
-                        <textarea id="feedback_text" name="feedback_text" rows="4" required style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px;"></textarea>
-                    </div>
-                    <div class="form-group button-group">
-                        <button type="submit">Submit Feedback</button>
-                        <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-                    </div>
-                </form>
-            </div>
-        `;
+    // Report data: Average rating per employee
+    if ($shouldFetch('report_avg_ratings')) {
+        $stmt = $con->prepare("
+            SELECT e.employee_id, u.first_name, u.last_name, AVG(f.rating) as avg_rating, COUNT(f.feedback_id) as feedback_count
+            FROM Feedback f 
+            JOIN Employees e ON f.employee_id = e.employee_id 
+            JOIN Users u ON e.user_id = u.user_id 
+            WHERE f.reviewer_id = :manager_id
+            GROUP BY e.employee_id, u.first_name, u.last_name
+        ");
+        $stmt->execute(['manager_id' => $manager_id]);
+        $data['report_avg_ratings'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-    const form = document.getElementById('feedbackForm');
-    if (form) {
-      form.addEventListener('submit', function (event) {
-        event.preventDefault();
-        if (!validateFeedbackForm(this)) return;
+    // Report data: Feedback type distribution
+    if ($shouldFetch('report_feedback_types')) {
+        $stmt = $con->prepare("
+            SELECT f.feedback_type, COUNT(f.feedback_id) as type_count
+            FROM Feedback f 
+            JOIN Employees e ON f.employee_id = e.employee_id 
+            WHERE f.reviewer_id = :manager_id
+            GROUP BY f.feedback_type
+        ");
+        $stmt->execute(['manager_id' => $manager_id]);
+        $data['report_feedback_types'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-        fetch('../pages/features/manage_feedback.php', {
-          method: 'POST',
-          body: new FormData(this),
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              fetch('../pages/features/fetch_feedback.php')
-                .then((response) => response.json())
-                .then((updatedFeedback) => {
-                  feedback.length = 0;
-                  updatedFeedback.forEach((fb) => feedback.push(fb));
-                  if (
-                    confirm(
-                      'Feedback submitted successfully! Would you like to view the feedback history?'
-                    )
-                  ) {
-                    showFeedbackHistory();
-                  } else {
-                    form.reset();
-                  }
-                })
-                .catch((error) =>
-                  showError('Error updating feedback data: ' + error.message)
-                );
+    // Get manager's department_id
+    $stmt = $con->prepare("
+        SELECT department_id 
+        FROM Employees 
+        WHERE employee_id = :manager_id
+    ");
+    $stmt->execute(['manager_id' => $manager_id]);
+    $manager_dept = $stmt->fetch(PDO::FETCH_ASSOC);
+    $department_id = $manager_dept['department_id'];
+
+    // Projects under the manager's department
+    if ($shouldFetch('projects')) {
+        $stmt = $con->prepare("
+            SELECT p.project_id, p.project_name, p.start_date, p.expected_end_date, p.actual_end_date, 
+                   p.client_name, p.client_contact_email, p.project_status, p.budget, p.actual_cost, p.department_id
+            FROM Projects p
+            WHERE p.department_id = :department_id AND p.project_status != 'Completed'
+        ");
+        $stmt->execute(['department_id' => $department_id]);
+        $data['projects'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Tasks and their assignments for projects in the manager's department
+    if ($shouldFetch('tasks')) {
+        $stmt = $con->prepare("
+            SELECT t.task_id, t.task_description, t.status, t.project_id, p.project_name,
+                   at.employee_id, at.due_date, u.first_name, u.last_name
+            FROM Task t
+            JOIN Projects p ON t.project_id = p.project_id
+            LEFT JOIN Assignment_Task at ON t.task_id = at.task_id
+            LEFT JOIN Employees e ON at.employee_id = e.employee_id
+            LEFT JOIN Users u ON e.user_id = u.user_id
+            WHERE p.department_id = :department_id
+        ");
+        $stmt->execute(['department_id' => $department_id]);
+        $data['tasks'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Fetch employees assigned to projects in the manager's department
+    if ($shouldFetch('project_assignments')) {
+        $stmt = $con->prepare("
+            SELECT a.assignment_id, a.project_id, a.employee_id, a.role_in_project, 
+                p.project_name, u.first_name, u.last_name
+            FROM Assignment a
+            JOIN Projects p ON a.project_id = p.project_id
+            JOIN Employees e ON a.employee_id = e.employee_id
+            JOIN Users u ON e.user_id = u.user_id
+            WHERE p.department_id = :department_id AND p.project_status != 'Completed'
+        ");
+        $stmt->execute(['department_id' => $department_id]);
+        $data['project_assignments'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Fetch training certificates for employees under this manager
+    if ($shouldFetch('employee_trainings')) {
+        $stmt = $con->prepare("
+            SELECT et.employee_training_id, et.employee_id, et.training_id, et.enrollment_date,
+                   et.completion_status, et.score, t.training_name, t.certificate, t.training_date
+            FROM Employee_Training et
+            JOIN Employees e ON et.employee_id = e.employee_id
+            JOIN Training t ON et.training_id = t.training_id
+            JOIN Users u ON e.user_id = u.user_id
+            WHERE e.manager_id = :manager_id AND et.completion_status = 'completed'
+        ");
+        $stmt->execute(['manager_id' => $manager_id]);
+        $data['employee_trainings'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    return $data;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+    header('Content-Type: application/json');
+    $response = ['success' => false];
+
+    if ($_POST['action'] === 'refresh_data') {
+        $sections = isset($_POST['section']) && $_POST['section'] === 'project_assignments'
+            ? ['projects', 'project_assignments']
+            : (isset($_POST['section']) && $_POST['section'] === 'reports'
+                ? ['feedback', 'report_avg_ratings', 'report_feedback_types', 'employee_trainings']
+                : (isset($_POST['section']) && $_POST['section'] === 'projects'
+                    ? ['projects']
+                    : (isset($_POST['section']) && $_POST['section'] === 'tasks'
+                        ? ['tasks']
+                        : ['all'])));
+        $data = fetchData($con, $manager_id, $sections);
+        $response['success'] = true;
+        $response = array_merge($response, $data);
+    } elseif ($_POST['action'] === 'update_assignment') {
+        $assignment_id = $_POST['assignment_id'];
+        $role_in_project = $_POST['role_in_project'];
+    
+        // Validate inputs
+        if (empty($assignment_id) || !is_numeric($assignment_id)) {
+            $response['error'] = 'Invalid assignment ID';
+            echo json_encode($response);
+            exit();
+        }
+        if (empty($role_in_project)) {
+            $response['error'] = 'Role in project is required';
+            echo json_encode($response);
+            exit();
+        }
+    
+        try {
+            $stmt = $con->prepare("
+                UPDATE Assignment 
+                SET role_in_project = :role_in_project
+                WHERE assignment_id = :assignment_id
+            ");
+            $success = $stmt->execute([
+                'role_in_project' => $role_in_project,
+                'assignment_id' => $assignment_id
+            ]);
+    
+            if ($success && $stmt->rowCount() > 0) {
+                $response['success'] = true;
+                $data = fetchData($con, $manager_id, ['projects', 'project_assignments']);
+                $response = array_merge($response, $data);
             } else {
-              showError(data.error || 'Failed to submit feedback');
+                $response['error'] = 'Assignment not found or no changes made';
             }
-          })
-          .catch((error) => showError('Network error: ' + error.message));
-      });
+        } catch (PDOException $e) {
+            $response['error'] = 'Database error: ' . $e->getMessage();
+        }
+    
+        echo json_encode($response);
+        exit();
+    } elseif ($_POST['action'] === 'remove_assignment') {
+        $assignment_id = $_POST['assignment_id'];
+    
+        // Validate assignment_id
+        if (empty($assignment_id) || !is_numeric($assignment_id)) {
+            $response['error'] = 'Invalid assignment ID';
+            echo json_encode($response);
+            exit();
+        }
+    
+        try {
+            $stmt = $con->prepare("
+                DELETE FROM Assignment 
+                WHERE assignment_id = :assignment_id
+            ");
+            $success = $stmt->execute(['assignment_id' => $assignment_id]);
+    
+            if ($success && $stmt->rowCount() > 0) {
+                $response['success'] = true;
+                // Fetch updated projects and project assignments
+                $data = fetchData($con, $manager_id, ['projects', 'project_assignments']);
+                $response = array_merge($response, $data);
+            } else {
+                $response['error'] = 'Assignment not found or already deleted';
+            }
+        } catch (PDOException $e) {
+            $response['error'] = 'Database error: ' . $e->getMessage();
+        }
+    
+        echo json_encode($response);
+        exit();
     }
-  }
+    echo json_encode($response);
+    exit();
+}
+// Fetch departments with description and employee count
+try {
+    $stmt = $con->query("
+        SELECT 
+            d.department_id, 
+            d.department_name, 
+            d.department_description, 
+            COUNT(e.employee_id) AS employee_count
+        FROM Department d
+        LEFT JOIN Employees e ON d.department_id = e.department_id
+        GROUP BY d.department_id, d.department_name, d.department_description
+    ");
+    $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $departments = [];
+    $_SESSION['error'] = "Failed to fetch department information: " . $e->getMessage();
 }
 
-function validateFeedbackForm(form) {
-  const rating = form.querySelector('#rating').value;
-  if (rating < 1 || rating > 5) {
-    alert('Rating must be between 1 and 5.');
-    return false;
-  }
-  return true;
-}
 
-function renderFeedbackTable(selectedEmployeeId) {
-  const selectedId = selectedEmployeeId ? String(selectedEmployeeId) : '';
-  let filteredFeedback = feedback;
-  if (selectedId) {
-    filteredFeedback = feedback.filter(
-      (f) => String(f.employee_id) === selectedId
-    );
-  }
+$data = fetchData($con, $manager_id);
+$employees = $data['employees'];
+$feedback = $data['feedback'];
+$report_avg_ratings = $data['report_avg_ratings'];
+$report_feedback_types = $data['report_feedback_types'];
+$projects = $data['projects'];
+$tasks = $data['tasks'];
+$project_assignments = $data['project_assignments'];
+$employee_trainings = $data['employee_trainings'] ?? [];
+?>
 
-  let tableHTML = `
-        <table class="report-table">
-            <thead>
-                <tr>
-                    <th>Employee</th>
-                    <th>Rating</th>
-                    <th>Type</th>
-                    <th>Feedback</th>
-                    <th>Date Submitted</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-
-  if (filteredFeedback.length === 0) {
-    tableHTML += `
-            <tr>
-                <td colspan="5">No feedback available.</td>
-            </tr>
-        `;
-  } else {
-    filteredFeedback.forEach((f) => {
-      tableHTML += `
-                <tr>
-                    <td>${f.first_name} ${f.last_name}</td>
-                    <td>${f.rating || 'N/A'}</td>
-                    <td>${f.feedback_type || 'N/A'}</td>
-                    <td>${f.feedback_text || 'N/A'}</td>
-                    <td>${f.date_submitted || 'N/A'}</td>
-                </tr>
-            `;
-    });
-  }
-
-  tableHTML += `</tbody></table>`;
-  return tableHTML;
-}
-
-function showFeedbackHistory() {
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'block';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-    projectAssignmentsSection.style.display = 'none';
-
-    let feedbackTableHTML = `
-            <div class="card">
-                <h2>Feedback History</h2>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Dashboard</title>
+    <link rel="stylesheet" href="../assets/css/styles.css">
+    <link rel="stylesheet" href="../assets/css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+<?php include '../includes/header.php'; ?>
+<div class="dashboard-container">
+    <?php include '../includes/sidebar_manager.php'; ?>
+    <div class="content" id="content-area">
+        <div id="main-content" class="card">
+            <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Manager'); ?> (Manager)</h2>
+            <p>Select an option from the menu on the left to get started.</p>
+        </div>
+        <div id="profile-update-form" style="display: none;"></div>
+        <div id="reports-analytics" style="display: none;" class="card">
+            <h2>Reports and Analytics</h2>
+            <div class="report-filter">
                 <div class="form-group">
-                    <label for="employee-filter">Filter by Employee:</label>
-                    <select id="employee-filter">
-                        <option value="">All Employees</option>
-                        ${employees
-                          .filter(
-                            (emp) =>
-                              emp.manager_id ==
-                              sessionStorage.getItem('employee_id')
-                          )
-                          .map(
-                            (emp) =>
-                              `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`
-                          )
-                          .join('')}
+                    <label for="employee-search">Search Employee:</label>
+                    <select id="employee-search">
+                        <option value="">Select an employee</option>
+                        <?php foreach ($employees as $emp): ?>
+                            <option value="<?php echo htmlspecialchars($emp['employee_id']); ?>">
+                                <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
-                <div id="feedback-table-container">
-                    ${renderFeedbackTable('')}
+                <div class="form-group button-group">
+                    <button type="button" id="generate-report-btn">Generate Report</button>
+                </div>
+            </div>
+            <div class="report-section" id="report-content" style="display: none;">
+                <div class="report-section">
+                    <h3>Average Ratings per Employee</h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Employee Name</th>
+                                <th>Average Rating</th>
+                                <th>Feedback Count</th>
+                            </tr>
+                        </thead>
+                        <tbody id="avg-ratings-table"></tbody>
+                    </table>
+                </div>
+                <div class="report-section">
+                    <h3>Feedback Type Distribution</h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Feedback Type</th>
+                                <th>Count</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feedback-types-table"></tbody>
+                    </table>
+                </div>
+                <div class="report-section">
+                    <h3>Work Summary</h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="work-summary-table"></tbody>
+                    </table>
+                </div>
+                <div class="report-section">
+                    <h3>Training Certificates</h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Training Name</th>
+                                <th>Training Date</th>
+                                <th>Certificate</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="training-certificates-table"></tbody>
+                    </table>
+                </div>
+                <div class="report-section">
+                    <h3>Feedback Summary</h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Employee Name</th>
+                                <th>Rating</th>
+                                <th>Feedback Type</th>
+                                <th>Feedback Details</th>
+                                <th>Date Submitted</th>
+                            </tr>
+                        </thead>
+                        <tbody id="feedback-summary-table"></tbody>
+                    </table>
                 </div>
                 <div class="form-group button-group">
-                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                    <button type="button" id="download-pdf-btn">Download PDF</button>
                 </div>
             </div>
-        `;
-
-    profileUpdateForm.innerHTML = feedbackTableHTML;
-
-    const employeeFilter = document.getElementById('employee-filter');
-    const tableContainer = document.getElementById('feedback-table-container');
-    if (employeeFilter && tableContainer) {
-      employeeFilter.addEventListener('change', function () {
-        tableContainer.innerHTML = renderFeedbackTable(this.value);
-      });
-    }
-  }
-}
-
-function showReportsAnalytics() {
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const reportContent = document.getElementById('report-content');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    reportContent &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'none';
-    reportsAnalytics.style.display = 'block';
-    reportContent.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-    projectAssignmentsSection.style.display = 'none';
-
-    const generateReportBtn = document.getElementById('generate-report-btn');
-    const employeeSearch = document.getElementById('employee-search');
-    if (generateReportBtn && employeeSearch) {
-      generateReportBtn.addEventListener('click', function () {
-        const selectedEmployeeId = employeeSearch.value;
-        if (!selectedEmployeeId) {
-          alert('Please select an employee to generate the report.');
-          return;
-        }
-
-        const filteredAvgRatings = reportAvgRatings.filter(
-          (report) => String(report.employee_id) === selectedEmployeeId
-        );
-        const filteredFeedback = feedback.filter(
-          (fb) => String(fb.employee_id) === selectedEmployeeId
-        );
-        const filteredFeedbackTypes = reportFeedbackTypes
-          .filter((type) => {
-            const typeFeedback = filteredFeedback.filter(
-              (fb) => fb.feedback_type === type.feedback_type
-            );
-            return typeFeedback.length > 0;
-          })
-          .map((type) => ({
-            feedback_type: type.feedback_type,
-            type_count: filteredFeedback.filter(
-              (fb) => fb.feedback_type === type.feedback_type
-            ).length,
-          }));
-        const filteredAssignments = projectAssignments.filter(
-          (assignment) => String(assignment.employee_id) === selectedEmployeeId
-        );
-        const filteredTrainings = employeeTrainings.filter(
-          (training) => String(training.employee_id) === selectedEmployeeId
-        );
-
-        const avgRatingsTable = document.getElementById('avg-ratings-table');
-        avgRatingsTable.innerHTML = '';
-        if (filteredAvgRatings.length === 0) {
-          avgRatingsTable.innerHTML = `<tr><td colspan="3">No feedback data available for this employee.</td></tr>`;
-        } else {
-          filteredAvgRatings.forEach((report) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                          <td>${report.first_name} ${report.last_name}</td>
-                          <td>${parseFloat(report.avg_rating).toFixed(2)}</td>
-                          <td>${report.feedback_count}</td>
-                      `;
-            avgRatingsTable.appendChild(row);
-          });
-        }
-
-        const feedbackTypesTable = document.getElementById(
-          'feedback-types-table'
-        );
-        feedbackTypesTable.innerHTML = '';
-        if (filteredFeedbackTypes.length === 0) {
-          feedbackTypesTable.innerHTML = `<tr><td colspan="2">No feedback data available for this employee.</td></tr>`;
-        } else {
-          filteredFeedbackTypes.forEach((report) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                          <td>${report.feedback_type}</td>
-                          <td>${report.type_count}</td>
-                      `;
-            feedbackTypesTable.appendChild(row);
-          });
-        }
-
-        const workSummaryTable = document.getElementById('work-summary-table');
-        workSummaryTable.innerHTML = '';
-        if (filteredFeedback.length === 0 && filteredAssignments.length === 0) {
-          workSummaryTable.innerHTML = `<tr><td colspan="2">No work summary available for this employee.</td></tr>`;
-        } else {
-          if (filteredFeedback.length > 0) {
-            const feedbackSummary = filteredFeedback
-              .map(
-                (fb) =>
-                  `${fb.feedback_type}: ${fb.feedback_text} (Rating: ${fb.rating}, Date: ${fb.date_submitted})`
-              )
-              .join('; ');
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                          <td>Feedback</td>
-                          <td>${feedbackSummary}</td>
-                      `;
-            workSummaryTable.appendChild(row);
-          }
-          if (filteredAssignments.length > 0) {
-            const projectSummary = filteredAssignments
-              .map(
-                (assignment) =>
-                  `${assignment.project_name} (Role: ${assignment.role_in_project})`
-              )
-              .join('; ');
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                          <td>Projects</td>
-                          <td>${projectSummary}</td>
-                      `;
-            workSummaryTable.appendChild(row);
-          }
-        }
-
-        const trainingTable = document.getElementById(
-          'training-certificates-table'
-        );
-        trainingTable.innerHTML = '';
-        if (filteredTrainings.length === 0) {
-          trainingTable.innerHTML = `<tr><td colspan="4">No training certificates available for this employee.</td></tr>`;
-        } else {
-          filteredTrainings.forEach((training) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                          <td>${training.training_name}</td>
-                          <td>${training.training_date || 'N/A'}</td>
-                          <td>${training.certificate || 'N/A'}</td>
-                          <td>${training.score || 'N/A'}</td>
-                      `;
-            trainingTable.appendChild(row);
-          });
-        }
-
-        const feedbackSummaryTable = document.getElementById(
-          'feedback-summary-table'
-        );
-        feedbackSummaryTable.innerHTML = '';
-        if (filteredFeedback.length === 0) {
-          feedbackSummaryTable.innerHTML = `<tr><td colspan="5">No feedback data available for this employee.</td></tr>`;
-        } else {
-          filteredFeedback.forEach((fb) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-                          <td>${fb.first_name} ${fb.last_name}</td>
-                          <td>${fb.rating}</td>
-                          <td>${fb.feedback_type}</td>
-                          <td>${fb.feedback_text}</td>
-                          <td>${fb.date_submitted}</td>
-                      `;
-            feedbackSummaryTable.appendChild(row);
-          });
-        }
-
-        reportContent.style.display = 'block';
-      });
-    }
-
-    const initializeDownloadPdf = () => {
-      const downloadPdfBtn = document.getElementById('download-pdf-btn');
-      if (downloadPdfBtn) {
-        downloadPdfBtn.addEventListener('click', function () {
-          const reportContent = document.getElementById('report-content');
-          if (!reportContent) {
-            showError(
-              'Report content not found. Please generate the report first.'
-            );
-            return;
-          }
-
-          if (
-            typeof html2canvas === 'undefined' ||
-            typeof window.jspdf === 'undefined'
-          ) {
-            showError('PDF libraries not loaded.');
-            return;
-          }
-
-          downloadPdfBtn.style.display = 'none';
-          html2canvas(reportContent, { scale: 2 })
-            .then((canvas) => {
-              const imgData = canvas.toDataURL('image/png');
-              const { jsPDF } = window.jspdf;
-              const pdf = new jsPDF('p', 'mm', 'a4');
-              const pageWidth = pdf.internal.pageSize.getWidth();
-              const pageHeight = pdf.internal.pageSize.getHeight();
-              const imgWidth = pageWidth - 20;
-              const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-              let position = 10;
-              pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-              let remainingHeight = imgHeight;
-              while (remainingHeight > pageHeight - 20) {
-                pdf.addPage();
-                position = 10;
-                remainingHeight -= pageHeight - 20;
-                pdf.addImage(
-                  imgData,
-                  'PNG',
-                  10,
-                  position - remainingHeight,
-                  imgWidth,
-                  imgHeight
-                );
-              }
-
-              const selectedEmployee =
-                employeeSearch.options[employeeSearch.selectedIndex].text;
-              pdf.save(
-                `Employee_Report_${selectedEmployee}_${
-                  new Date().toISOString().split('T')[0]
-                }.pdf`
-              );
-              downloadPdfBtn.style.display = 'block';
-            })
-            .catch((error) => {
-              showError('Failed to generate PDF: ' + error.message);
-              downloadPdfBtn.style.display = 'block';
-            });
-        });
-      }
-    };
-
-    if (
-      typeof html2canvas !== 'undefined' &&
-      typeof window.jspdf !== 'undefined'
-    ) {
-      initializeDownloadPdf();
-    } else {
-      const loadHtml2Canvas = new Promise((resolve, reject) => {
-        if (typeof html2canvas !== 'undefined') return resolve();
-        loadScript('../assets/js/html2canvas.min.js', (error) =>
-          error ? reject(error) : resolve()
-        );
-      });
-      const loadJsPDF = new Promise((resolve, reject) => {
-        if (typeof window.jspdf !== 'undefined') return resolve();
-        loadScript('../assets/js/jspdf.umd.min.js', (error) =>
-          error ? reject(error) : resolve()
-        );
-      });
-      Promise.all([loadHtml2Canvas, loadJsPDF])
-        .then(initializeDownloadPdf)
-        .catch((error) =>
-          showError('Failed to load PDF libraries: ' + error.message)
-        );
-    }
-  }
-}
-
-function loadScript(url, callback) {
-  const script = document.createElement('script');
-  script.src = url;
-  script.onload = () => callback();
-  script.onerror = () => callback(new Error(`Failed to load script: ${url}`));
-  document.head.appendChild(script);
-}
-
-function showProjects() {
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'none';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'block';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-    projectAssignmentsSection.style.display = 'none';
-
-    const projectsTable = document.getElementById('projects-table');
-    projectsTable.innerHTML = '';
-    if (projects.length === 0) {
-      projectsTable.innerHTML = `<tr><td colspan="8">No active projects found.</td></tr>`;
-    } else {
-      projects.forEach((p) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-                  <td>${p.project_name}</td>
-                  <td>${p.project_status}</td>
-                  <td>$${parseFloat(p.budget).toFixed(2)}</td>
-                  <td>${
-                    p.actual_cost
-                      ? '$' + parseFloat(p.actual_cost).toFixed(2)
-                      : 'N/A'
-                  }</td>
-                  <td>${p.start_date}</td>
-                  <td>${p.expected_end_date}</td>
-                  <td>${p.actual_end_date || 'N/A'}</td>
-                  <td>${p.client_name} (${p.client_contact_email})</td>
-              `;
-        projectsTable.appendChild(row);
-      });
-    }
-  }
-}
-
-function showAssignEmployees() {
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'none';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'block';
-    subtasksSection.style.display = 'none';
-    projectAssignmentsSection.style.display = 'none';
-
-    const form = document.getElementById('assign-employees-form');
-    form.addEventListener('submit', function (event) {
-      event.preventDefault();
-      fetch('../pages/features/manage_assignments.php', {
-        method: 'POST',
-        body: new FormData(this),
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .then((data) => {
-          if (data.success) {
-            form.reset();
-            fetchUpdatedAssignmentsAfterAssignment(
-              'Employee assigned to project successfully!'
-            );
-          } else {
-            showError(
-              data.error || 'Failed to assign employee',
-              'assign-employees-section'
-            );
-          }
-        })
-        .catch((error) =>
-          showError(
-            'Network error: ' + error.message,
-            'assign-employees-section'
-          )
-        );
-    });
-  }
-}
-
-function fetchUpdatedAssignmentsAfterAssignment(successMessage) {
-  fetch('manager_dashboard.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data�ion=project_assignments',
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((data) => {
-      if (data.success) {
-        window.projectAssignments = data.project_assignments || [];
-        showAssignedEmployeesSection();
-        const projectSelect = document.getElementById('project_id_view');
-        const selectedProjectId = projectSelect ? projectSelect.value : '';
-        renderAssignmentsTable(selectedProjectId);
-        if (successMessage) {
-          showSuccess(successMessage, 'project-assignments-section');
-        }
-      } else {
-        showError(
-          data.error || 'Failed to fetch updated assignments',
-          'project-assignments-section'
-        );
-      }
-    })
-    .catch((error) => {
-      showError(
-        'Network error: ' + error.message,
-        'project-assignments-section'
-      );
-    });
-}
-
-function showSubtasksForm() {
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'none';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'block';
-    projectAssignmentsSection.style.display = 'none';
-
-    loadTasks();
-    const form = document.getElementById('subtask-form');
-    form.addEventListener('submit', function (event) {
-      event.preventDefault();
-
-      if (isSubmitting) {
-        showError(
-          'Please wait, a submission is already in progress',
-          'subtasks-section'
-        );
-        return;
-      }
-
-      const taskId = document.getElementById('task_id').value;
-      const isNewSubtask = !taskId || taskId === '';
-
-      if (!isNewSubtask) {
-        const task = window.tasks.find((t) => t.task_id == taskId);
-        if (!task) {
-          showError('Task not found', 'subtasks-section');
-          return;
-        }
-        const formData = new FormData(this);
-        const currentData = {
-          project_id: formData.get('project_id'),
-          task_description: formData.get('task_description'),
-          employee_id: formData.get('employee_id') || '',
-          due_date: formData.get('due_date'),
-          status: formData.get('status'),
-        };
-        const existingData = {
-          project_id: task.project_id.toString(),
-          task_description: task.task_description || '',
-          employee_id: task.employee_id ? task.employee_id.toString() : '',
-          due_date: task.due_date || '',
-          status: task.status || '',
-        };
-
-        const hasChanges = Object.keys(currentData).some(
-          (key) => currentData[key] !== existingData[key]
-        );
-
-        if (!hasChanges) {
-          showInfo('No changes made', 'subtasks-section');
-          return;
-        }
-      }
-
-      isSubmitting = true;
-      const saveButton = document.getElementById('save-task-btn');
-      saveButton.disabled = true;
-
-      const formData = new FormData(this);
-      formData.append('action', 'save_subtask');
-      if (taskId) {
-        formData.append('task_id', taskId); // Ensure task_id is included
-      }
-
-      fetch('manager_dashboard.php', {
-        method: 'POST',
-        body: formData,
-      })
-        .then((response) => response.text())
-        .then((text) => JSON.parse(text))
-        .then((data) => {
-          if (data.success) {
-            const successMessage = isNewSubtask
-              ? 'Subtask created successfully!'
-              : 'Subtask updated successfully!';
-            showSuccess(successMessage, 'subtasks-section');
-            window.tasks = data.tasks || [];
-            if (isNewSubtask) {
-              this.reset();
-              document.getElementById('task_id').value = '';
-              const employeeSelect = document.getElementById(
-                'employee_id_subtask'
-              );
-              employeeSelect.innerHTML = '<option value="">Unassigned</option>';
-              const taskSelect = document.getElementById('task_id');
-              taskSelect.innerHTML =
-                '<option value="">Create new task</option>';
-            }
-            return loadTasks();
-          } else {
-            showError(data.error || 'Failed to save task', 'subtasks-section');
-          }
-        })
-        .catch((error) => {
-          console.error('Fetch Error:', error);
-          showError('Network error: ' + error.message, 'subtasks-section');
-        });
-    });
-  }
-}
-
-function showAssignedEmployeesSection() {
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'none';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-    projectAssignmentsSection.style.display = 'block';
-
-    loadAssignments();
-  }
-}
-
-function loadAssignments() {
-  const projectSelect = document.getElementById('project_id_view');
-  if (!projectSelect) return;
-  renderAssignmentsTable(projectSelect.value);
-  const assignmentsTable = document.getElementById('assignments-table');
-  if (!assignmentsTable || !projectSelect) {
-    console.error('Assignments table or project select not found!');
-    return;
-  }
-
-  const renderTable = (selectedProjectId) => {
-    assignmentsTable.innerHTML = '';
-    let filteredAssignments = projectAssignments;
-    if (selectedProjectId) {
-      filteredAssignments = projectAssignments.filter(
-        (assignment) => assignment.project_id == selectedProjectId
-      );
-    }
-
-    if (filteredAssignments.length === 0) {
-      assignmentsTable.innerHTML = `<tr><td colspan="4">No assignments found for this project.</td></tr>`;
-      return;
-    }
-
-    filteredAssignments.forEach((assignment) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${assignment.project_name}</td>
-        <td>${assignment.first_name} ${assignment.last_name}</td>
-        <td>${assignment.role_in_project || 'N/A'}</td>
-        <td>
-          <button onclick="editAssignment(${
-            assignment.assignment_id
-          })">Edit</button>
-          <button onclick="deleteAssignment(${
-            assignment.assignment_id
-          })">Delete</button>
-        </td>
-      `;
-      assignmentsTable.appendChild(row);
-    });
-  };
-
-  renderTable(projectSelect.value);
-}
-
-function editAssignment(assignmentId) {
-  const assignment = window.projectAssignments.find(
-    (a) => a.assignment_id == assignmentId
-  );
-  if (!assignment) {
-    showError('Assignment not found', 'project-assignments-section');
-    return;
-  }
-
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-  const editAssignmentSection = document.getElementById(
-    'edit-assignment-section'
-  );
-
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection &&
-    editAssignmentSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'none';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-    projectAssignmentsSection.style.display = 'none';
-    editAssignmentSection.style.display = 'block';
-
-    document.getElementById('edit_assignment_id').value =
-      assignment.assignment_id;
-    document.getElementById(
-      'edit_employee_name'
-    ).value = `${assignment.first_name} ${assignment.last_name}`;
-    document.getElementById('edit_project_name').value =
-      assignment.project_name;
-    document.getElementById('edit_role_in_project').value =
-      assignment.role_in_project || '';
-  }
-
-  const form = document.getElementById('edit-assignment-form');
-  form.addEventListener(
-    'submit',
-    function (event) {
-      event.preventDefault();
-      const formData = new FormData(this);
-      formData.append('action', 'update_assignment');
-
-      fetch('manager_dashboard.php', {
-        method: 'POST',
-        body: formData,
-      })
-        .then((response) => {
-          if (!response.ok)
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          return response.json();
-        })
-        .then((data) => {
-          if (data.success) {
-            fetchUpdatedAssignments('Assignment updated successfully!');
-          } else {
-            showError(
-              data.error || 'Failed to update assignment',
-              'edit-assignment-section'
-            );
-          }
-        })
-        .catch((error) =>
-          showError(
-            'Network error: ' + error.message,
-            'edit-assignment-section'
-          )
-        );
-    },
-    { once: true }
-  );
-}
-
-function deleteAssignment(assignmentId) {
-  if (confirm('Are you sure you want to delete this assignment?')) {
-    const formData = new FormData();
-    formData.append('action', 'remove_assignment');
-    formData.append('assignment_id', assignmentId);
-
-    fetch('manager_dashboard.php', {
-      method: 'POST',
-      body: formData,
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.text();
-      })
-      .then((text) => {
-        try {
-          const data = JSON.parse(text);
-          if (data.success) {
-            showSuccess(
-              'Assignment deleted successfully!',
-              'project-assignments-section'
-            );
-            fetchUpdatedAssignments();
-          } else {
-            showError(
-              data.error || 'Failed to delete assignment',
-              'project-assignments-section'
-            );
-          }
-        } catch (e) {
-          console.error('Raw response:', text);
-          throw new Error('Invalid JSON response: ' + e.message);
-        }
-      })
-      .catch((error) => {
-        showError(
-          'Network error: ' + error.message,
-          'project-assignments-section'
-        );
-      });
-  }
-}
-
-function fetchUpdatedAssignments() {
-  fetch('manager_dashboard.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data&section=project_assignments',
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((data) => {
-      if (data.success) {
-        window.projectAssignments = data.project_assignments || [];
-        showAssignedEmployeesSection();
-        const projectSelect = document.getElementById('project_id_view');
-        const selectedProjectId = projectSelect ? projectSelect.value : '';
-        renderAssignmentsTable(selectedProjectId);
-      } else {
-        showError(
-          data.error || 'Failed to fetch updated assignments',
-          'project-assignments-section'
-        );
-      }
-    })
-    .catch((error) => {
-      showError(
-        'Network error: ' + error.message,
-        'project-assignments-section'
-      );
-    });
-}
-
-function renderAssignmentsTable(selectedProjectId) {
-  const assignmentsTable = document.getElementById('assignments-table');
-  if (!assignmentsTable) return;
-
-  assignmentsTable.innerHTML = '';
-  let filteredAssignments = window.projectAssignments;
-  if (selectedProjectId) {
-    filteredAssignments = window.projectAssignments.filter(
-      (assignment) => assignment.project_id == selectedProjectId
-    );
-  }
-
-  if (filteredAssignments.length === 0) {
-    assignmentsTable.innerHTML = `<tr><td colspan="4">No assignments found for this project.</td></tr>`;
-  } else {
-    filteredAssignments.forEach((assignment) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${assignment.project_name}</td>
-        <td>${assignment.first_name} ${assignment.last_name}</td>
-        <td>${assignment.role_in_project || 'N/A'}</td>
-        <td>
-          <button onclick="editAssignment(${
-            assignment.assignment_id
-          })">Edit</button>
-          <button onclick="deleteAssignment(${
-            assignment.assignment_id
-          })">Delete</button>
-        </td>
-      `;
-      assignmentsTable.appendChild(row);
-    });
-  }
-}
-
-function loadTasks() {
-  const projectId = document.getElementById('project_id_subtask').value;
-  const taskSelect = document.getElementById('task_id');
-  const tasksTable = document.getElementById('tasks-table');
-  taskSelect.innerHTML = '<option value="">Create new task</option>';
-  tasksTable.innerHTML = '';
-
-  if (projectId) {
-    const projectTasks = tasks.filter((t) => t.project_id == projectId);
-    projectTasks.forEach((t) => {
-      taskSelect.innerHTML += `<option value="${t.task_id}">${t.task_description}</option>`;
-      const row = document.createElement('tr');
-      row.innerHTML = `
-              <td>${t.task_description}</td>
-              <td>${t.project_name}</td>
-              <td>${
-                t.first_name ? t.first_name + ' ' + t.last_name : 'Unassigned'
-              }</td>
-              <td>${t.due_date || 'N/A'}</td>
-              <td>${t.status}</td>
-          `;
-      row.onclick = () => populateTaskForm(t);
-      tasksTable.appendChild(row);
-    });
-  }
-}
-
-function populateTaskForm(task) {
-  document.getElementById('task_id').value = task.task_id;
-  document.getElementById('task_description').value = task.task_description;
-  document.getElementById('project_id_subtask').value = task.project_id;
-  document.getElementById('employee_id_subtask').value = task.employee_id || '';
-  document.getElementById('due_date').value = task.due_date || '';
-  document.getElementById('task_status').value = task.status;
-  document.getElementById('delete-task-btn').style.display = 'block';
-}
-
-function resetSubtaskForm() {
-  document.getElementById('subtask-form').reset();
-  document.getElementById('task_id').value = '';
-  document.getElementById('delete-task-btn').style.display = 'none';
-  loadTasks();
-}
-
-function deleteTask() {
-  const taskId = document.getElementById('task_id').value;
-  if (!taskId) {
-    showError('No task selected to delete', 'subtasks-section');
-    return;
-  }
-
-  if (confirm('Are you sure you want to delete this task?')) {
-    fetch('../pages/features/manage_tasks.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `action=delete&task_id=${taskId}`,
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.success) {
-          refreshData();
-          resetSubtaskForm();
-        } else {
-          showError(data.error || 'Failed to delete task', 'subtasks-section');
-        }
-      })
-      .catch((error) =>
-        showError('Network error: ' + error.message, 'subtasks-section')
-      );
-  }
-}
-
-function addexitinterview() {
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'block';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-    projectAssignmentsSection.style.display = 'none';
-
-    const managerId = sessionStorage.getItem('employee_id');
-    const assignedEmployees = employees.filter(
-      (emp) => emp.manager_id == managerId
-    );
-
-    if (assignedEmployees.length === 0) {
-      profileUpdateForm.innerHTML = `
-                <div class="card">
-                    <h2>Request Exit Interview</h2>
-                    <p>No employees assigned to you.</p>
-                    <div class="form-group button-group">
-                        <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-                    </div>
+        </div>
+        <!-- Projects Section -->
+        <div id="projects-section" style="display: none;" class="card">
+            <h2>Project Status</h2>
+            <table class="report-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Status</th>
+                        <th>Budget</th>
+                        <th>Actual Cost</th>
+                        <th>Start Date</th>
+                        <th>Expected End</th>
+                        <th>Actual End</th>
+                        <th>Client</th>
+                    </tr>
+                </thead>
+                <tbody id="projects-table"></tbody>
+            </table>
+            <div class="form-group button-group">
+                <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+            </div>
+        </div>
+        <!-- Assign Employees Section -->
+        <div id="assign-employees-section" style="display: none;" class="card">
+            <h2>Assign Employees to Project</h2>
+            <form id="assign-employees-form" method="POST">
+                <div class="form-group">
+                    <label for="project_id_assign">Project:</label>
+                    <select id="project_id_assign" name="project_id" required>
+                        <option value="">Select a project</option>
+                        <?php foreach ($projects as $project): ?>
+                            <option value="<?php echo htmlspecialchars($project['project_id']); ?>">
+                                <?php echo htmlspecialchars($project['project_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
-            `;
-      return;
-    }
-
-    profileUpdateForm.innerHTML = `
-            <div class="card">
-                <h2>Request Exit Interview</h2>
-                <form id="exitInterviewForm" method="POST">
-                    <div class="form-group">
-                        <label for="employee_id">Employee:</label>
-                        <select id="employee_id" name="employee_id" required>
-                            <option value="">Select an employee</option>
-                            ${assignedEmployees
-                              .map(
-                                (emp) =>
-                                  `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name} (${emp.emp_job_title})</option>`
-                              )
-                              .join('')}
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="last_working_date">Last Working Date:</label>
-                        <input type="date" id="last_working_date" name="last_working_date" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="manager_rating">Manager Rating (calculated):</label>
-                        <input type="number" id="manager_rating" name="manager_rating" min="1" max="5" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="eligible_for_rehire">Eligible for Rehire:</label>
-                        <select id="eligible_for_rehire" name="eligible_for_rehire">
-                            <option value="1">Yes</option>
-                            <option value="0">No</option>
-                        </select>
-                    </div>
-                    <div class="form-group button-group">
-                        <button type="submit">Submit Request</button>
-                        <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-                    </div>
-                </form>
-            </div>
-        `;
-
-    const form = document.getElementById('exitInterviewForm');
-    const employeeSelect = document.getElementById('employee_id');
-    const managerRatingInput = document.getElementById('manager_rating');
-    if (form && employeeSelect && managerRatingInput) {
-      employeeSelect.addEventListener('change', function () {
-        const selectedEmployeeId = this.value;
-        const ratingData = reportAvgRatings.find(
-          (r) => r.employee_id == selectedEmployeeId
-        );
-        managerRatingInput.value =
-          ratingData && ratingData.avg_rating
-            ? parseFloat(ratingData.avg_rating).toFixed(1)
-            : 'N/A';
-      });
-
-      form.addEventListener('submit', function (event) {
-        event.preventDefault();
-        const lastWorkingDate = form.querySelector('#last_working_date').value;
-        const today = new Date().toISOString().split('T')[0];
-        if (lastWorkingDate < today) {
-          alert('Last working date cannot be in the past.');
-          return;
-        }
-
-        const managerRating =
-          managerRatingInput.value === 'N/A' ? null : managerRatingInput.value;
-        const formData = new FormData(this);
-        if (managerRating !== null) {
-          formData.set('manager_rating', managerRating);
-        }
-
-        fetch('../pages/features/request_exit_interview.php', {
-          method: 'POST',
-          body: formData,
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              alert('Requested exit interview successfully!');
-              form.reset();
-              managerRatingInput.value = '';
-            } else {
-              showError(
-                data.error || 'Failed to submit exit interview request',
-                'profile-update-form'
-              );
-            }
-          })
-          .catch((error) =>
-            showError('Network error: ' + error.message, 'profile-update-form')
-          );
-      });
-    }
-  }
-}
-
-function updateExitInterview(selectedInterviewId = null) {
-  const mainContent = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  const innerMainContent = document.getElementById('main-content');
-  const reportsAnalytics = document.getElementById('reports-analytics');
-  const projectsSection = document.getElementById('projects-section');
-  const assignEmployeesSection = document.getElementById(
-    'assign-employees-section'
-  );
-  const subtasksSection = document.getElementById('subtasks-section');
-  const projectAssignmentsSection = document.getElementById(
-    'project-assignments-section'
-  );
-
-  if (
-    mainContent &&
-    profileUpdateForm &&
-    innerMainContent &&
-    reportsAnalytics &&
-    projectsSection &&
-    assignEmployeesSection &&
-    subtasksSection &&
-    projectAssignmentsSection
-  ) {
-    mainContent.style.display = 'block';
-    innerMainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'block';
-    reportsAnalytics.style.display = 'none';
-    projectsSection.style.display = 'none';
-    assignEmployeesSection.style.display = 'none';
-    subtasksSection.style.display = 'none';
-    projectAssignmentsSection.style.display = 'none';
-
-    profileUpdateForm.style.width = '100%';
-    profileUpdateForm.style.margin = '0';
-    profileUpdateForm.style.padding = '20px';
-    profileUpdateForm.style.boxShadow = 'none';
-    profileUpdateForm.style.borderRadius = '0';
-
-    let exitInterviews = [];
-
-    const fetchExitInterviews = () => {
-      return fetch('../pages/features/fetch_exit_interviews.php')
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          return response.json();
-        })
-        .catch((error) => {
-          console.error('Error fetching exit interviews:', error);
-          throw error;
-        });
-    };
-
-    fetchExitInterviews()
-      .then((data) => {
-        if (!Array.isArray(data)) {
-          if (data.error) {
-            showError('Error: ' + data.error, 'profile-update-form');
-            profileUpdateForm.innerHTML = `
-                            <div style="padding: 20px;">
-                                <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Exit Interview Requests</h2>
-                                <p style="color: #555; font-size: 16px; margin-bottom: 20px;">${data.error}</p>
-                                <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
-                                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-                                </div>
-                            </div>
-                        `;
-            return;
-          } else {
-            throw new Error(
-              'Response is not an array: ' + JSON.stringify(data)
-            );
-          }
-        }
-
-        exitInterviews = data;
-
-        if (selectedInterviewId) {
-          const interview = data.find(
-            (ei) => ei.interview_id == selectedInterviewId
-          );
-          if (!interview) {
-            showError(
-              'Exit interview request not found.',
-              'profile-update-form'
-            );
-            return;
-          }
-
-          profileUpdateForm.innerHTML = `
-            <div class="card">
-                <h2>Update Exit Interview Request</h2>
-                <form id="updateExitInterviewForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                    <input type="hidden" name="interview_id" value="${
-                      interview.interview_id
-                    }">
-                    <div class="form-group">
-                        <label for="employee_id">Employee:</label>
-                        <input type="text" value="${interview.first_name} ${
-            interview.last_name
-          }" readonly>
-                        <input type="hidden" name="employee_id" value="${
-                          interview.employee_id
-                        }">
-                    </div>
-                    <div class="form-group">
-                        <label for="last_working_date">Last Working Date:</label>
-                        <input type="date" id="last_working_date" name="last_working_date" value="${
-                          interview.last_working_date
-                        }" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="manager_rating">Manager Rating:</label>
-                        <input type="number" id="manager_rating" name="manager_rating" value="${
-                          interview.manager_rating || ''
-                        }" step="0.1" min="1" max="5">
-                    </div>
-                    <div class="form-group">
-                        <label for="eligible_for_rehire">Eligible for Rehire:</label>
-                        <select id="eligible_for_rehire" name="eligible_for_rehire" required>
-                            <option value="1" ${
-                              interview.eligible_for_rehire === '1'
-                                ? 'selected'
-                                : ''
-                            }>Yes</option>
-                            <option value="0" ${
-                              interview.eligible_for_rehire === '0'
-                                ? 'selected'
-                                : ''
-                            }>No</option>
-                        </select>
-                    </div>
-                    <div class="form-group button-group" style="grid-column: span 2;">
-                        <button type="submit">Update Request</button>
-                        <button type="button" onclick="updateExitInterview()">Back to List</button>
-                    </div>
-                </form>
-            </div>
-          `;
-
-          const form = document.getElementById('updateExitInterviewForm');
-          if (form) {
-            form.addEventListener('submit', function (event) {
-              event.preventDefault();
-
-              const lastWorkingDate =
-                form.querySelector('#last_working_date').value;
-              const today = new Date().toISOString().split('T')[0];
-              if (lastWorkingDate < today) {
-                alert('Last working date cannot be in the past.');
-                return;
-              }
-
-              const managerRating = form.querySelector('#manager_rating').value;
-              if (managerRating && (managerRating < 1 || managerRating > 5)) {
-                alert('Manager rating must be between 1 and 5.');
-                return;
-              }
-
-              const formData = new FormData(this);
-              fetch('../pages/features/update_exit_interview.php', {
-                method: 'POST',
-                body: formData,
-              })
-                .then((response) => response.json())
-                .then((data) => {
-                  if (data.success) {
-                    showSuccess(
-                      'Exit interview request updated successfully!',
-                      'profile-update-form'
-                    );
-                    fetchExitInterviews().then((updatedData) => {
-                      exitInterviews = updatedData;
-                      updateExitInterview();
-                    });
-                  } else {
-                    showError(
-                      data.error || 'Failed to update exit interview request',
-                      'profile-update-form'
-                    );
-                  }
-                })
-                .catch((error) =>
-                  showError(
-                    'Network error: ' + error.message,
-                    'profile-update-form'
-                  )
-                );
-            });
-          }
-        } else {
-          let tableHTML = `
-                        <div style="width: 100%;">
-                            <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Exit Interview Requests</h2>
-                            <div style="overflow-x: auto;">
-                                <table class="exit-interview-table" style="width: 100%; border-collapse: collapse; font-family: Arial, sans-serif; font-size: 16px;">
-                                    <thead style="background-color: #f4f4f4; color: #333;">
-                                        <tr>
-                                            <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Employee</th>
-                                            <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Interview Date</th>
-                                            <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Last Working Date</th>
-                                            <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Manager Rating</th>
-                                            <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Eligible for Rehire</th>
-                                            <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                    `;
-
-          if (data.length === 0) {
-            tableHTML += `
+                <div class="form-group">
+                    <label for="employee_id_assign">Employee:</label>
+                    <select id="employee_id_assign" name="employee_id" required>
+                        <option value="">Select an employee</option>
+                        <?php foreach ($employees as $emp): ?>
+                            <option value="<?php echo htmlspecialchars($emp['employee_id']); ?>">
+                                <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="role_in_project">Role in Project:</label>
+                    <input type="text" id="role_in_project" name="role_in_project" required>
+                </div>
+                <div class="form-group button-group">
+                    <button type="submit" style="margin: 10px;">Assign Employee</button>
+                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+                </div>
+            </form>
+        </div>
+        <!-- View/Edit Project Assignments Section -->
+        <div id="project-assignments-section" style="display: none;" class="card">
+            <h2>View/Edit Project Assignments</h2>
+            <div class="form-group">
+                <label for="project_id_view">Select Project:</label>
+                <select id="project_id_view" name="project_id" onchange="loadAssignments()">
+                    <option value="">Select a project</option>
+                    <?php foreach ($projects as $project): ?>
+                        <option value="<?php echo htmlspecialchars($project['project_id']); ?>">
+                            <?php echo htmlspecialchars($project['project_name']); ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div id="assignments-content">
+                    <table class="report-table">
+                        <thead>
                             <tr>
-                                <td colspan="6" style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">No exit interview requests found.</td>
+                                <th>Project Name</th>
+                                <th>Employee Name</th>
+                                <th>Role in Project</th>
+                                <th>Actions</th>
                             </tr>
-                        `;
-          } else {
-            data.forEach((ei) => {
-              tableHTML += `
-                                <tr style="transition: background-color 0.3s;"
-                                    onmouseover="this.style.backgroundColor='#f9f9f9'"
-                                    onmouseout="this.style.backgroundColor='transparent'">
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
-                                      ei.first_name
-                                    } ${ei.last_name}</td>
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
-                                      ei.interview_date || 'N/A'
-                                    }</td>
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
-                                      ei.last_working_date || 'N/A'
-                                    }</td>
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
-                                      ei.manager_rating || 'N/A'
-                                    }</td>
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
-                                      ei.eligible_for_rehire == 1 ? 'Yes' : 'No'
-                                    }</td>
-                                    <td style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd;">
-                                        <button class="update-exit-interview-btn" data-interview-id="${
-                                          ei.interview_id
-                                        }">Update</button>
-                                    </td>
-                                </tr>
-                            `;
-            });
-          }
+                        </thead>
+                        <tbody id="assignments-table"></tbody>
+                    </table>
+                </div>
+                <div class="form-group button-group">
+                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+                </div>
+            </div>
+            <!-- Edit Assignment Section -->
+            <div id="edit-assignment-section" style="display: none;" class="card">
+                <h2>Edit Assignment</h2>
+                <form id="edit-assignment-form">
+                    <div class="form-group">
+                        <label for="edit_employee_name">Employee:</label>
+                        <input type="text" id="edit_employee_name" name="employee_name" readonly>
+                        <input type="hidden" id="edit_assignment_id" name="assignment_id">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_project_name">Project:</label>
+                        <input type="text" id="edit_project_name" name="project_name" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_role_in_project">Role in Project:</label>
+                        <input type="text" id="edit_role_in_project" name="role_in_project" required>
+                    </div>
+                    <div class="form-group button-group">
+                        <button type="submit" style="margin: 10px;">Update</button>
+                        <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+                    </div>
+                </form>
+            </div>
+            <!-- Subtasks Section -->
+            <div id="subtasks-section" style="display: none;" class="card">
+                <h2>Create/Update Subtasks</h2>
+                <form id="subtask-form" method="POST">
+                    <div class="form-group">
+                        <label for="project_id_subtask">Project:</label>
+                        <select id="project_id_subtask" name="project_id" required onchange="loadTasks()">
+                            <option value="">Select a project</option>
+                            <?php foreach ($projects as $project): ?>
+                                <option value="<?php echo htmlspecialchars($project['project_id']); ?>">
+                                    <?php echo htmlspecialchars($project['project_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task_id">Task (Optional):</label>
+                        <select id="task_id" name="task_id">
+                            <option value="">Create new task</option>
+                            <!-- Populated dynamically by JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task_description">Task Description:</label>
+                        <input type="text" id="task_description" name="task_description" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="employee_id_subtask">Assignee:</label>
+                        <select id="employee_id_subtask" name="employee_id">
+                            <option value="">Unassigned</option>
+                            <?php foreach ($employees as $emp): ?>
+                                <option value="<?php echo htmlspecialchars($emp['employee_id']); ?>">
+                                    <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="due_date">Due Date:</label>
+                        <input type="date" id="due_date" name="due_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="task_status">Status:</label>
+                        <select id="task_status" name="status" required>
+                            <option value="To Do">To Do</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Done">Done</option>
+                        </select>
+                    </div>
+                    <div class="form-group button-group">
+                        <button type="submit" id="save-task-btn" style="margin: 10px;">Save Task</button>
+                        <button type="button" id="delete-task-btn" style="display: none;" onclick="deleteTask()" style="margin: 10px;">Delete Task</button>
+                        <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+                    </div>
+                </form>
+                <h3>Existing Subtasks</h3>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Description</th>
+                            <th>Project</th>
+                            <th>Assignee</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasks-table"></tbody>
+                </table>
+            </div>
+            <?php
+            if (isset($_SESSION['success'])) {
+                echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';
+                unset($_SESSION['success']);
+            }
+            if (isset($_SESSION['error'])) {
+                echo '<div class="alert alert-error" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['error']) . '</div>';
+                unset($_SESSION['error']);
+            }
+            ?>
+        </div>
+    </div>
+    <script>
+        const departments = <?php echo json_encode($departments ?: []); ?>;
+        const employees = <?php echo json_encode($employees); ?>;
+        const feedback = <?php echo json_encode($feedback); ?>;
+        const reportAvgRatings = <?php echo json_encode($report_avg_ratings); ?>;
+        const reportFeedbackTypes = <?php echo json_encode($report_feedback_types); ?>;
+        const projects = <?php echo json_encode($projects); ?>;
+        const tasks = <?php echo json_encode($tasks); ?>;
+        const projectAssignments = <?php echo json_encode($project_assignments); ?>;
+        const employeeTrainings = <?php echo json_encode($employee_trainings); ?>;
+        const userName = "<?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Manager'); ?>";
+        const managerId = <?php echo json_encode($manager_id); ?>;
+        console.log('Departments:', departments);
 
-          tableHTML += `
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
-                                <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-                            </div>
-                        </div>
-                    `;
 
-          profileUpdateForm.innerHTML = tableHTML;
-
-          const updateButtons = profileUpdateForm.querySelectorAll(
-            '.update-exit-interview-btn'
-          );
-          updateButtons.forEach((button) => {
-            button.addEventListener('click', function () {
-              const interviewId = this.getAttribute('data-interview-id');
-              updateExitInterview(interviewId);
-            });
-          });
-        }
-      })
-      .catch((error) =>
-        showError(
-          'Error fetching exit interviews: ' + error.message,
-          'profile-update-form'
-        )
-      );
-  }
-}
-
-document.querySelectorAll('.sidebar-menu a').forEach((link) => {
-  link.addEventListener('click', function (event) {
-    event.preventDefault();
-    const action = this.getAttribute('onclick');
-    if (action && typeof window[action] === 'function') {
-      window[action]();
-    }
-  });
-});
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+        });
+    </script>
+    <script src="../assets/js/dashboard.js"></script>
+    <script src="../assets/js/manager_dashboard.js"></script>
+</body>
+</html>
