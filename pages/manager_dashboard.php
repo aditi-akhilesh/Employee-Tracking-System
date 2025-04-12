@@ -13,7 +13,6 @@ function fetchData($con, $manager_id, $sections = ['all']) {
     $shouldFetch = function($section) use ($sections) {
         return in_array('all', $sections) || in_array($section, $sections);
     };
-
     // Employees assigned to this manager
     if ($shouldFetch('employees')) {
         $stmt = $con->prepare("
@@ -231,6 +230,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     echo json_encode($response);
     exit();
 }
+// Fetch departments with description and employee count
+try {
+    $stmt = $con->query("
+        SELECT 
+            d.department_id, 
+            d.department_name, 
+            d.department_description, 
+            COUNT(e.employee_id) AS employee_count
+        FROM Department d
+        LEFT JOIN Employees e ON d.department_id = e.department_id
+        GROUP BY d.department_id, d.department_name, d.department_description
+    ");
+    $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $departments = [];
+    $_SESSION['error'] = "Failed to fetch department information: " . $e->getMessage();
+}
+
 
 $data = fetchData($con, $manager_id);
 $employees = $data['employees'];
@@ -550,6 +567,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
         </div>
     </div>
     <script>
+        const departments = <?php echo json_encode($departments ?: []); ?>;
         const employees = <?php echo json_encode($employees); ?>;
         const feedback = <?php echo json_encode($feedback); ?>;
         const reportAvgRatings = <?php echo json_encode($report_avg_ratings); ?>;
@@ -560,6 +578,8 @@ $employee_trainings = $data['employee_trainings'] ?? [];
         const employeeTrainings = <?php echo json_encode($employee_trainings); ?>;
         const userName = "<?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Manager'); ?>";
         const managerId = <?php echo json_encode($manager_id); ?>;
+        console.log('Departments:', departments);
+
 
         document.addEventListener('DOMContentLoaded', function() {
             refreshData();
