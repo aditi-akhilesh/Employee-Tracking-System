@@ -670,7 +670,9 @@ function showReportsAnalytics() {
               const selectedEmployee =
                 employeeSearch.options[employeeSearch.selectedIndex].text;
               pdf.save(
-                `Employee_Report_${selectedEmployee}_${new Date().toISOString().split('T')[0]}.pdf`
+                `Employee_Report_${selectedEmployee}_${
+                  new Date().toISOString().split('T')[0]
+                }.pdf`
               );
               downloadPdfBtn.style.display = 'block';
             })
@@ -1238,7 +1240,7 @@ function fetchUpdatedAssignments() {
   fetch('manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data�ion=project_assignments',
+    body: 'action=refresh_data&section=project_assignments',
   })
     .then((response) => {
       if (!response.ok) {
@@ -1605,7 +1607,10 @@ function updateExitInterview(selectedInterviewId = null) {
             (ei) => ei.interview_id == selectedInterviewId
           );
           if (!interview) {
-            showError('Exit interview request not found.', 'profile-update-form');
+            showError(
+              'Exit interview request not found.',
+              'profile-update-form'
+            );
             return;
           }
 
@@ -1613,25 +1618,43 @@ function updateExitInterview(selectedInterviewId = null) {
             <div class="card">
                 <h2>Update Exit Interview Request</h2>
                 <form id="updateExitInterviewForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                    <input type="hidden" name="interview_id" value="${interview.interview_id}">
+                    <input type="hidden" name="interview_id" value="${
+                      interview.interview_id
+                    }">
                     <div class="form-group">
                         <label for="employee_id">Employee:</label>
-                        <input type="text" value="${interview.first_name} ${interview.last_name}" readonly>
-                        <input type="hidden" name="employee_id" value="${interview.employee_id}">
+                        <input type="text" value="${interview.first_name} ${
+            interview.last_name
+          }" readonly>
+                        <input type="hidden" name="employee_id" value="${
+                          interview.employee_id
+                        }">
                     </div>
                     <div class="form-group">
                         <label for="last_working_date">Last Working Date:</label>
-                        <input type="date" id="last_working_date" name="last_working_date" value="${interview.last_working_date}" required>
+                        <input type="date" id="last_working_date" name="last_working_date" value="${
+                          interview.last_working_date
+                        }" required>
                     </div>
                     <div class="form-group">
                         <label for="manager_rating">Manager Rating:</label>
-                        <input type="number" id="manager_rating" name="manager_rating" value="${interview.manager_rating || ''}" step="0.1" min="1" max="5">
+                        <input type="number" id="manager_rating" name="manager_rating" value="${
+                          interview.manager_rating || ''
+                        }" step="0.1" min="1" max="5">
                     </div>
                     <div class="form-group">
                         <label for="eligible_for_rehire">Eligible for Rehire:</label>
                         <select id="eligible_for_rehire" name="eligible_for_rehire" required>
-                            <option value="1" ${interview.eligible_for_rehire === '1' ? 'selected' : ''}>Yes</option>
-                            <option value="0" ${interview.eligible_for_rehire === '0' ? 'selected' : ''}>No</option>
+                            <option value="1" ${
+                              interview.eligible_for_rehire === '1'
+                                ? 'selected'
+                                : ''
+                            }>Yes</option>
+                            <option value="0" ${
+                              interview.eligible_for_rehire === '0'
+                                ? 'selected'
+                                : ''
+                            }>No</option>
                         </select>
                     </div>
                     <div class="form-group button-group" style="grid-column: span 2;">
@@ -1647,7 +1670,8 @@ function updateExitInterview(selectedInterviewId = null) {
             form.addEventListener('submit', function (event) {
               event.preventDefault();
 
-              const lastWorkingDate = form.querySelector('#last_working_date').value;
+              const lastWorkingDate =
+                form.querySelector('#last_working_date').value;
               const today = new Date().toISOString().split('T')[0];
               if (lastWorkingDate < today) {
                 alert('Last working date cannot be in the past.');
@@ -1668,7 +1692,10 @@ function updateExitInterview(selectedInterviewId = null) {
                 .then((response) => response.json())
                 .then((data) => {
                   if (data.success) {
-                    showSuccess('Exit interview request updated successfully!', 'profile-update-form');
+                    showSuccess(
+                      'Exit interview request updated successfully!',
+                      'profile-update-form'
+                    );
                     fetchExitInterviews().then((updatedData) => {
                       exitInterviews = updatedData;
                       updateExitInterview();
@@ -1681,7 +1708,10 @@ function updateExitInterview(selectedInterviewId = null) {
                   }
                 })
                 .catch((error) =>
-                  showError('Network error: ' + error.message, 'profile-update-form')
+                  showError(
+                    'Network error: ' + error.message,
+                    'profile-update-form'
+                  )
                 );
             });
           }
@@ -1716,13 +1746,25 @@ function updateExitInterview(selectedInterviewId = null) {
                                 <tr style="transition: background-color 0.3s;"
                                     onmouseover="this.style.backgroundColor='#f9f9f9'"
                                     onmouseout="this.style.backgroundColor='transparent'">
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.first_name} ${ei.last_name}</td>
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.interview_date || 'N/A'}</td>
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.last_working_date || 'N/A'}</td>
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.manager_rating || 'N/A'}</td>
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.eligible_for_rehire == 1 ? 'Yes' : 'No'}</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
+                                      ei.first_name
+                                    } ${ei.last_name}</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
+                                      ei.interview_date || 'N/A'
+                                    }</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
+                                      ei.last_working_date || 'N/A'
+                                    }</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
+                                      ei.manager_rating || 'N/A'
+                                    }</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
+                                      ei.eligible_for_rehire == 1 ? 'Yes' : 'No'
+                                    }</td>
                                     <td style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd;">
-                                        <button class="update-exit-interview-btn" data-interview-id="${ei.interview_id}">Update</button>
+                                        <button class="update-exit-interview-btn" data-interview-id="${
+                                          ei.interview_id
+                                        }">Update</button>
                                     </td>
                                 </tr>
                             `;
@@ -1753,7 +1795,10 @@ function updateExitInterview(selectedInterviewId = null) {
         }
       })
       .catch((error) =>
-        showError('Error fetching exit interviews: ' + error.message, 'profile-update-form')
+        showError(
+          'Error fetching exit interviews: ' + error.message,
+          'profile-update-form'
+        )
       );
   }
 }
