@@ -121,6 +121,21 @@ function fetchData($con, $manager_id, $sections = ['all']) {
         $data['project_assignments'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Fetch training certificates for employees under this manager
+    if ($shouldFetch('employee_trainings')) {
+        $stmt = $con->prepare("
+            SELECT et.employee_training_id, et.employee_id, et.training_id, et.enrollment_date,
+                   et.completion_status, et.score, t.training_name, t.certificate, t.training_date
+            FROM Employee_Training et
+            JOIN Employees e ON et.employee_id = e.employee_id
+            JOIN Training t ON et.training_id = t.training_id
+            JOIN Users u ON e.user_id = u.user_id
+            WHERE e.manager_id = :manager_id AND et.completion_status = 'completed'
+        ");
+        $stmt->execute(['manager_id' => $manager_id]);
+        $data['employee_trainings'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     return $data;
 }
 
@@ -132,7 +147,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $sections = isset($_POST['section']) && $_POST['section'] === 'project_assignments'
             ? ['projects', 'project_assignments']
             : (isset($_POST['section']) && $_POST['section'] === 'reports'
-                ? ['feedback', 'report_avg_ratings', 'report_feedback_types']
+                ? ['feedback', 'report_avg_ratings', 'report_feedback_types', 'employee_trainings']
                 : (isset($_POST['section']) && $_POST['section'] === 'projects'
                     ? ['projects']
                     : (isset($_POST['section']) && $_POST['section'] === 'tasks'
@@ -225,6 +240,7 @@ $report_feedback_types = $data['report_feedback_types'];
 $projects = $data['projects'];
 $tasks = $data['tasks'];
 $project_assignments = $data['project_assignments'];
+$employee_trainings = $data['employee_trainings'] ?? [];
 ?>
 
 <!DOCTYPE html>
@@ -292,6 +308,32 @@ $project_assignments = $data['project_assignments'];
                             </tr>
                         </thead>
                         <tbody id="feedback-types-table"></tbody>
+                    </table>
+                </div>
+                <div class="report-section">
+                    <h3>Work Summary</h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="work-summary-table"></tbody>
+                    </table>
+                </div>
+                <div class="report-section">
+                    <h3>Training Certificates</h3>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Training Name</th>
+                                <th>Training Date</th>
+                                <th>Certificate</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="training-certificates-table"></tbody>
                     </table>
                 </div>
                 <div class="report-section">
@@ -382,147 +424,148 @@ $project_assignments = $data['project_assignments'];
                     <?php foreach ($projects as $project): ?>
                         <option value="<?php echo htmlspecialchars($project['project_id']); ?>">
                             <?php echo htmlspecialchars($project['project_name']); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div id="assignments-content">
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Project Name</th>
+                                <th>Employee Name</th>
+                                <th>Role in Project</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assignments-table"></tbody>
+                    </table>
+                </div>
+                <div class="form-group button-group">
+                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+                </div>
             </div>
-            <div id="assignments-content">
+            <!-- Edit Assignment Section -->
+            <div id="edit-assignment-section" style="display: none;" class="card">
+                <h2>Edit Assignment</h2>
+                <form id="edit-assignment-form">
+                    <div class="form-group">
+                        <label for="edit_employee_name">Employee:</label>
+                        <input type="text" id="edit_employee_name" name="employee_name" readonly>
+                        <input type="hidden" id="edit_assignment_id" name="assignment_id">
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_project_name">Project:</label>
+                        <input type="text" id="edit_project_name" name="project_name" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit_role_in_project">Role in Project:</label>
+                        <input type="text" id="edit_role_in_project" name="role_in_project" required>
+                    </div>
+                    <div class="form-group button-group">
+                        <button type="submit" style="margin: 10px;">Update</button>
+                        <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+                    </div>
+                </form>
+            </div>
+            <!-- Subtasks Section -->
+            <div id="subtasks-section" style="display: none;" class="card">
+                <h2>Create/Update Subtasks</h2>
+                <form id="subtask-form" method="POST">
+                    <div class="form-group">
+                        <label for="project_id_subtask">Project:</label>
+                        <select id="project_id_subtask" name="project_id" required onchange="loadTasks()">
+                            <option value="">Select a project</option>
+                            <?php foreach ($projects as $project): ?>
+                                <option value="<?php echo htmlspecialchars($project['project_id']); ?>">
+                                    <?php echo htmlspecialchars($project['project_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task_id">Task (Optional):</label>
+                        <select id="task_id" name="task_id">
+                            <option value="">Create new task</option>
+                            <!-- Populated dynamically by JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="task_description">Task Description:</label>
+                        <input type="text" id="task_description" name="task_description" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="employee_id_subtask">Assignee:</label>
+                        <select id="employee_id_subtask" name="employee_id">
+                            <option value="">Unassigned</option>
+                            <?php foreach ($employees as $emp): ?>
+                                <option value="<?php echo htmlspecialchars($emp['employee_id']); ?>">
+                                    <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="due_date">Due Date:</label>
+                        <input type="date" id="due_date" name="due_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="task_status">Status:</label>
+                        <select id="task_status" name="status" required>
+                            <option value="To Do">To Do</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Done">Done</option>
+                        </select>
+                    </div>
+                    <div class="form-group button-group">
+                        <button type="submit" id="save-task-btn" style="margin: 10px;">Save Task</button>
+                        <button type="button" id="delete-task-btn" style="display: none;" onclick="deleteTask()" style="margin: 10px;">Delete Task</button>
+                        <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+                    </div>
+                </form>
+                <h3>Existing Subtasks</h3>
                 <table class="report-table">
                     <thead>
                         <tr>
-                            <th>Project Name</th>
-                            <th>Employee Name</th>
-                            <th>Role in Project</th>
-                            <th>Actions</th>
+                            <th>Description</th>
+                            <th>Project</th>
+                            <th>Assignee</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
                         </tr>
                     </thead>
-                    <tbody id="assignments-table"></tbody>
+                    <tbody id="tasks-table"></tbody>
                 </table>
             </div>
-            <div class="form-group button-group">
-                <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
-            </div>
+            <?php
+            if (isset($_SESSION['success'])) {
+                echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';
+                unset($_SESSION['success']);
+            }
+            if (isset($_SESSION['error'])) {
+                echo '<div class="alert alert-error" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['error']) . '</div>';
+                unset($_SESSION['error']);
+            }
+            ?>
         </div>
-        <!-- Edit Assignment Section -->
-        <div id="edit-assignment-section" style="display: none;" class="card">
-            <h2>Edit Assignment</h2>
-            <form id="edit-assignment-form">
-                <div class="form-group">
-                    <label for="edit_employee_name">Employee:</label>
-                    <input type="text" id="edit_employee_name" name="employee_name" readonly>
-                    <input type="hidden" id="edit_assignment_id" name="assignment_id">
-                </div>
-                <div class="form-group">
-                    <label for="edit_project_name">Project:</label>
-                    <input type="text" id="edit_project_name" name="project_name" readonly>
-                </div>
-                <div class="form-group">
-                    <label for="edit_role_in_project">Role in Project:</label>
-                    <input type="text" id="edit_role_in_project" name="role_in_project" required>
-                </div>
-                <div class="form-group button-group">
-                    <button type="submit" style="margin: 10px;">Update</button>
-                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
-                </div>
-            </form>
-        </div>
-        <!-- Subtasks Section -->
-        <div id="subtasks-section" style="display: none;" class="card">
-            <h2>Create/Update Subtasks</h2>
-            <form id="subtask-form" method="POST">
-                <div class="form-group">
-                    <label for="project_id_subtask">Project:</label>
-                    <select id="project_id_subtask" name="project_id" required onchange="loadTasks()">
-                        <option value="">Select a project</option>
-                        <?php foreach ($projects as $project): ?>
-                            <option value="<?php echo htmlspecialchars($project['project_id']); ?>">
-                                <?php echo htmlspecialchars($project['project_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="task_id">Task (Optional):</label>
-                    <select id="task_id" name="task_id">
-                        <option value="">Create new task</option>
-                        <!-- Populated dynamically by JS -->
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="task_description">Task Description:</label>
-                    <input type="text" id="task_description" name="task_description" required>
-                </div>
-                <div class="form-group">
-                    <label for="employee_id_subtask">Assignee:</label>
-                    <select id="employee_id_subtask" name="employee_id">
-                        <option value="">Unassigned</option>
-                        <?php foreach ($employees as $emp): ?>
-                            <option value="<?php echo htmlspecialchars($emp['employee_id']); ?>">
-                                <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="due_date">Due Date:</label>
-                    <input type="date" id="due_date" name="due_date" required>
-                </div>
-                <div class="form-group">
-                    <label for="task_status">Status:</label>
-                    <select id="task_status" name="status" required>
-                        <option value="To Do">To Do</option>
-                        <option value="In Progress">In Progress</option>
-                        <option value="Done">Done</option>
-                    </select>
-                </div>
-                <div class="form-group button-group">
-                    <button type="submit" id="save-task-btn" style="margin: 10px;">Save Task</button>
-                    <button type="button" id="delete-task-btn" style="display: none;" onclick="deleteTask()" style="margin: 10px;">Delete Task</button>
-                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
-                </div>
-            </form>
-            <h3>Existing Subtasks</h3>
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th>Description</th>
-                        <th>Project</th>
-                        <th>Assignee</th>
-                        <th>Due Date</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="tasks-table"></tbody>
-            </table>
-        </div>
-        <?php
-        if (isset($_SESSION['success'])) {
-            echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';
-            unset($_SESSION['success']);
-        }
-        if (isset($_SESSION['error'])) {
-            echo '<div class="alert alert-error" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['error']) . '</div>';
-            unset($_SESSION['error']);
-        }
-        ?>
     </div>
-</div>
-<script>
-    const employees = <?php echo json_encode($employees); ?>;
-    const feedback = <?php echo json_encode($feedback); ?>;
-    const reportAvgRatings = <?php echo json_encode($report_avg_ratings); ?>;
-    const reportFeedbackTypes = <?php echo json_encode($report_feedback_types); ?>;
-    const projects = <?php echo json_encode($projects); ?>;
-    const tasks = <?php echo json_encode($tasks); ?>;
-    const projectAssignments = <?php echo json_encode($project_assignments); ?>;
-    const userName = "<?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Manager'); ?>";
-    const managerId = <?php echo json_encode($manager_id); ?>;
+    <script>
+        const employees = <?php echo json_encode($employees); ?>;
+        const feedback = <?php echo json_encode($feedback); ?>;
+        const reportAvgRatings = <?php echo json_encode($report_avg_ratings); ?>;
+        const reportFeedbackTypes = <?php echo json_encode($report_feedback_types); ?>;
+        const projects = <?php echo json_encode($projects); ?>;
+        const tasks = <?php echo json_encode($tasks); ?>;
+        const projectAssignments = <?php echo json_encode($project_assignments); ?>;
+        const employeeTrainings = <?php echo json_encode($employee_trainings); ?>;
+        const userName = "<?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Manager'); ?>";
+        const managerId = <?php echo json_encode($manager_id); ?>;
 
-    document.addEventListener('DOMContentLoaded', function() {
-        refreshData();
-    });
-</script>
-<script src="../assets/js/dashboard.js"></script>
-<script src="../assets/js/manager_dashboard.js"></script>
+        document.addEventListener('DOMContentLoaded', function() {
+            refreshData();
+        });
+    </script>
+    <script src="../assets/js/dashboard.js"></script>
+    <script src="../assets/js/manager_dashboard.js"></script>
 </body>
 </html>

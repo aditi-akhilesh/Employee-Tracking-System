@@ -17,7 +17,9 @@ function refreshData(callback) {
         window.tasks = data.tasks || tasks;
         window.projectAssignments =
           data.project_assignments || projectAssignments;
+        window.employeeTrainings = data.employee_trainings || employeeTrainings;
         console.log('Project Assignments:', window.projectAssignments);
+        console.log('Employee Trainings:', window.employeeTrainings);
         if (callback) callback();
       } else {
         showError(data.error || 'Failed to refresh data');
@@ -499,6 +501,12 @@ function showReportsAnalytics() {
               (fb) => fb.feedback_type === type.feedback_type
             ).length,
           }));
+        const filteredAssignments = projectAssignments.filter(
+          (assignment) => String(assignment.employee_id) === selectedEmployeeId
+        );
+        const filteredTrainings = employeeTrainings.filter(
+          (training) => String(training.employee_id) === selectedEmployeeId
+        );
 
         const avgRatingsTable = document.getElementById('avg-ratings-table');
         avgRatingsTable.innerHTML = '';
@@ -530,6 +538,60 @@ function showReportsAnalytics() {
                           <td>${report.type_count}</td>
                       `;
             feedbackTypesTable.appendChild(row);
+          });
+        }
+
+        const workSummaryTable = document.getElementById('work-summary-table');
+        workSummaryTable.innerHTML = '';
+        if (filteredFeedback.length === 0 && filteredAssignments.length === 0) {
+          workSummaryTable.innerHTML = `<tr><td colspan="2">No work summary available for this employee.</td></tr>`;
+        } else {
+          if (filteredFeedback.length > 0) {
+            const feedbackSummary = filteredFeedback
+              .map(
+                (fb) =>
+                  `${fb.feedback_type}: ${fb.feedback_text} (Rating: ${fb.rating}, Date: ${fb.date_submitted})`
+              )
+              .join('; ');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                          <td>Feedback</td>
+                          <td>${feedbackSummary}</td>
+                      `;
+            workSummaryTable.appendChild(row);
+          }
+          if (filteredAssignments.length > 0) {
+            const projectSummary = filteredAssignments
+              .map(
+                (assignment) =>
+                  `${assignment.project_name} (Role: ${assignment.role_in_project})`
+              )
+              .join('; ');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                          <td>Projects</td>
+                          <td>${projectSummary}</td>
+                      `;
+            workSummaryTable.appendChild(row);
+          }
+        }
+
+        const trainingTable = document.getElementById(
+          'training-certificates-table'
+        );
+        trainingTable.innerHTML = '';
+        if (filteredTrainings.length === 0) {
+          trainingTable.innerHTML = `<tr><td colspan="4">No training certificates available for this employee.</td></tr>`;
+        } else {
+          filteredTrainings.forEach((training) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                          <td>${training.training_name}</td>
+                          <td>${training.training_date || 'N/A'}</td>
+                          <td>${training.certificate || 'N/A'}</td>
+                          <td>${training.score || 'N/A'}</td>
+                      `;
+            trainingTable.appendChild(row);
           });
         }
 
@@ -608,9 +670,7 @@ function showReportsAnalytics() {
               const selectedEmployee =
                 employeeSearch.options[employeeSearch.selectedIndex].text;
               pdf.save(
-                `Employee_Report_${selectedEmployee}_${
-                  new Date().toISOString().split('T')[0]
-                }.pdf`
+                `Employee_Report_${selectedEmployee}_${new Date().toISOString().split('T')[0]}.pdf`
               );
               downloadPdfBtn.style.display = 'block';
             })
@@ -657,7 +717,6 @@ function loadScript(url, callback) {
   document.head.appendChild(script);
 }
 
-// Projects and Tasks Functions
 function showProjects() {
   const mainContent = document.getElementById('content-area');
   const profileUpdateForm = document.getElementById('profile-update-form');
@@ -766,8 +825,7 @@ function showAssignEmployees() {
         })
         .then((data) => {
           if (data.success) {
-            form.reset(); // Reset the form immediately
-            // Pass the success message to the target page
+            form.reset();
             fetchUpdatedAssignmentsAfterAssignment(
               'Employee assigned to project successfully!'
             );
@@ -792,7 +850,7 @@ function fetchUpdatedAssignmentsAfterAssignment(successMessage) {
   fetch('manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_dataÂ§ion=project_assignments',
+    body: 'action=refresh_data§ion=project_assignments',
   })
     .then((response) => {
       if (!response.ok) {
@@ -803,12 +861,11 @@ function fetchUpdatedAssignmentsAfterAssignment(successMessage) {
     .then((data) => {
       if (data.success) {
         window.projectAssignments = data.project_assignments || [];
-        showAssignedEmployeesSection(); // Redirect to the target page
+        showAssignedEmployeesSection();
         const projectSelect = document.getElementById('project_id_view');
         const selectedProjectId = projectSelect ? projectSelect.value : '';
-        renderAssignmentsTable(selectedProjectId); // Render the updated table
+        renderAssignmentsTable(selectedProjectId);
         if (successMessage) {
-          // Show the success message in the target section
           showSuccess(successMessage, 'project-assignments-section');
         }
       } else {
@@ -969,7 +1026,6 @@ function loadAssignments() {
   renderTable(projectSelect.value);
 }
 
-// Function to show the Edit Assignment section and populate the form
 function editAssignment(assignmentId) {
   const assignment = window.projectAssignments.find(
     (a) => a.assignment_id == assignmentId
@@ -979,7 +1035,6 @@ function editAssignment(assignmentId) {
     return;
   }
 
-  // Show the Edit Assignment section
   const mainContent = document.getElementById('content-area');
   const profileUpdateForm = document.getElementById('profile-update-form');
   const innerMainContent = document.getElementById('main-content');
@@ -1017,7 +1072,6 @@ function editAssignment(assignmentId) {
     projectAssignmentsSection.style.display = 'none';
     editAssignmentSection.style.display = 'block';
 
-    // Populate the form with assignment data
     document.getElementById('edit_assignment_id').value =
       assignment.assignment_id;
     document.getElementById(
@@ -1029,7 +1083,6 @@ function editAssignment(assignmentId) {
       assignment.role_in_project || '';
   }
 
-  // Add form submission handler
   const form = document.getElementById('edit-assignment-form');
   form.addEventListener(
     'submit',
@@ -1065,7 +1118,7 @@ function editAssignment(assignmentId) {
         );
     },
     { once: true }
-  ); // Ensure the listener is added only once
+  );
 }
 
 function deleteAssignment(assignmentId) {
@@ -1092,7 +1145,7 @@ function deleteAssignment(assignmentId) {
               'Assignment deleted successfully!',
               'project-assignments-section'
             );
-            fetchUpdatedAssignments(); // Fetch and update table
+            fetchUpdatedAssignments();
           } else {
             showError(
               data.error || 'Failed to delete assignment',
@@ -1117,7 +1170,7 @@ function fetchUpdatedAssignments() {
   fetch('manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data&section=project_assignments',
+    body: 'action=refresh_data§ion=project_assignments',
   })
     .then((response) => {
       if (!response.ok) {
@@ -1127,11 +1180,8 @@ function fetchUpdatedAssignments() {
     })
     .then((data) => {
       if (data.success) {
-        // Update global projectAssignments with fresh data
         window.projectAssignments = data.project_assignments || [];
-        // Ensure we're in the project assignments section
         showAssignedEmployeesSection();
-        // Re-render the table with the updated data
         const projectSelect = document.getElementById('project_id_view');
         const selectedProjectId = projectSelect ? projectSelect.value : '';
         renderAssignmentsTable(selectedProjectId);
@@ -1150,7 +1200,6 @@ function fetchUpdatedAssignments() {
     });
 }
 
-// Helper function to render the assignments table
 function renderAssignmentsTable(selectedProjectId) {
   const assignmentsTable = document.getElementById('assignments-table');
   if (!assignmentsTable) return;
@@ -1331,7 +1380,7 @@ function addexitinterview() {
                     </div>
                     <div class="form-group">
                         <label for="manager_rating">Manager Rating (calculated):</label>
-                        <input type="number" id="manager_rating" name="manager_rating" readonly>
+                        <input type="number" id="manager_rating" name="manager_rating" min="1" max="5" readonly>
                     </div>
                     <div class="form-group">
                         <label for="eligible_for_rehire">Eligible for Rehire:</label>
@@ -1390,10 +1439,15 @@ function addexitinterview() {
               form.reset();
               managerRatingInput.value = '';
             } else {
-              alert(data.error || 'Failed to submit exit interview request');
+              showError(
+                data.error || 'Failed to submit exit interview request',
+                'profile-update-form'
+              );
             }
           })
-          .catch((error) => alert('Network error: ' + error.message));
+          .catch((error) =>
+            showError('Network error: ' + error.message, 'profile-update-form')
+          );
       });
     }
   }
@@ -1446,18 +1500,7 @@ function updateExitInterview(selectedInterviewId = null) {
           if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
           }
-          return response.text();
-        })
-        .then((text) => {
-          console.log('Raw response from fetch_exit_interviews.php:', text);
-          try {
-            const data = JSON.parse(text);
-            console.log('Parsed data:', data);
-            return data;
-          } catch (error) {
-            console.error('Invalid JSON response:', text);
-            throw new Error('Failed to parse JSON: ' + error.message);
-          }
+          return response.json();
         })
         .catch((error) => {
           console.error('Error fetching exit interviews:', error);
@@ -1465,14 +1508,11 @@ function updateExitInterview(selectedInterviewId = null) {
         });
     };
 
-    (exitInterviews.length > 0
-      ? Promise.resolve(exitInterviews)
-      : fetchExitInterviews()
-    )
+    fetchExitInterviews()
       .then((data) => {
         if (!Array.isArray(data)) {
           if (data.error) {
-            alert('Error: ' + data.error);
+            showError('Error: ' + data.error, 'profile-update-form');
             profileUpdateForm.innerHTML = `
                             <div style="padding: 20px;">
                                 <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Exit Interview Requests</h2>
@@ -1497,63 +1537,49 @@ function updateExitInterview(selectedInterviewId = null) {
             (ei) => ei.interview_id == selectedInterviewId
           );
           if (!interview) {
-            alert('Exit interview request not found.');
+            showError('Exit interview request not found.', 'profile-update-form');
             return;
           }
 
           profileUpdateForm.innerHTML = `
-    <div class="card">
-        <h2>Update Exit Interview Request</h2>
-        <form id="updateExitInterviewForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-            <input type="hidden" name="interview_id" value="${
-              interview.interview_id
-            }">
-            <div class="form-group">
-                <label for="employee_id">Employee:</label>
-                <input type="text" value="${interview.first_name} ${
-            interview.last_name
-          }" readonly>
-                <input type="hidden" name="employee_id" value="${
-                  interview.employee_id
-                }">
+            <div class="card">
+                <h2>Update Exit Interview Request</h2>
+                <form id="updateExitInterviewForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                    <input type="hidden" name="interview_id" value="${interview.interview_id}">
+                    <div class="form-group">
+                        <label for="employee_id">Employee:</label>
+                        <input type="text" value="${interview.first_name} ${interview.last_name}" readonly>
+                        <input type="hidden" name="employee_id" value="${interview.employee_id}">
+                    </div>
+                    <div class="form-group">
+                        <label for="last_working_date">Last Working Date:</label>
+                        <input type="date" id="last_working_date" name="last_working_date" value="${interview.last_working_date}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="manager_rating">Manager Rating:</label>
+                        <input type="number" id="manager_rating" name="manager_rating" value="${interview.manager_rating || ''}" step="0.1" min="1" max="5">
+                    </div>
+                    <div class="form-group">
+                        <label for="eligible_for_rehire">Eligible for Rehire:</label>
+                        <select id="eligible_for_rehire" name="eligible_for_rehire" required>
+                            <option value="1" ${interview.eligible_for_rehire === '1' ? 'selected' : ''}>Yes</option>
+                            <option value="0" ${interview.eligible_for_rehire === '0' ? 'selected' : ''}>No</option>
+                        </select>
+                    </div>
+                    <div class="form-group button-group" style="grid-column: span 2;">
+                        <button type="submit">Update Request</button>
+                        <button type="button" onclick="updateExitInterview()">Back to List</button>
+                    </div>
+                </form>
             </div>
-            <div class="form-group">
-                <label for="last_working_date">Last Working Date:</label>
-                <input type="date" id="last_working_date" name="last_working_date" value="${
-                  interview.last_working_date
-                }" required>
-            </div>
-            <div class="form-group">
-                <label for="manager_rating">Manager Rating:</label>
-                <input type="number" id="manager_rating" name="manager_rating" value="${
-                  interview.manager_rating || ''
-                }" step="0.1" min="1" max="5">
-            </div>
-            <div class="form-group">
-                <label for="eligible_for_rehire">Eligible for Rehire:</label>
-                <select id="eligible_for_rehire" name="eligible_for_rehire" required>
-                    <option value="1" ${
-                      interview.eligible_for_rehire === '1' ? 'selected' : ''
-                    }>Yes</option>
-                    <option value="0" ${
-                      interview.eligible_for_rehire === '0' ? 'selected' : ''
-                    }>No</option>
-                </select>
-            </div>
-            <div class="form-group button-group" style="grid-column: span 2;">
-                <button type="submit">Update Request</button>
-                <button type="button" onclick="updateExitInterview()">Back to List</button>
-            </div>
-        </form>
-    </div>
-`;
+          `;
+
           const form = document.getElementById('updateExitInterviewForm');
           if (form) {
             form.addEventListener('submit', function (event) {
               event.preventDefault();
 
-              const lastWorkingDate =
-                form.querySelector('#last_working_date').value;
+              const lastWorkingDate = form.querySelector('#last_working_date').value;
               const today = new Date().toISOString().split('T')[0];
               if (lastWorkingDate < today) {
                 alert('Last working date cannot be in the past.');
@@ -1574,20 +1600,21 @@ function updateExitInterview(selectedInterviewId = null) {
                 .then((response) => response.json())
                 .then((data) => {
                   if (data.success) {
-                    alert('Exit interview request updated successfully!');
-                    fetch('../pages/features/fetch_exit_interviews.php')
-                      .then((response) => response.json())
-                      .then((updatedData) => {
-                        exitInterviews = updatedData;
-                        updateExitInterview();
-                      });
+                    showSuccess('Exit interview request updated successfully!', 'profile-update-form');
+                    fetchExitInterviews().then((updatedData) => {
+                      exitInterviews = updatedData;
+                      updateExitInterview();
+                    });
                   } else {
-                    alert(
-                      data.error || 'Failed to update exit interview request'
+                    showError(
+                      data.error || 'Failed to update exit interview request',
+                      'profile-update-form'
                     );
                   }
                 })
-                .catch((error) => alert('Network error: ' + error.message));
+                .catch((error) =>
+                  showError('Network error: ' + error.message, 'profile-update-form')
+                );
             });
           }
         } else {
@@ -1621,25 +1648,13 @@ function updateExitInterview(selectedInterviewId = null) {
                                 <tr style="transition: background-color 0.3s;"
                                     onmouseover="this.style.backgroundColor='#f9f9f9'"
                                     onmouseout="this.style.backgroundColor='transparent'">
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
-                                      ei.first_name
-                                    } ${ei.last_name}</td>
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
-                                      ei.interview_date || 'N/A'
-                                    }</td>
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
-                                      ei.last_working_date || 'N/A'
-                                    }</td>
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
-                                      ei.manager_rating || 'N/A'
-                                    }</td>
-                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
-                                      ei.eligible_for_rehire == 1 ? 'Yes' : 'No'
-                                    }</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.first_name} ${ei.last_name}</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.interview_date || 'N/A'}</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.last_working_date || 'N/A'}</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.manager_rating || 'N/A'}</td>
+                                    <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.eligible_for_rehire == 1 ? 'Yes' : 'No'}</td>
                                     <td style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd;">
-                                        <button class="update-exit-interview-btn" data-interview-id="${
-                                          ei.interview_id
-                                        }">Update</button>
+                                        <button class="update-exit-interview-btn" data-interview-id="${ei.interview_id}">Update</button>
                                     </td>
                                 </tr>
                             `;
@@ -1670,7 +1685,17 @@ function updateExitInterview(selectedInterviewId = null) {
         }
       })
       .catch((error) =>
-        alert('Error fetching exit interviews: ' + error.message)
+        showError('Error fetching exit interviews: ' + error.message, 'profile-update-form')
       );
   }
 }
+
+document.querySelectorAll('.sidebar-menu a').forEach((link) => {
+  link.addEventListener('click', function (event) {
+    event.preventDefault();
+    const action = this.getAttribute('onclick');
+    if (action && typeof window[action] === 'function') {
+      window[action]();
+    }
+  });
+});
