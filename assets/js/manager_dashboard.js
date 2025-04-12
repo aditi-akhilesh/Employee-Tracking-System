@@ -850,7 +850,7 @@ function fetchUpdatedAssignmentsAfterAssignment(successMessage) {
   fetch('manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data§ion=project_assignments',
+    body: 'action=refresh_dataï¿½ion=project_assignments',
   })
     .then((response) => {
       if (!response.ok) {
@@ -920,8 +920,61 @@ function showSubtasksForm() {
     const form = document.getElementById('subtask-form');
     form.addEventListener('submit', function (event) {
       event.preventDefault();
+
+      if (isSubmitting) {
+        showError(
+          'Please wait, a submission is already in progress',
+          'subtasks-section'
+        );
+        return;
+      }
+
+      const taskId = document.getElementById('task_id').value;
+      const isNewSubtask = !taskId || taskId === '';
+
+      if (!isNewSubtask) {
+        const task = window.tasks.find((t) => t.task_id == taskId);
+        if (!task) {
+          showError('Task not found', 'subtasks-section');
+          return;
+        }
+        const formData = new FormData(this);
+        const currentData = {
+          project_id: formData.get('project_id'),
+          task_description: formData.get('task_description'),
+          employee_id: formData.get('employee_id') || '',
+          due_date: formData.get('due_date'),
+          status: formData.get('status'),
+        };
+        const existingData = {
+          project_id: task.project_id.toString(),
+          task_description: task.task_description || '',
+          employee_id: task.employee_id ? task.employee_id.toString() : '',
+          due_date: task.due_date || '',
+          status: task.status || '',
+        };
+
+        const hasChanges = Object.keys(currentData).some(
+          (key) => currentData[key] !== existingData[key]
+        );
+
+        if (!hasChanges) {
+          showInfo('No changes made', 'subtasks-section');
+          return;
+        }
+      }
+
+      isSubmitting = true;
+      const saveButton = document.getElementById('save-task-btn');
+      saveButton.disabled = true;
+
       const formData = new FormData(this);
-      fetch('../pages/features/manage_tasks.php', {
+      formData.append('action', 'save_subtask');
+      if (taskId) {
+        formData.append('task_id', taskId); // Ensure task_id is included
+      }
+
+      fetch('manager_dashboard.php', {
         method: 'POST',
         body: formData,
       })
@@ -929,8 +982,23 @@ function showSubtasksForm() {
         .then((text) => JSON.parse(text))
         .then((data) => {
           if (data.success) {
-            refreshData();
-            resetSubtaskForm();
+            const successMessage = isNewSubtask
+              ? 'Subtask created successfully!'
+              : 'Subtask updated successfully!';
+            showSuccess(successMessage, 'subtasks-section');
+            window.tasks = data.tasks || [];
+            if (isNewSubtask) {
+              this.reset();
+              document.getElementById('task_id').value = '';
+              const employeeSelect = document.getElementById(
+                'employee_id_subtask'
+              );
+              employeeSelect.innerHTML = '<option value="">Unassigned</option>';
+              const taskSelect = document.getElementById('task_id');
+              taskSelect.innerHTML =
+                '<option value="">Create new task</option>';
+            }
+            return loadTasks();
           } else {
             showError(data.error || 'Failed to save task', 'subtasks-section');
           }
@@ -1170,7 +1238,7 @@ function fetchUpdatedAssignments() {
   fetch('manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data§ion=project_assignments',
+    body: 'action=refresh_dataï¿½ion=project_assignments',
   })
     .then((response) => {
       if (!response.ok) {
