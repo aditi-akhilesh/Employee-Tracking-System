@@ -10,7 +10,8 @@ function showSection(sectionId) {
     'track-leave-section',
     'faqs-section',
     'hr-contact-section',
-    'projects-tasks-section', // Add this
+    'projects-tasks-section',
+    'salary-details-section',
   ];
   sections.forEach((id) => {
     const section = document.getElementById(id);
@@ -504,6 +505,7 @@ function showProfileForm() {
 document.addEventListener('DOMContentLoaded', function () {
   window.toggleDropdown = toggleDropdown;
   window.showWelcomeMessage = showWelcomeMessage;
+  window.showEmployeeWelcomeMessage = showEmployeeWelcomeMessage;
   window.showMarkAttendanceForm = showMarkAttendanceForm;
   window.showAttendanceHistory = showAttendanceHistory;
   window.showApplyLeaveForm = showApplyLeaveForm;
@@ -514,6 +516,7 @@ document.addEventListener('DOMContentLoaded', function () {
   window.showFAQs = showFAQs;
   window.showHRContact = showHRContact;
   window.showProjectsTasks = showProjectsTasks;
+  window.showSalaryDetails = showSalaryDetails;
 
   // Add hover effects for sidebar items (matching manager dashboard)
   const sidebarLinks = document.querySelectorAll('.sidebar ul li a');
@@ -867,6 +870,7 @@ function showEmployeeWelcomeMessage() {
       <h2>Welcome,  ${userName} (Employee)</h2>
       <p>You are in Employee Dashboard, select an option from the menu on the left to get started.</p>
     `;
+    showSection('main-content'); // Use showSection to manage visibility
     console.log('Welcome message displayed in content-area'); // Debug log
   } else {
     console.error('content-area element not found');
@@ -1122,4 +1126,96 @@ function showUpdatePasswordForm() {
         });
     });
   }
+}
+
+
+// Show Salary Details section
+function showSalaryDetails() {
+  showSection('salary-details-section');
+  fetchSalaryDetails();
+}
+
+// Fetch and display salary details
+function fetchSalaryDetails() {
+  const salarySection = document.getElementById('salary-details-section');
+  if (!salarySection) {
+    console.error('Salary details section not found');
+    return;
+  }
+
+  // Display a loading message while fetching data
+  salarySection.innerHTML = `
+    <div class="card">
+      <h2>Salary Details</h2>
+      <p>Loading salary details...</p>
+    </div>
+  `;
+
+  fetch('../pages/features/fetch_salary_details.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'fetch_salary_details',
+    }),
+  })
+    .then((response) => {
+      console.log('Salary response status:', response.status);
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then((data) => {
+      console.log('Salary data:', data);
+      if (data.success && data.salary_details) {
+        const salary = data.salary_details.salary || 'N/A';
+        const employeeId = data.salary_details.employee_id || 'N/A';
+        const jobTitle = data.salary_details.emp_job_title || 'N/A';
+        const hireDate = data.salary_details.emp_hire_date || 'N/A';
+        const departmentId = data.salary_details.department_id || 'N/A';
+
+        // Display the salary details in a dashboard format
+        salarySection.innerHTML = `
+          <div class="card">
+            <h2>Salary Details</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px;">
+              <div style="flex: 1; min-width: 250px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <h3 style="font-size: 18px; color: #333; margin-bottom: 10px;">Overview</h3>
+                <p><strong>Employee ID:</strong> ${employeeId}</p>
+                <p><strong>Job Title:</strong> ${jobTitle}</p>
+                <p><strong>Hire Date:</strong> ${hireDate}</p>
+                <p><strong>Department ID:</strong> ${departmentId}</p>
+              </div>
+              <div style="flex: 1; min-width: 250px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <h3 style="font-size: 18px; color: #333; margin-bottom: 10px;">Compensation</h3>
+                <p><strong>Current Salary:</strong> $${parseFloat(salary).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
+            </div>
+            <div class="form-group button-group" style="margin-top: 20px;">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+          </div>
+        `;
+      } else {
+        salarySection.innerHTML = `
+          <div class="card">
+            <h2>Salary Details</h2>
+            <p style="color: #ff0000;">${data.error || 'No salary details found.'}</p>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+          </div>
+        `;
+      }
+    })
+    .catch((error) => {
+      console.error('Error fetching salary details:', error);
+      salarySection.innerHTML = `
+        <div class="card">
+          <h2>Salary Details</h2>
+          <p style="color: #ff0000;">Error fetching salary details: ${error.message}</p>
+          <div class="form-group button-group">
+            <button type="button" onclick="showWelcomeMessage()">Back</button>
+          </div>
+        </div>
+      `;
+    });
 }

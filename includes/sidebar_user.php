@@ -16,7 +16,7 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'payroll-dropdown')"><i class="fas fa-money-bill"></i> Payroll and Salary</a>
             <ul id="payroll-dropdown" class="dropdown">
-                <li><a href="#">View salary details</a></li>
+                <li><a href="#" onclick="showSalaryDetails()">View salary details</a></li>
            </ul>
         </li>
         <li>
