@@ -159,6 +159,140 @@ if (isset($_POST['action'])) {
             ", [$employee_id], "Failed to fetch leave balance");
             $response['leave_balances'] = $leave_balances;
             $response['success'] = true;
+        } elseif ($_POST['action'] === 'fetch_projects') {
+            $query = "
+                SELECT 
+                    p.project_id, p.project_name, p.start_date, p.expected_end_date, 
+                    p.project_status, p.budget, 
+                    COALESCE((
+                        SELECT COUNT(*) 
+                        FROM Task t 
+                        JOIN Assignment_Task at ON t.task_id = at.task_id 
+                        WHERE t.project_id = p.project_id 
+                        AND at.employee_id = ? 
+                        AND t.status = 'completed'
+                    ), 0) AS completed_tasks,
+                    COALESCE((
+                        SELECT COUNT(*) 
+                        FROM Task t 
+                        JOIN Assignment_Task at ON t.task_id = at.task_id 
+                        WHERE t.project_id = p.project_id 
+                        AND at.employee_id = ?
+                    ), 0) AS total_tasks
+                FROM Projects p
+                JOIN Assignment a ON p.project_id = a.project_id
+                WHERE a.employee_id = ?
+            ";
+            $projects = fetchData($con, $query, [$employee_id, $employee_id, $employee_id], "Failed to fetch projects");
+            $response['projects'] = $projects;
+            $response['success'] = true;
+        } elseif ($_POST['action'] === 'fetch_tasks') {
+            $sort_by = $_POST['sort_by'] ?? 'due_date';
+            $sort_order = $_POST['sort_order'] ?? 'ASC';
+            $project_id = $_POST['project_id'] ?? '';
+
+            $query = "
+                SELECT 
+                    t.task_id, t.task_description, t.status, at.due_date, 
+                    p.project_name, p.project_id
+                FROM Task t
+                JOIN Assignment_Task at ON t.task_id = at.task_id
+                JOIN Projects p ON t.project_id = p.project_id
+                WHERE at.employee_id = ?
+            ";
+            $params = [$employee_id];
+
+            if ($project_id) {
+                $query .= " AND p.project_id = ?";
+                $params[] = $project_id;
+            }
+
+            // Validate sort_by to prevent SQL injection
+            $valid_sort_columns = ['due_date', 'project_name'];
+            $sort_by = in_array($sort_by, $valid_sort_columns) ? $sort_by : 'due_date';
+            $sort_order = strtoupper($sort_order) === 'DESC' ? 'DESC' : 'ASC';
+            $query .= " ORDER BY $sort_by $sort_order";
+
+            $tasks = fetchData($con, $query, $params, "Failed to fetch tasks");
+            $response['tasks'] = $tasks;
+            $response['success'] = true;
+        } elseif ($_POST['action'] === 'update_task_status') {
+            $task_id = $_POST['task_id'] ?? null;
+            $new_status = $_POST['new_status'] ?? null;
+
+            if (!$task_id || !$new_status) {
+                $response['error'] = "Task ID and new status are required.";
+                echo json_encode($response);
+                exit;
+            }
+
+            // Validate status
+            $valid_statuses = ['not_started', 'in_progress', 'completed', 'blocked'];
+            if (!in_array($new_status, $valid_statuses)) {
+                $response['error'] = "Invalid status value.";
+                echo json_encode($response);
+                exit;
+            }
+
+            $stmt = $con->prepare("
+                UPDATE Task t
+                JOIN Assignment_Task at ON t.task_id = at.task_id
+                SET t.status = ?
+                WHERE t.task_id = ? AND at.employee_id = ?
+            ");
+            $success = $stmt->execute([$new_status, $task_id, $employee_id]);
+
+            if ($success) {
+                $response['success'] = true;
+                $response['message'] = "Task status updated successfully.";
+            } else {
+                $response['error'] = "Failed to update task status.";
+            }
+        }  elseif ($_POST['action'] === 'fetch_performance_metrics') {
+            // Total tasks assigned
+            $total_tasks_query = "
+                SELECT COUNT(*) AS total_tasks
+                FROM Assignment_Task at
+                WHERE at.employee_id = ?
+            ";
+            $total_tasks_result = fetchData($con, $total_tasks_query, [$employee_id], "Failed to fetch total tasks");
+            $total_tasks = $total_tasks_result[0]['total_tasks'] ?? 0;
+
+            // Completed tasks
+            $completed_tasks_query = "
+                SELECT COUNT(*) AS completed_tasks
+                FROM Assignment_Task at
+                JOIN Task t ON at.task_id = t.task_id
+                WHERE at.employee_id = ? AND t.status = 'completed'
+            ";
+            $completed_tasks_result = fetchData($con, $completed_tasks_query, [$employee_id], "Failed to fetch completed tasks");
+            $completed_tasks = $completed_tasks_result[0]['completed_tasks'] ?? 0;
+
+            // On-time completion rate
+            $on_time_tasks_query = "
+                SELECT COUNT(*) AS on_time_tasks
+                FROM Assignment_Task at
+                JOIN Task t ON at.task_id = t.task_id
+                WHERE at.employee_id = ? 
+                AND t.status = 'completed'
+                AND at.due_date >= (
+                    SELECT MAX(a.action_date)
+                    FROM Audit_Log a
+                    WHERE a.user_id = (SELECT user_id FROM Employees WHERE employee_id = ?)
+                    AND a.action LIKE 'Task % completed'
+                )
+            ";
+            $on_time_tasks_result = fetchData($con, $on_time_tasks_query, [$employee_id, $employee_id], "Failed to fetch on-time tasks");
+            $on_time_tasks = $on_time_tasks_result[0]['on_time_tasks'] ?? 0;
+
+            $on_time_rate = $completed_tasks > 0 ? ($on_time_tasks / $completed_tasks) * 100 : 0;
+
+            $response['metrics'] = [
+                'total_tasks' => $total_tasks,
+                'completed_tasks' => $completed_tasks,
+                'on_time_rate' => round($on_time_rate, 2)
+            ];
+            $response['success'] = true;
         }
     } catch (PDOException $e) {
         $response['error'] = "Database error: " . $e->getMessage();
@@ -206,6 +340,44 @@ $leave_balances = fetchData($con, "
             border-radius: 6px;
             transition: color 0.3s;
         }
+        /* Projects and Tasks Section */
+        #projects-table, #tasks-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        }
+        #projects-table th, #projects-table td,
+        #tasks-table th, #tasks-table td {
+        padding: 12px;
+        border: 1px solid #ddd;
+        text-align: left;
+        }
+        #projects-table th, #tasks-table th {
+        background-color: #003087;
+        color: #fff;
+        }
+        #projects-table tr:nth-child(even),
+        #tasks-table tr:nth-child(even) {
+        background-color: #f9f9f9;
+        }
+        #projects-table tr:hover,
+        #tasks-table tr:hover {
+        background-color: #f1f1f1;
+        }
+        #tasks-table select {
+        padding: 5px;
+        border-radius: 3px;
+        border: 1px solid #ddd;
+        cursor: pointer;
+        }
+        #performance-metrics p {
+        margin: 10px 0;
+        font-size: 16px;
+        }
+        #performance-metrics span {
+        font-weight: bold;
+        color: #003087;
+        }
         /* Styles for Attendance & Leaves features */
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
@@ -233,7 +405,7 @@ $leave_balances = fetchData($con, "
             padding: 5px 10px;
             border-radius: 12px;
             font-weight: bold;
-            color: white;
+            color: black;
             font-size: 12px;
         }
         .status-pending { background-color: #ff9800; }
@@ -302,6 +474,77 @@ $leave_balances = fetchData($con, "
         <div id="main-content">
             <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name']); ?> (Employee)</h2>
             <p>You are in Employee Dashboard, select an option from the menu on the left to get started.</p>
+        </div>
+
+        
+        <!-- Projects and Tasks Section -->
+        <div id="projects-tasks-section" style="display: none;" class="card">
+            <h2>Projects and Tasks</h2>
+            
+            <!-- Projects Overview -->
+            <div id="projects-overview">
+                <h3>Assigned Projects</h3>
+                <table id="projects-table">
+                    <thead>
+                        <tr>
+                            <th>Project Name</th>
+                            <th>Start Date</th>
+                            <th>Expected End Date</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projects-table-body"></tbody>
+                </table>
+            </div>
+
+            <!-- Tasks List -->
+            <div id="tasks-list" style="margin-top: 30px;">
+                <h3>Assigned Tasks</h3>
+                <div class="form-group">
+                    <label for="task_sort_by">Sort By:</label>
+                    <select id="task_sort_by" onchange="fetchTasks()">
+                        <option value="due_date">Due Date</option>
+                        <option value="project_name">Project</option>
+                    </select>
+                    <label for="task_sort_order">Order:</label>
+                    <select id="task_sort_order" onchange="fetchTasks()">
+                        <option value="ASC">Ascending</option>
+                        <option value="DESC">Descending</option>
+                    </select>
+                    <label for="task_project_filter">Filter by Project:</label>
+                    <select id="task_project_filter" onchange="fetchTasks()">
+                        <option value="">All Projects</option>
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+                <table id="tasks-table">
+                    <thead>
+                        <tr>
+                            <th>Task Description</th>
+                            <th>Project</th>
+                            <th>Due Date</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasks-table-body"></tbody>
+                </table>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div id="performance-metrics" style="margin-top: 30px;">
+                <h3>Performance Metrics</h3>
+                <div id="metrics-display">
+                    <p><strong>Total Tasks Assigned:</strong> <span id="total-tasks">0</span></p>
+                    <p><strong>Tasks Completed:</strong> <span id="completed-tasks">0</span></p>
+                    <p><strong>On-Time Completion Rate:</strong> <span id="on-time-rate">0%</span></p>
+                </div>
+            </div>
+
+            <div class="form-group button-group">
+                <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
+            </div>
         </div>
 
         <!-- Mark Attendance Section -->
