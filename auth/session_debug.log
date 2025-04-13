@@ -368,3 +368,68 @@
     [role] => HR
 )
 
+2025-03-11 21:39:41 - Array
+(
+    [user_id] => 14
+    [user_name] => Kate Wilson
+    [user_email] => kate.w@gmail.com
+    [role] => User
+)
+
+2025-03-11 21:46:57 - Array
+(
+    [user_id] => 2
+    [user_name] => Jane Smith
+    [user_email] => jane.smith@gmail.com
+    [role] => HR
+)
+
+2025-03-11 22:14:32 - Array
+(
+    [user_id] => 1
+    [user_name] => John Doe
+    [user_email] => john.doe@gmail.com
+    [role] => Super Admin
+)
+
+2025-03-11 22:27:19 - Array
+(
+    [user_id] => 1
+    [user_name] => John Doe
+    [user_email] => john.doe@gmail.com
+    [role] => Super Admin
+)
+
+2025-04-12 20:42:48 - Array
+(
+    [user_id] => 4
+    [first_name] => Bob
+    [last_name] => Brown
+    [user_name] => Bob Brown
+    [user_email] => bob.brown@gmail.com
+    [role] => User
+    [employee_id] => 4
+)
+
+2025-04-12 20:43:09 - Array
+(
+    [user_id] => 4
+    [first_name] => Bob
+    [last_name] => Brown
+    [user_name] => Bob Brown
+    [user_email] => bob.brown@gmail.com
+    [role] => User
+    [employee_id] => 4
+)
+
+2025-04-12 20:43:59 - Array
+(
+    [user_id] => 4
+    [first_name] => Bob
+    [last_name] => Brown
+    [user_name] => Bob Brown
+    [user_email] => bob.brown@gmail.com
+    [role] => User
+    [employee_id] => 4
+)
+

@@ -21,8 +21,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             // Use password_verify for hashed password comparison
             if (password_verify($password, $user['password_hash'])) {
                 $_SESSION['user_id'] = $user['user_id'];
-                $_SESSION['first_name'] = $user['first_name']; // Add this
-                $_SESSION['last_name'] = $user['last_name'];   // Add this
                 $_SESSION['user_name'] = $user['first_name'] . " " . $user['last_name'];
                 $_SESSION['user_email'] = $user['email'];
                 $_SESSION['role'] = $user['role'];
@@ -73,13 +71,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     header("Location: ../pages/login.php");
     exit();
-}
-
-// Page protection logic: Check if user is logged in
-if (!isset($_SESSION['user_id']) || !isset($_SESSION['role'])) {
-    $_SESSION['error'] = "Please log in to access this page.";
-    header("Location: /Employee-Tracking-System/pages/login.php"); // Absolute path
+} else {
+    $_SESSION['error'] = "Invalid request method.";
+    header("Location: ../pages/login.php");
     exit();
 }
-
 ?>
