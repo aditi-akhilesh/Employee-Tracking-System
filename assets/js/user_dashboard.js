@@ -48,6 +48,7 @@ function showMarkAttendanceForm() {
 
 function handleMarkAttendanceSubmit(event) {
     event.preventDefault();
+    const form = document.getElementById('mark-attendance-form');
     const checkIn = document.getElementById('check_in').value;
     const checkOut = document.getElementById('check_out').value;
     const status = document.getElementById('status').value;
