@@ -402,3 +402,106 @@ table tr:hover {
         grid-template-columns: 1fr !important; /* Stack fields vertically */
     }
 }
+
+
+/* styles.css or dashboard.css */
+
+/* Ensure the card has enough width to accommodate two columns */
+.card {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background-color: #fff;
+}
+
+/* Style for the form row to create a two-column layout */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* Two equal columns */
+  gap: 20px; /* Space between columns */
+  margin-bottom: 15px;
+}
+
+/* Ensure form-group takes full width within the grid */
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Style labels and inputs */
+.form-group label {
+  margin-bottom: 5px;
+  font-weight: bold;
+  color: #333;
+}
+
+.form-group input,
+.form-group select {
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Style for readonly inputs */
+.form-group input[readonly] {
+  background-color: #f5f5f5;
+  cursor: not-allowed;
+}
+
+/* Style for emergency contacts section */
+.emergency-contact {
+  border: 1px solid #eee;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 4px;
+  background-color: #fafafa;
+}
+
+/* Style for buttons */
+.button-group {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.button-group button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.button-group button:hover {
+  background-color: #0056b3;
+}
+
+.button-group button[type="button"]:last-child {
+  background-color: #6c757d;
+}
+
+.button-group button[type="button"]:last-child:hover {
+  background-color: #5a6268;
+}
+
+/* Override for checkbox labels to display inline */
+.form-group label.checkbox-label {
+  display: flex;
+  align-items: center;
+  font-weight: normal;
+  color: #555;
+  margin-bottom: 0;
+}
+
+.form-group label.checkbox-label input[type="checkbox"] {
+  margin-right: 8px;
+}
+

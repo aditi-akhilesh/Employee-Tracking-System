@@ -13,7 +13,7 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'department-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-building" style="margin-right: 10px;"></i> Department Management</a>
             <ul id="department-dropdown" class="dropdown" style="display: none; padding-left: 20px;">
-                <li><a href="#" onclick="showDepartmentInfo()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Track department information</a></li>
+                <li><a href="#" onclick="showDepartment()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Track department information</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'project-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-tasks" style="margin-right: 10px;"></i> Projects and Tasks</a>

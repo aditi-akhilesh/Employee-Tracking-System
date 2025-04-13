@@ -1,4 +1,4 @@
-<?php
+	<?php
 require_once '../includes/auth_check.php';
 $page_title = "Employee Dashboard";
 ?>
@@ -26,6 +26,22 @@ $page_title = "Employee Dashboard";
         <?php endif; ?>
     </div>
 </div>
+<script>     
+const userName = <?php echo json_encode(htmlspecialchars($_SESSION['user_name'])); ?>;
+document.addEventListener('click', function(event) {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            if (!alert.contains(event.target)) {
+                alert.style.display = 'none';
+            }
+        });
+    });
+
+
+
+</script>
+<script src="../assets/js/user_dashboard.js"></script>
 <script src="../assets/js/dashboard.js"></script>
+
 </body>
 </html>

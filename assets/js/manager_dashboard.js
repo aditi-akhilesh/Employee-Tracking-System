@@ -1812,3 +1812,68 @@ document.querySelectorAll('.sidebar-menu a').forEach((link) => {
     }
   });
 });
+
+
+
+function showDepartment() {
+  console.log('showDepartmentInfo called');
+  const mainContent = document.getElementById('main-content');
+  const profileUpdateForm = document.getElementById('profile-update-form');
+  if (mainContent && profileUpdateForm) {
+    mainContent.style.display = 'block';
+    profileUpdateForm.style.display = 'none';
+    let html = `
+            <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Department Information</h2>
+            <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <thead>
+                    <tr style="background-color: #003087; color: #FFFFFF;">
+                        <th style="border: 1px solid #ddd; padding: 8px;">Department ID</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Name</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Description</th>
+                        <th style="border: 1px solid #ddd; padding: 8px;">Employee Count</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+    if (departments.length > 0) {
+      departments.forEach((dept) => {
+        html += `
+                    <tr>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${
+                          dept.department_id
+                        }</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${
+                          dept.department_name
+                        }</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${
+                          dept.department_description || 'No description'
+                        }</td>
+                        <td style="border: 1px solid #ddd; padding: 8px;">${
+                          dept.employee_count
+                        }</td>
+                    </tr>
+                `;
+      });
+    } else {
+      html += `
+                <tr>
+                    <td colspan="4" style="padding: 20px; text-align: center; color: #666;">No departments found.</td>
+                </tr>
+            `;
+    }
+    html += `
+                </tbody>
+            </table>
+            <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                        onmouseover="this.style.backgroundColor='#5a6268'" 
+                        onmouseout="this.style.backgroundColor='#6c757d'"
+                        onclick="showWelcomeMessage()">Back</button>
+            </div>
+        `;
+    mainContent.innerHTML = html;
+  } else {
+    console.error('main-content or profile-update-form not found');
+  }
+}
+
