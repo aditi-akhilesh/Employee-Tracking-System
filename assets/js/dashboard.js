@@ -255,24 +255,29 @@ function showCreateUserForm() {
   }
 }
 
+// dashboard.js
+
 function showWelcomeMessage(event) {
-  if (event) event.preventDefault(); // Prevent form submission or default behavior
-  console.log('showWelcomeMessage called');
-  const mainContent = document.getElementById('main-content');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  if (mainContent && profileUpdateForm) {
-    console.log('Elements found, updating display');
-    mainContent.style.display = 'block';
-    profileUpdateForm.style.display = 'none';
-    profileUpdateForm.innerHTML = '';
-    mainContent.innerHTML = `
+    if (event) event.preventDefault();
+    console.log("showWelcomeMessage called with event:", event);
+    const mainContent = document.getElementById('main-content');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    console.log("mainContent:", mainContent, "profileUpdateForm:", profileUpdateForm);
+    if (mainContent && profileUpdateForm) {
+        console.log("Elements found, updating display");
+        mainContent.style.display = 'block';
+        profileUpdateForm.style.display = 'none';
+        profileUpdateForm.innerHTML = '';
+        // Reset main-content to welcome message
+        mainContent.innerHTML = `
             <h2>Welcome, ${userName} (HR)</h2>
             <p>Select an option from the menu on the left to get started.</p>
         `;
-  } else {
-    console.error('main-content or profile-update-form not found');
-  }
+    } else {
+        console.error("main-content or profile-update-form not found");
+    }
 }
+
 
 function showAddProjectForm() {
   console.log('showAddProjectForm called');
