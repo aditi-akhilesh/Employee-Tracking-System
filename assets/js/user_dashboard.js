@@ -1,17 +1,20 @@
 
-// Utility function to show a section and hide others
+// user_dashboard.js
 function showSection(sectionId) {
   const sections = [
     'main-content',
     'projects-tasks-section',
-    'salary-details-section',
     'mark-attendance-section',
     'attendance-history-section',
     'apply-leave-section',
     'track-leave-section',
     'faqs-section',
     'hr-contact-section',
-    'profile-update-form' // Add this
+    'profile-update-form',
+    'salary-details-section',
+    'feedback-section',               // Add this
+    'submit-exit-interview-section',  // Add this
+    'exit-interview-details-section'  // Add this
   ];
   sections.forEach(id => {
     const section = document.getElementById(id);
@@ -20,6 +23,8 @@ function showSection(sectionId) {
     }
   });
 }
+
+
 // Show welcome message (default view)
 function showWelcomeMessage() {
   showSection('main-content');
@@ -1129,6 +1134,400 @@ function fetchSalaryDetails() {
             <button type="button" onclick="showWelcomeMessage()">Back</button>
           </div>
         </div>
+      `;
+    });
+}
+
+// Show Feedback Section
+function showFeedback() {
+  showSection('feedback-section');
+  fetchFeedback();
+}
+
+// Fetch and Display Feedback
+function fetchFeedback() {
+  const feedbackSection = document.getElementById('feedback-section');
+  if (!feedbackSection) {
+    console.error('Feedback section not found');
+    return;
+  }
+
+  feedbackSection.innerHTML = `
+    <div class="card">
+      <h2>My Feedback</h2>
+      <p>Loading feedback...</p>
+    </div>
+  `;
+
+  fetch('../pages/features/fetch_employee_feedback.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'fetch_feedback'
+    })
+  })
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(data => {
+      if (data.success && data.feedback && data.feedback.length > 0) {
+        feedbackSection.innerHTML = `
+            <h2>My Feedback</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Reviewer ID</th>
+                  <th>Rating</th>
+                  <th>Type</th>
+                  <th>Feedback</th>
+                  <th>Date Submitted</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${data.feedback.map(f => `
+                  <tr>
+                    <td>${f.reviewer_id}</td>
+                    <td>${f.rating}</td>
+                    <td>${f.feedback_type}</td>
+                    <td>${f.feedback_text}</td>
+                    <td>${f.date_submitted}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+        `;
+      } else {
+        feedbackSection.innerHTML = `
+          <div class="card">
+            <h2>My Feedback</h2>
+            <p style="color: #ff0000;">${data.error || 'No feedback found.'}</p>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+          </div>
+        `;
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching feedback:', error);
+      feedbackSection.innerHTML = `
+        <div class="card">
+          <h2>My Feedback</h2>
+          <p style="color: #ff0000;">Error fetching feedback: ${error.message}</p>
+          <div class="form-group button-group">
+            <button type="button" onclick="showWelcomeMessage()">Back</button>
+          </div>
+        </div>
+      `;
+    });
+}
+
+// Show Submit Exit Interview Form
+function showSubmitExitInterviewForm() {
+  showSection('submit-exit-interview-section');
+  const exitInterviewSection = document.getElementById('submit-exit-interview-section');
+  if (!exitInterviewSection) {
+    console.error('Submit exit interview section not found');
+    return;
+  }
+
+  // Check if an exit interview already exists
+  fetch('../pages/features/fetch_employee_exit_interview.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'fetch_exit_interview'
+    })
+  })
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(data => {
+      if (data.success && data.exit_interview) {
+        // Exit interview is fully submitted, show message
+        exitInterviewSection.innerHTML = `
+            <h2>Submit Exit Interview Details</h2>
+            <div style="color: #4CAF50; line-height: 1.6;">
+              <p>You have submitted your exit interview already.</p>
+              <p>There are no pending exit interviews for now.</p>
+              <p>Contact your manager for any questions.</p>
+            </div>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+        `;
+      } else {
+        // No exit interview or incomplete, show the form
+        // If the record exists but is incomplete, prefill the form with existing data
+        const existingData = data.exit_interview || {};
+        exitInterviewSection.innerHTML = `
+            <h2>Submit Exit Interview Details</h2>
+            <form id="exit-interview-form">
+              <div class="form-group">
+                <label for="resignation_type">Resignation Type:</label>
+                <select id="resignation_type" name="resignation_type" required>
+                  <option value="">Select Resignation Type</option>
+                  <option value="Voluntary" ${existingData.resignation_type === 'Voluntary' ? 'selected' : ''}>Voluntary</option>
+                  <option value="Involuntary" ${existingData.resignation_type === 'Involuntary' ? 'selected' : ''}>Involuntary</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="primary_reason">Primary Reason for Leaving:</label>
+                <textarea id="primary_reason" name="primary_reason" rows="4" placeholder="Enter the primary reason for leaving" required>${existingData.primary_reason || ''}</textarea>
+              </div>
+              <div class="form-group">
+                <label for="overall_satisfaction_rating">Overall Satisfaction Rating (1-5):</label>
+                <select id="overall_satisfaction_rating" name="overall_satisfaction_rating" required>
+                  <option value="">Select Rating</option>
+                  <option value="1" ${existingData.overall_satisfaction_rating === '1' ? 'selected' : ''}>1 - Very Dissatisfied</option>
+                  <option value="2" ${existingData.overall_satisfaction_rating === '2' ? 'selected' : ''}>2 - Dissatisfied</option>
+                  <option value="3" ${existingData.overall_satisfaction_rating === '3' ? 'selected' : ''}>3 - Neutral</option>
+                  <option value="4" ${existingData.overall_satisfaction_rating === '4' ? 'selected' : ''}>4 - Satisfied</option>
+                  <option value="5" ${existingData.overall_satisfaction_rating === '5' ? 'selected' : ''}>5 - Very Satisfied</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="knowledge_transfer_status">Knowledge Transfer Status:</label>
+                <textarea id="knowledge_transfer_status" name="knowledge_transfer_status" rows="4" placeholder="Describe the status of knowledge transfer">${existingData.knowledge_transfer_status || ''}</textarea>
+              </div>
+              <div class="form-group">
+                <label for="assets_returned">Assets Returned:</label>
+                <select id="assets_returned" name="assets_returned" required>
+                  <option value="">Select Option</option>
+                  <option value="1" ${existingData.assets_returned === '1' ? 'selected' : ''}>Yes</option>
+                  <option value="0" ${existingData.assets_returned === '0' ? 'selected' : ''}>No</option>
+                </select>
+              </div>
+              <div class="form-group button-group">
+                <button type="submit">Submit</button>
+                <button type="button" onclick="showWelcomeMessage()">Back</button>
+              </div>
+            </form>
+        `;
+
+        // Add event listener for form submission
+        document.getElementById('exit-interview-form').addEventListener('submit', function(e) {
+          e.preventDefault();
+          submitExitInterview();
+        });
+      }
+    })
+    .catch(error => {
+      console.error('Error checking exit interview status:', error);
+      exitInterviewSection.innerHTML = `
+        <div class="card">
+          <h2>Submit Exit Interview Details</h2>
+          <p style="color: #ff0000;">Error checking exit interview status: ${error.message}</p>
+          <div class="form-group button-group">
+            <button type="button" onclick="showWelcomeMessage()">Back</button>
+          </div>
+        </div>
+      `;
+    });
+}
+function submitExitInterview() {
+  const exitInterviewSection = document.getElementById('submit-exit-interview-section');
+  if (!exitInterviewSection) {
+    console.error('Submit exit interview section not found');
+    return;
+  }
+
+  const resignationType = document.getElementById('resignation_type').value;
+  const primaryReason = document.getElementById('primary_reason').value.trim();
+  const overallSatisfactionRating = document.getElementById('overall_satisfaction_rating').value;
+  const knowledgeTransferStatus = document.getElementById('knowledge_transfer_status').value.trim();
+  const assetsReturned = document.getElementById('assets_returned').value;
+
+  // Log the form values for debugging
+  console.log('Form Values:', {
+    resignation_type: resignationType,
+    primary_reason: primaryReason,
+    overall_satisfaction_rating: overallSatisfactionRating,
+    knowledge_transfer_status: knowledgeTransferStatus,
+    assets_returned: assetsReturned
+  });
+
+  // Client-side validation
+  let errors = [];
+  if (!resignationType) {
+    errors.push('Resignation Type is required.');
+    document.getElementById('resignation_type').style.border = '1px solid red';
+  } else {
+    document.getElementById('resignation_type').style.border = '';
+  }
+  if (!primaryReason) {
+    errors.push('Primary Reason for Leaving is required.');
+    document.getElementById('primary_reason').style.border = '1px solid red';
+  } else {
+    document.getElementById('primary_reason').style.border = '';
+  }
+  if (!overallSatisfactionRating) {
+    errors.push('Overall Satisfaction Rating is required.');
+    document.getElementById('overall_satisfaction_rating').style.border = '1px solid red';
+  } else {
+    document.getElementById('overall_satisfaction_rating').style.border = '';
+  }
+  if (assetsReturned === '') {
+    errors.push('Assets Returned is required.');
+    document.getElementById('assets_returned').style.border = '1px solid red';
+  } else {
+    document.getElementById('assets_returned').style.border = '';
+  }
+
+  if (errors.length > 0) {
+    exitInterviewSection.innerHTML = `
+      <div class="card">
+        <h2>Submit Exit Interview Details</h2>
+        <p style="color: #ff0000;">${errors.join('<br>')}</p>
+        <div class="form-group button-group">
+          <button type="button" onclick="showSubmitExitInterviewForm()">Try Again</button>
+          <button type="button" onclick="showWelcomeMessage()">Back</button>
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // Create FormData to ensure proper encoding
+  const formData = new FormData();
+  formData.append('action', 'submit_exit_interview');
+  formData.append('resignation_type', resignationType);
+  formData.append('primary_reason', primaryReason);
+  formData.append('overall_satisfaction_rating', overallSatisfactionRating);
+  formData.append('knowledge_transfer_status', knowledgeTransferStatus);
+  formData.append('assets_returned', assetsReturned);
+
+  fetch('../pages/features/submit_exit_interview.php', {
+    method: 'POST',
+    body: formData
+  })
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(data => {
+      console.log('Server Response:', data);
+      if (data.success) {
+        // Show alert with success message
+        alert('Exit interview details submitted successfully!');
+
+        // Update the section with the new message
+        exitInterviewSection.innerHTML = `
+          <div class="card">
+            <h2>Submit Exit Interview Details</h2>
+            <p style="color: #4CAF50;">
+              You have submitted your exit interview already. 
+              There are no pending exit interviews for now. 
+              Contact your manager for any questions.
+            </p>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+          </div>
+        `;
+      } else {
+        exitInterviewSection.innerHTML = `
+          <div class="card">
+            <h2>Submit Exit Interview Details</h2>
+            <p style="color: #ff0000;">${data.error || 'Failed to submit exit interview details.'}</p>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+          </div>
+        `;
+      }
+    })
+    .catch(error => {
+      console.error('Error submitting exit interview:', error);
+      exitInterviewSection.innerHTML = `
+        <div class="card">
+          <h2>Submit Exit Interview Details</h2>
+          <p style="color: #ff0000;">Error submitting exit interview: ${error.message}</p>
+          <div class="form-group button-group">
+            <button type="button" onclick="showWelcomeMessage()">Back</button>
+          </div>
+        </div>
+      `;
+    });
+}
+
+// Show Exit Interview Details
+function showExitInterviewDetails() {
+  showSection('exit-interview-details-section');
+  fetchExitInterviewDetails();
+}
+
+// Fetch and Display Exit Interview Details
+function fetchExitInterviewDetails() {
+  const exitInterviewDetailsSection = document.getElementById('exit-interview-details-section');
+  if (!exitInterviewDetailsSection) {
+    console.error('Exit interview details section not found');
+    return;
+  }
+
+  exitInterviewDetailsSection.innerHTML = `
+    <div class="card">
+      <h2>Exit Interview Details</h2>
+      <p>Loading exit interview details...</p>
+    </div>
+  `;
+
+  fetch('../pages/features/fetch_employee_exit_interview.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'fetch_exit_interview'
+    })
+  })
+    .then(response => {
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then(data => {
+      if (data.success && data.exit_interview) {
+        const ei = data.exit_interview;
+        exitInterviewDetailsSection.innerHTML = `
+            <h2>Exit Interview Details</h2>
+            <div class="salary-details-container">
+              <div class="salary-details-box">
+                <h3>Details</h3>
+                <p><strong>Interview Date:</strong> ${ei.interview_date || 'N/A'}</p>
+                <p><strong>Last Working Date:</strong> ${ei.last_working_date || 'N/A'}</p>
+                <p><strong>Resignation Type:</strong> ${ei.resignation_type || 'N/A'}</p>
+                <p><strong>Primary Reason:</strong> ${ei.primary_reason || 'N/A'}</p>
+                <p><strong>Overall Satisfaction Rating:</strong> ${ei.overall_satisfaction_rating || 'N/A'}</p>
+                <p><strong>Knowledge Transfer Status:</strong> ${ei.knowledge_transfer_status || 'N/A'}</p>
+                <p><strong>Assets Returned:</strong> ${ei.assets_returned == 1 ? 'Yes' : 'No'}</p>
+                <p><strong>Eligible for Rehire:</strong> ${ei.eligible_for_rehire == 1 ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+        `;
+      } else {
+        exitInterviewDetailsSection.innerHTML = `
+            <h2>Exit Interview Details</h2>
+            <p style="color: #ff0000;">${data.error || 'No exit interview details found.'}</p>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+        `;
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching exit interview details:', error);
+      exitInterviewDetailsSection.innerHTML = `
+          <h2>Exit Interview Details</h2>
+          <p style="color: #ff0000;">Error fetching exit interview details: ${error.message}</p>
+          <div class="form-group button-group">
+            <button type="button" onclick="showWelcomeMessage()">Back</button>
+          </div>
       `;
     });
 }

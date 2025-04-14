@@ -30,8 +30,9 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'feedback-dropdown')"><i class="fas fa-comment"></i> Feedback and Exit Interviews</a>
             <ul id="feedback-dropdown" class="dropdown">
-                <li><a href="#">Submit feedback about company policies</a></li>
-                <li><a href="#">View exit interview details</a></li>
+                <li><a href="#" onclick="showFeedback()">View My Feedback</a></li>
+                <li><a href="#" onclick="showSubmitExitInterviewForm()">Submit Exit Interview Details</a></li>
+                <li><a href="#" onclick="showExitInterviewDetails()">View Exit Interview Details</a></li>            
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'help-dropdown')"><i class="fas fa-question-circle"></i> Help & Support</a>

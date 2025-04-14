@@ -480,6 +480,20 @@ $leave_balances = fetchData($con, "
   <div id="salary-details-section" style="display: none;" class="card">
     <!-- Content will be populated dynamically by fetchSalaryDetails -->
   </div>
+<!-- Feedback Section -->
+  <div id="feedback-section" style="display: none;" class="card">
+    <!-- Content will be populated dynamically by fetchFeedback -->
+  </div>
+
+  <!-- Submit Exit Interview Section -->
+  <div id="submit-exit-interview-section" style="display: none;" class="card">
+    <!-- Content will be populated dynamically by showSubmitExitInterviewForm -->
+  </div>
+
+  <!-- View Exit Interview Section -->
+  <div id="exit-interview-details-section" style="display: none;" class="card">
+    <!-- Content will be populated dynamically by fetchExitInterviewDetails -->
+  </div>
         <!-- Projects and Tasks Section -->
         <div id="projects-tasks-section" style="display: none;" class="card">
             <h2>Projects and Tasks</h2>
