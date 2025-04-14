@@ -1722,7 +1722,7 @@ function showDepartment() {
             <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
                     onmouseover="this.style.backgroundColor='#5a6268'" 
                     onmouseout="this.style.backgroundColor='#6c757d'"
-                    onclick="showWelcomeMessage()">Back</button>
+                    onclick="showWelcomeMessage(event)">Back</button>
         </div>
     `;
   mainContent.innerHTML = html;
