@@ -324,7 +324,8 @@ function showFeedbackHistory() {
                     ${employees
                       .filter(
                         (emp) =>
-                          emp.manager_id == sessionStorage.getItem('employee_id')
+                          emp.manager_id ==
+                          sessionStorage.getItem('employee_id')
                       )
                       .map(
                         (emp) =>
@@ -411,7 +412,9 @@ function showReportsAnalytics() {
         });
       }
 
-      const feedbackTypesTable = document.getElementById('feedback-types-table');
+      const feedbackTypesTable = document.getElementById(
+        'feedback-types-table'
+      );
       feedbackTypesTable.innerHTML = '';
       if (filteredFeedbackTypes.length === 0) {
         feedbackTypesTable.innerHTML = `<tr><td colspan="2">No feedback data available for this employee.</td></tr>`;
@@ -461,7 +464,9 @@ function showReportsAnalytics() {
         }
       }
 
-      const trainingTable = document.getElementById('training-certificates-table');
+      const trainingTable = document.getElementById(
+        'training-certificates-table'
+      );
       trainingTable.innerHTML = '';
       if (filteredTrainings.length === 0) {
         trainingTable.innerHTML = `<tr><td colspan="4">No training certificates available for this employee.</td></tr>`;
@@ -478,7 +483,9 @@ function showReportsAnalytics() {
         });
       }
 
-      const feedbackSummaryTable = document.getElementById('feedback-summary-table');
+      const feedbackSummaryTable = document.getElementById(
+        'feedback-summary-table'
+      );
       feedbackSummaryTable.innerHTML = '';
       if (filteredFeedback.length === 0) {
         feedbackSummaryTable.innerHTML = `<tr><td colspan="5">No feedback data available for this employee.</td></tr>`;
@@ -506,11 +513,16 @@ function showReportsAnalytics() {
       downloadPdfBtn.addEventListener('click', function () {
         const reportContent = document.getElementById('report-content');
         if (!reportContent) {
-          showError('Report content not found. Please generate the report first.');
+          showError(
+            'Report content not found. Please generate the report first.'
+          );
           return;
         }
 
-        if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+        if (
+          typeof html2canvas === 'undefined' ||
+          typeof window.jspdf === 'undefined'
+        ) {
           showError('PDF libraries not loaded.');
           return;
         }
@@ -543,9 +555,12 @@ function showReportsAnalytics() {
               );
             }
 
-            const selectedEmployee = employeeSearch.options[employeeSearch.selectedIndex].text;
+            const selectedEmployee =
+              employeeSearch.options[employeeSearch.selectedIndex].text;
             pdf.save(
-              `Employee_Report_${selectedEmployee}_${new Date().toISOString().split('T')[0]}.pdf`
+              `Employee_Report_${selectedEmployee}_${
+                new Date().toISOString().split('T')[0]
+              }.pdf`
             );
             downloadPdfBtn.style.display = 'block';
           })
@@ -557,7 +572,10 @@ function showReportsAnalytics() {
     }
   };
 
-  if (typeof html2canvas !== 'undefined' && typeof window.jspdf !== 'undefined') {
+  if (
+    typeof html2canvas !== 'undefined' &&
+    typeof window.jspdf !== 'undefined'
+  ) {
     initializeDownloadPdf();
   } else {
     const loadHtml2Canvas = new Promise((resolve, reject) => {
@@ -580,61 +598,95 @@ function showReportsAnalytics() {
   }
 }
 
-function loadScript(url, callback) {
-  const script = document.createElement('script');
-  script.src = url;
-  script.onload = () => callback();
-  script.onerror = () => callback(new Error(`Failed to load script: ${url}`));
-  document.head.appendChild(script);
-}
-
-function showProjects() {
-  if (!showSection('projects-section')) return;
-
-  const projectsTable = document.getElementById('projects-table');
-  projectsTable.innerHTML = '';
-  if (projects.length === 0) {
-    projectsTable.innerHTML = `<tr><td colspan="8">No active projects found.</td></tr>`;
-  } else {
-    projects.forEach((p) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-                <td>${p.project_name}</td>
-                <td>${p.project_status}</td>
-                <td>$${parseFloat(p.budget).toFixed(2)}</td>
-                <td>${p.actual_cost ? '$' + parseFloat(p.actual_cost).toFixed(2) : 'N/A'}</td>
-                <td>${p.start_date}</td>
-                <td>${p.expected_end_date}</td>
-                <td>${p.actual_end_date || 'N/A'}</td>
-                <td>${p.client_name} (${p.client_contact_email})</td>
-            `;
-      projectsTable.appendChild(row);
-    });
-  }
-}
-
+// Show Assign Employees Form
 function showAssignEmployees() {
   if (!showSection('assign-employees-section')) return;
 
   const form = document.getElementById('assign-employees-form');
+  const projectSelect = document.getElementById('project_id');
+  const employeeSelect = document.getElementById('employee_id');
+
+  if (!form || !projectSelect || !employeeSelect) {
+    console.error('Assign employees form elements not found');
+    showError('Form setup error', 'assign-employees-section');
+    return;
+  }
+
+  // Reset form
+  form.reset();
+
+  // Populate project dropdown
+  projectSelect.innerHTML = '<option value="">Select a project</option>';
+  if (window.projects && window.projects.length > 0) {
+    window.projects.forEach((project) => {
+      projectSelect.innerHTML += `<option value="${project.project_id}">${project.project_name}</option>`;
+    });
+  }
+
+  // Function to populate employee dropdown based on selected project
+  function populateEmployeeDropdown(selectedProjectId = '') {
+    employeeSelect.innerHTML = '<option value="">Select an employee</option>';
+
+    // Filter employees under the manager who are not assigned to the selected project
+    const managerId = sessionStorage.getItem('employee_id');
+    const assignedEmployeeIds = selectedProjectId
+      ? (window.projectAssignments || [])
+          .filter((assignment) => assignment.project_id == selectedProjectId)
+          .map((assignment) => assignment.employee_id)
+      : [];
+
+    const availableEmployees = (window.employees || []).filter(
+      (emp) =>
+        emp.manager_id == managerId && // Employees under the manager
+        !assignedEmployeeIds.includes(emp.employee_id) // Not already assigned to the project
+    );
+
+    if (availableEmployees.length === 0) {
+      employeeSelect.innerHTML +=
+        '<option value="">No available employees</option>';
+      employeeSelect.disabled = true;
+    } else {
+      availableEmployees.forEach((emp) => {
+        employeeSelect.innerHTML += `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`;
+      });
+      employeeSelect.disabled = false;
+    }
+  }
+
+  // Initial employee dropdown population
+  populateEmployeeDropdown();
+
+  // Update employee dropdown when project changes
+  projectSelect.addEventListener('change', () => {
+    populateEmployeeDropdown(projectSelect.value);
+  });
+
+  // Handle form submission
+  // Handle form submission in showAssignEmployees()
   form.addEventListener('submit', function (event) {
     event.preventDefault();
+
+    const formData = new FormData(this);
     fetch('../pages/features/manage_assignments.php', {
       method: 'POST',
-      body: new FormData(this),
+      body: formData,
     })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-      })
+      .then((response) => response.json())
       .then((data) => {
         if (data.success) {
-          form.reset();
-          fetchUpdatedAssignmentsAfterAssignment(
-            'Employee assigned to project successfully!'
+          showSuccess(
+            'Employee assigned to project successfully!',
+            'assign-employees-section'
           );
+          refreshData(() => {
+            form.reset();
+            populateEmployeeDropdown(); // Ensure this is called after refresh
+            const projectSelectView =
+              document.getElementById('project_id_view');
+            if (projectSelectView) {
+              renderAssignmentsTable(projectSelectView.value);
+            }
+          });
         } else {
           showError(
             data.error || 'Failed to assign employee',
@@ -648,18 +700,176 @@ function showAssignEmployees() {
   });
 }
 
-function fetchUpdatedAssignmentsAfterAssignment(successMessage) {
+// Show Assigned Employees Section (View/Edit Project Assignments)
+function showAssignedEmployeesSection() {
+  if (!showSection('project-assignments-section')) return;
+
+  const projectSelect = document.getElementById('project_id_view');
+  const assignmentsTable = document.getElementById('assignments-table');
+
+  if (!projectSelect || !assignmentsTable) {
+    console.error('Project assignments elements not found');
+    showError('Section setup error', 'project-assignments-section');
+    return;
+  }
+
+  // Populate project dropdown
+  projectSelect.innerHTML = '<option value="">Select a project</option>';
+  if (window.projects && window.projects.length > 0) {
+    window.projects.forEach((project) => {
+      projectSelect.innerHTML += `<option value="${project.project_id}">${project.project_name}</option>`;
+    });
+  }
+
+  // Initial table render
+  renderAssignmentsTable();
+
+  // Update table when project changes
+  projectSelect.addEventListener('change', () =>
+    renderAssignmentsTable(projectSelect.value)
+  );
+}
+
+// Edit Assignment
+function editAssignment(assignmentId) {
+  if (!showSection('edit-assignment-section')) return;
+
+  const assignment = window.projectAssignments.find(
+    (a) => a.assignment_id == assignmentId
+  );
+  if (!assignment) {
+    showError('Assignment not found', 'edit-assignment-section');
+    return;
+  }
+
+  // Populate the edit form
+  document.getElementById('assignment_id').value = assignment.assignment_id;
+  document.getElementById('edit_project_id').value =
+    assignment.project_name || 'N/A';
+  document.getElementById('edit_employee_id').value =
+    `${assignment.first_name} ${assignment.last_name}` || 'N/A';
+  document.getElementById('edit_role_in_project').value =
+    assignment.role_in_project || '';
+
+  // Handle form submission
+  const form = document.getElementById('edit-assignment-form');
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    const formData = new FormData(this);
+    formData.append('action', 'update');
+    formData.append('assignment_id', assignmentId);
+
+    fetch('../pages/features/manage_assignments.php', {
+      method: 'POST',
+      body: formData,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          showSuccess(
+            'Assignment updated successfully!',
+            'edit-assignment-section'
+          );
+          refreshData(() => {
+            showAssignedEmployeesSection(); // Go back to the assignments table
+          });
+        } else {
+          showError(
+            data.error || 'Failed to update assignment',
+            'edit-assignment-section'
+          );
+        }
+      })
+      .catch((error) =>
+        showError('Network error: ' + error.message, 'edit-assignment-section')
+      );
+  });
+}
+
+// Delete Assignment
+function deleteAssignment(assignmentId) {
+  if (
+    !confirm('Are you sure you want to remove this employee from the project?')
+  )
+    return;
+
+  const formData = new FormData();
+  formData.append('action', 'delete');
+  formData.append('assignment_id', assignmentId);
+
+  fetch('../pages/features/manage_assignments.php', {
+    method: 'POST',
+    body: formData,
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        showSuccess(
+          'Employee removed from project successfully!',
+          'project-assignments-section'
+        );
+        refreshData(() => {
+          const projectSelect = document.getElementById('project_id_view');
+          renderAssignmentsTable(projectSelect.value);
+          // Refresh the employee dropdown in the assign form
+          const assignProjectSelect = document.getElementById('project_id');
+          if (assignProjectSelect) {
+            const populateEmployeeDropdown = () => {
+              const employeeSelect = document.getElementById('employee_id');
+              employeeSelect.innerHTML =
+                '<option value="">Select an employee</option>';
+              const managerId = sessionStorage.getItem('employee_id');
+              const assignedEmployeeIds = assignProjectSelect.value
+                ? (window.projectAssignments || [])
+                    .filter(
+                      (assignment) =>
+                        assignment.project_id == assignProjectSelect.value
+                    )
+                    .map((assignment) => assignment.employee_id)
+                : [];
+              const availableEmployees = (window.employees || []).filter(
+                (emp) =>
+                  emp.manager_id == managerId &&
+                  !assignedEmployeeIds.includes(emp.employee_id)
+              );
+              if (availableEmployees.length === 0) {
+                employeeSelect.innerHTML +=
+                  '<option value="">No available employees</option>';
+                employeeSelect.disabled = true;
+              } else {
+                availableEmployees.forEach((emp) => {
+                  employeeSelect.innerHTML += `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`;
+                });
+                employeeSelect.disabled = false;
+              }
+            };
+            populateEmployeeDropdown();
+          }
+        });
+      } else {
+        showError(
+          data.error || 'Failed to delete assignment',
+          'project-assignments-section'
+        );
+      }
+    })
+    .catch((error) =>
+      showError(
+        'Network error: ' + error.message,
+        'project-assignments-section'
+      )
+    );
+}
+
+// Fetch updated assignments after an action (e.g., assign, edit, delete)
+function fetchUpdatedAssignments(successMessage = '') {
   fetch('manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_dataï¿½ion=project_assignments',
+    body: 'action=refresh_data',
   })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      return response.json();
-    })
+    .then((response) => response.json())
     .then((data) => {
       if (data.success) {
         window.projectAssignments = data.project_assignments || [];
@@ -677,109 +887,20 @@ function fetchUpdatedAssignmentsAfterAssignment(successMessage) {
         );
       }
     })
-    .catch((error) => {
-      showError('Network error: ' + error.message, 'project-assignments-section');
-    });
-}
-
-function showSubtasksForm() {
-  if (!showSection('subtasks-section')) return;
-
-  loadTasks();
-  const form = document.getElementById('subtask-form');
-  form.addEventListener('submit', function (event) {
-    event.preventDefault();
-
-    if (isSubmitting) {
+    .catch((error) =>
       showError(
-        'Please wait, a submission is already in progress',
-        'subtasks-section'
-      );
-      return;
-    }
-
-    const taskId = document.getElementById('task_id').value;
-    const isNewSubtask = !taskId || taskId === '';
-
-    if (!isNewSubtask) {
-      const task = window.tasks.find((t) => t.task_id == taskId);
-      if (!task) {
-        showError('Task not found', 'subtasks-section');
-        return;
-      }
-      const formData = new FormData(this);
-      const currentData = {
-        project_id: formData.get('project_id'),
-        task_description: formData.get('task_description'),
-        employee_id: formData.get('employee_id') || '',
-        due_date: formData.get('due_date'),
-        status: formData.get('status'),
-      };
-      const existingData = {
-        project_id: task.project_id.toString(),
-        task_description: task.task_description || '',
-        employee_id: task.employee_id ? task.employee_id.toString() : '',
-        due_date: task.due_date || '',
-        status: task.status || '',
-      };
-
-      const hasChanges = Object.keys(currentData).some(
-        (key) => currentData[key] !== existingData[key]
-      );
-
-      if (!hasChanges) {
-        showInfo('No changes made', 'subtasks-section');
-        return;
-      }
-    }
-
-    isSubmitting = true;
-    const saveButton = document.getElementById('save-task-btn');
-    saveButton.disabled = true;
-
-    const formData = new FormData(this);
-    formData.append('action', 'save_subtask');
-    if (taskId) {
-      formData.append('task_id', taskId);
-    }
-
-    fetch('manager_dashboard.php', {
-      method: 'POST',
-      body: formData,
-    })
-      .then((response) => response.text())
-      .then((text) => JSON.parse(text))
-      .then((data) => {
-        if (data.success) {
-          const successMessage = isNewSubtask
-            ? 'Subtask created successfully!'
-            : 'Subtask updated successfully!';
-          showSuccess(successMessage, 'subtasks-section');
-          window.tasks = data.tasks || [];
-          if (isNewSubtask) {
-            this.reset();
-            document.getElementById('task_id').value = '';
-            const employeeSelect = document.getElementById('employee_id_subtask');
-            employeeSelect.innerHTML = '<option value="">Unassigned</option>';
-            const taskSelect = document.getElementById('task_id');
-            taskSelect.innerHTML = '<option value="">Create new task</option>';
-          }
-          return loadTasks();
-        } else {
-          showError(data.error || 'Failed to save task', 'subtasks-section');
-        }
-      })
-      .catch((error) => {
-        console.error('Fetch Error:', error);
-        showError('Network error: ' + error.message, 'subtasks-section');
-      });
-  });
+        'Network error: ' + error.message,
+        'project-assignments-section'
+      )
+    );
 }
 
-function showAssignedEmployeesSection() {
-  if (!showSection('project-assignments-section')) return;
-
-  loadAssignments();
+function loadScript(url, callback) {
+  const script = document.createElement('script');
+  script.src = url;
+  script.onload = () => callback();
+  script.onerror = () => callback(new Error(`Failed to load script: ${url}`));
+  document.head.appendChild(script);
 }
 
 function loadAssignments() {
@@ -813,8 +934,12 @@ function loadAssignments() {
         <td>${assignment.first_name} ${assignment.last_name}</td>
         <td>${assignment.role_in_project || 'N/A'}</td>
         <td>
-          <button onclick="editAssignment(${assignment.assignment_id})">Edit</button>
-          <button onclick="deleteAssignment(${assignment.assignment_id})">Delete</button>
+          <button onclick="editAssignment(${
+            assignment.assignment_id
+          })">Edit</button>
+          <button onclick="deleteAssignment(${
+            assignment.assignment_id
+          })">Delete</button>
         </td>
       `;
       assignmentsTable.appendChild(row);
@@ -824,104 +949,11 @@ function loadAssignments() {
   renderTable(projectSelect.value);
 }
 
-function editAssignment(assignmentId) {
-  const assignment = window.projectAssignments.find(
-    (a) => a.assignment_id == assignmentId
-  );
-  if (!assignment) {
-    showError('Assignment not found', 'project-assignments-section');
-    return;
-  }
-
-  if (!showSection('edit-assignment-section')) return;
-
-  document.getElementById('edit_assignment_id').value = assignment.assignment_id;
-  document.getElementById('edit_employee_name').value = `${assignment.first_name} ${assignment.last_name}`;
-  document.getElementById('edit_project_name').value = assignment.project_name;
-  document.getElementById('edit_role_in_project').value = assignment.role_in_project || '';
-
-  const form = document.getElementById('edit-assignment-form');
-  form.addEventListener(
-    'submit',
-    function (event) {
-      event.preventDefault();
-      const formData = new FormData(this);
-      formData.append('action', 'update_assignment');
-
-      fetch('manager_dashboard.php', {
-        method: 'POST',
-        body: formData,
-      })
-        .then((response) => {
-          if (!response.ok)
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          return response.json();
-        })
-        .then((data) => {
-          if (data.success) {
-            fetchUpdatedAssignments('Assignment updated successfully!');
-          } else {
-            showError(
-              data.error || 'Failed to update assignment',
-              'edit-assignment-section'
-            );
-          }
-        })
-        .catch((error) =>
-          showError('Network error: ' + error.message, 'edit-assignment-section')
-        );
-    },
-    { once: true }
-  );
-}
-
-function deleteAssignment(assignmentId) {
-  if (confirm('Are you sure you want to delete this assignment?')) {
-    const formData = new FormData();
-    formData.append('action', 'remove_assignment');
-    formData.append('assignment_id', assignmentId);
-
-    fetch('manager_dashboard.php', {
-      method: 'POST',
-      body: formData,
-    })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.text();
-      })
-      .then((text) => {
-        try {
-          const data = JSON.parse(text);
-          if (data.success) {
-            showSuccess(
-              'Assignment deleted successfully!',
-              'project-assignments-section'
-            );
-            fetchUpdatedAssignments();
-          } else {
-            showError(
-              data.error || 'Failed to delete assignment',
-              'project-assignments-section'
-            );
-          }
-        } catch (e) {
-          console.error('Raw response:', text);
-          throw new Error('Invalid JSON response: ' + e.message);
-        }
-      })
-      .catch((error) => {
-        showError('Network error: ' + error.message, 'project-assignments-section');
-      });
-  }
-}
-
 function fetchUpdatedAssignments() {
   fetch('manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data§ion=project_assignments',
+    body: 'action=refresh_dataï¿½ion=project_assignments',
   })
     .then((response) => {
       if (!response.ok) {
@@ -944,7 +976,10 @@ function fetchUpdatedAssignments() {
       }
     })
     .catch((error) => {
-      showError('Network error: ' + error.message, 'project-assignments-section');
+      showError(
+        'Network error: ' + error.message,
+        'project-assignments-section'
+      );
     });
 }
 
@@ -953,9 +988,9 @@ function renderAssignmentsTable(selectedProjectId) {
   if (!assignmentsTable) return;
 
   assignmentsTable.innerHTML = '';
-  let filteredAssignments = window.projectAssignments;
+  let filteredAssignments = window.projectAssignments || [];
   if (selectedProjectId) {
-    filteredAssignments = window.projectAssignments.filter(
+    filteredAssignments = filteredAssignments.filter(
       (assignment) => assignment.project_id == selectedProjectId
     );
   }
@@ -966,12 +1001,16 @@ function renderAssignmentsTable(selectedProjectId) {
     filteredAssignments.forEach((assignment) => {
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td>${assignment.project_name}</td>
+        <td>${assignment.project_name || 'N/A'}</td>
         <td>${assignment.first_name} ${assignment.last_name}</td>
         <td>${assignment.role_in_project || 'N/A'}</td>
         <td>
-          <button onclick="editAssignment(${assignment.assignment_id})">Edit</button>
-          <button onclick="deleteAssignment(${assignment.assignment_id})">Delete</button>
+          <button onclick="editAssignment(${
+            assignment.assignment_id
+          })">Edit</button>
+          <button onclick="deleteAssignment(${
+            assignment.assignment_id
+          })">Delete</button>
         </td>
       `;
       assignmentsTable.appendChild(row);
@@ -979,74 +1018,282 @@ function renderAssignmentsTable(selectedProjectId) {
   }
 }
 
-function loadTasks() {
-  const projectId = document.getElementById('project_id_subtask').value;
-  const taskSelect = document.getElementById('task_id');
-  const tasksTable = document.getElementById('tasks-table');
-  taskSelect.innerHTML = '<option value="">Create new task</option>';
-  tasksTable.innerHTML = '';
+// Show Projects Section
+function showProjects() {
+  if (!showSection('projects-section')) return;
 
-  if (projectId) {
-    const projectTasks = tasks.filter((t) => t.project_id == projectId);
-    projectTasks.forEach((t) => {
-      taskSelect.innerHTML += `<option value="${t.task_id}">${t.task_description}</option>`;
+  const projectsTable = document.getElementById('projects-table');
+  if (!projectsTable) {
+    console.error('projects-table not found');
+    return;
+  }
+
+  projectsTable.innerHTML = '';
+  if (!window.projects || window.projects.length === 0) {
+    projectsTable.innerHTML = `<tr><td colspan="6">No active projects found.</td></tr>`;
+  } else {
+    window.projects.forEach((project) => {
       const row = document.createElement('tr');
       row.innerHTML = `
-            <td>${t.task_description}</td>
-            <td>${t.project_name}</td>
-            <td>${t.first_name ? t.first_name + ' ' + t.last_name : 'Unassigned'}</td>
-            <td>${t.due_date || 'N/A'}</td>
-            <td>${t.status}</td>
-        `;
-      row.onclick = () => populateTaskForm(t);
-      tasksTable.appendChild(row);
+        <td>${project.project_name || 'N/A'}</td>
+        <td>${project.project_status || 'N/A'}</td>
+        <td>$${parseFloat(project.budget || 0).toFixed(2)}</td>
+        <td>${project.start_date || 'N/A'}</td>
+        <td>${project.expected_end_date || 'N/A'}</td>
+        <td>${project.client_name || 'N/A'}</td>
+      `;
+      projectsTable.appendChild(row);
     });
   }
 }
 
-function populateTaskForm(task) {
-  document.getElementById('task_id').value = task.task_id;
-  document.getElementById('task_description').value = task.task_description;
-  document.getElementById('project_id_subtask').value = task.project_id;
-  document.getElementById('employee_id_subtask').value = task.employee_id || '';
-  document.getElementById('due_date').value = task.due_date || '';
-  document.getElementById('task_status').value = task.status;
-  document.getElementById('delete-task-btn').style.display = 'block';
-}
+// Show Subtasks Section (Create/Update/Delete/View Tasks)
+function showSubtasksForm() {
+  if (!showSection('subtasks-section')) return;
 
-function resetSubtaskForm() {
-  document.getElementById('subtask-form').reset();
-  document.getElementById('task_id').value = '';
-  document.getElementById('delete-task-btn').style.display = 'none';
-  loadTasks();
-}
+  const form = document.getElementById('subtask-form');
+  const tasksTable = document.getElementById('tasks-table');
+  const projectSelect = document.getElementById('project_id_subtask');
 
-function deleteTask() {
-  const taskId = document.getElementById('task_id').value;
-  if (!taskId) {
-    showError('No task selected to delete', 'subtasks-section');
+  if (!form || !tasksTable || !projectSelect) {
+    console.error('Subtask form elements not found');
+    showError('Form setup error', 'subtasks-section');
     return;
   }
 
-  if (confirm('Are you sure you want to delete this task?')) {
+  // Reset form
+  form.reset();
+  document.getElementById('task_id').value = '';
+  document.getElementById('delete-task-btn').style.display = 'none';
+
+  // Populate project dropdown
+  projectSelect.innerHTML = '<option value="">Select a project</option>';
+  if (window.projects && window.projects.length > 0) {
+    window.projects.forEach((project) => {
+      projectSelect.innerHTML += `<option value="${project.project_id}">${project.project_name}</option>`;
+    });
+  }
+
+  // Populate employee dropdown
+  const employeeSelect = document.getElementById('employee_id_subtask');
+  employeeSelect.innerHTML = '<option value="">Unassigned</option>';
+  if (window.employees && window.employees.length > 0) {
+    window.employees.forEach((emp) => {
+      employeeSelect.innerHTML += `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`;
+    });
+  }
+
+  // Render tasks table based on selected project
+  function renderTasksTable(projectId = '') {
+    tasksTable.innerHTML = '';
+    const filteredTasks = projectId
+      ? (window.tasks || []).filter((task) => task.project_id == projectId)
+      : window.tasks || [];
+
+    if (filteredTasks.length === 0) {
+      tasksTable.innerHTML = `<tr><td colspan="6">No tasks found for this project.</td></tr>`;
+      return;
+    }
+
+    filteredTasks.forEach((task) => {
+      const project =
+        window.projects.find((p) => p.project_id == task.project_id) || {};
+      const employee =
+        window.employees.find((e) => e.employee_id == task.employee_id) || {};
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${task.task_description || 'N/A'}</td>
+        <td>${project.project_name || 'N/A'}</td>
+        <td>${
+          employee.first_name
+            ? `${employee.first_name} ${employee.last_name}`
+            : 'Unassigned'
+        }</td>
+        <td>${task.due_date || 'N/A'}</td>
+        <td>${task.status || 'N/A'}</td>
+        <td>
+          <button onclick="editTask(${task.task_id})">Edit</button>
+          <button onclick="deleteTask(${task.task_id})">Delete</button>
+        </td>
+      `;
+      tasksTable.appendChild(row);
+    });
+  }
+
+  // Initial table render
+  renderTasksTable();
+
+  // Update table when project changes
+  projectSelect.addEventListener('change', () =>
+    renderTasksTable(projectSelect.value)
+  );
+
+  // Handle form submission (create/update task)
+  form.addEventListener('submit', function (event) {
+    event.preventDefault();
+
+    const taskId = document.getElementById('task_id').value;
+    const formData = new FormData(this);
+    if (taskId) {
+      formData.append('task_id', taskId);
+    }
+
     fetch('../pages/features/manage_tasks.php', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `action=delete&task_id=${taskId}`,
+      body: formData,
     })
       .then((response) => response.json())
       .then((data) => {
         if (data.success) {
-          refreshData();
-          resetSubtaskForm();
+          showSuccess(
+            taskId
+              ? 'Task updated successfully!'
+              : 'Task created successfully!',
+            'subtasks-section'
+          );
+          refreshData(() => {
+            form.reset();
+            document.getElementById('task_id').value = '';
+            document.getElementById('delete-task-btn').style.display = 'none';
+            renderTasksTable(projectSelect.value);
+          });
         } else {
-          showError(data.error || 'Failed to delete task', 'subtasks-section');
+          showError(data.error || 'Failed to save task', 'subtasks-section');
         }
       })
       .catch((error) =>
         showError('Network error: ' + error.message, 'subtasks-section')
       );
+  });
+}
+
+// Edit Task
+function editTask(taskId) {
+  const task = window.tasks.find((t) => t.task_id == taskId);
+  if (!task) {
+    showError('Task not found', 'subtasks-section');
+    return;
   }
+
+  document.getElementById('task_id').value = task.task_id;
+  document.getElementById('project_id_subtask').value = task.project_id || '';
+  document.getElementById('task_description').value =
+    task.task_description || '';
+  document.getElementById('employee_id_subtask').value = task.employee_id || '';
+  document.getElementById('due_date').value = task.due_date || '';
+  document.getElementById('task_status').value = task.status || 'To Do';
+  document.getElementById('delete-task-btn').style.display = 'block';
+
+  // Refresh tasks table to reflect current project
+  const projectSelect = document.getElementById('project_id_subtask');
+  const tasksTable = document.getElementById('tasks-table');
+  if (projectSelect && tasksTable) {
+    const renderTasksTable = () => {
+      tasksTable.innerHTML = '';
+      const filteredTasks = (window.tasks || []).filter(
+        (t) => t.project_id == projectSelect.value
+      );
+      if (filteredTasks.length === 0) {
+        tasksTable.innerHTML = `<tr><td colspan="6">No tasks found for this project.</td></tr>`;
+        return;
+      }
+      filteredTasks.forEach((t) => {
+        const project =
+          window.projects.find((p) => p.project_id == t.project_id) || {};
+        const employee =
+          window.employees.find((e) => e.employee_id == t.employee_id) || {};
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${t.task_description || 'N/A'}</td>
+          <td>${project.project_name || 'N/A'}</td>
+          <td>${
+            employee.first_name
+              ? `${employee.first_name} ${employee.last_name}`
+              : 'Unassigned'
+          }</td>
+          <td>${t.due_date || 'N/A'}</td>
+          <td>${t.status || 'N/A'}</td>
+          <td>
+            <button onclick="editTask(${t.task_id})">Edit</button>
+            <button onclick="deleteTask(${t.task_id})">Delete</button>
+          </td>
+        `;
+        tasksTable.appendChild(row);
+      });
+    };
+    renderTasksTable();
+  }
+}
+
+// Delete Task
+function deleteTask(taskId) {
+  if (!confirm('Are you sure you want to delete this task?')) return;
+
+  const formData = new FormData();
+  formData.append('action', 'delete');
+  formData.append('task_id', taskId);
+
+  fetch('../pages/features/manage_tasks.php', {
+    method: 'POST',
+    body: formData,
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        showSuccess('Task deleted successfully!', 'subtasks-section');
+        refreshData(() => {
+          document.getElementById('subtask-form').reset();
+          document.getElementById('task_id').value = '';
+          document.getElementById('delete-task-btn').style.display = 'none';
+          const projectSelect = document.getElementById('project_id_subtask');
+          const tasksTable = document.getElementById('tasks-table');
+          if (projectSelect && tasksTable) {
+            const renderTasksTable = () => {
+              tasksTable.innerHTML = '';
+              const filteredTasks = (window.tasks || []).filter(
+                (t) => t.project_id == projectSelect.value
+              );
+              if (filteredTasks.length === 0) {
+                tasksTable.innerHTML = `<tr><td colspan="6">No tasks found for this project.</td></tr>`;
+                return;
+              }
+              filteredTasks.forEach((t) => {
+                const project =
+                  window.projects.find((p) => p.project_id == t.project_id) ||
+                  {};
+                const employee =
+                  window.employees.find(
+                    (e) => e.employee_id == t.employee_id
+                  ) || {};
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                  <td>${t.task_description || 'N/A'}</td>
+                  <td>${project.project_name || 'N/A'}</td>
+                  <td>${
+                    employee.first_name
+                      ? `${employee.first_name} ${employee.last_name}`
+                      : 'Unassigned'
+                  }</td>
+                  <td>${t.due_date || 'N/A'}</td>
+                  <td>${t.status || 'N/A'}</td>
+                  <td>
+                    <button onclick="editTask(${t.task_id})">Edit</button>
+                    <button onclick="deleteTask(${t.task_id})">Delete</button>
+                  </td>
+                `;
+                tasksTable.appendChild(row);
+              });
+            };
+            renderTasksTable();
+          }
+        });
+      } else {
+        showError(data.error || 'Failed to delete task', 'subtasks-section');
+      }
+    })
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'subtasks-section')
+    );
 }
 
 function addexitinterview() {
@@ -1216,7 +1463,9 @@ function updateExitInterview(selectedInterviewId = null) {
       exitInterviews = data;
 
       if (selectedInterviewId) {
-        const interview = data.find((ei) => ei.interview_id == selectedInterviewId);
+        const interview = data.find(
+          (ei) => ei.interview_id == selectedInterviewId
+        );
         if (!interview) {
           showError('Exit interview request not found.', 'profile-update-form');
           return;
@@ -1226,25 +1475,43 @@ function updateExitInterview(selectedInterviewId = null) {
           <div class="card">
               <h2>Update Exit Interview Request</h2>
               <form id="updateExitInterviewForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
-                  <input type="hidden" name="interview_id" value="${interview.interview_id}">
+                  <input type="hidden" name="interview_id" value="${
+                    interview.interview_id
+                  }">
                   <div class="form-group">
                       <label for="employee_id">Employee:</label>
-                      <input type="text" value="${interview.first_name} ${interview.last_name}" readonly>
-                      <input type="hidden" name="employee_id" value="${interview.employee_id}">
+                      <input type="text" value="${interview.first_name} ${
+          interview.last_name
+        }" readonly>
+                      <input type="hidden" name="employee_id" value="${
+                        interview.employee_id
+                      }">
                   </div>
                   <div class="form-group">
                       <label for="last_working_date">Last Working Date:</label>
-                      <input type="date" id="last_working_date" name="last_working_date" value="${interview.last_working_date}" required>
+                      <input type="date" id="last_working_date" name="last_working_date" value="${
+                        interview.last_working_date
+                      }" required>
                   </div>
                   <div class="form-group">
                       <label for="manager_rating">Manager Rating:</label>
-                      <input type="number" id="manager_rating" name="manager_rating" value="${interview.manager_rating || ''}" step="0.1" min="1" max="5">
+                      <input type="number" id="manager_rating" name="manager_rating" value="${
+                        interview.manager_rating || ''
+                      }" step="0.1" min="1" max="5">
                   </div>
                   <div class="form-group">
                       <label for="eligible_for_rehire">Eligible for Rehire:</label>
                       <select id="eligible_for_rehire" name="eligible_for_rehire" required>
-                          <option value="1" ${interview.eligible_for_rehire === '1' ? 'selected' : ''}>Yes</option>
-                          <option value="0" ${interview.eligible_for_rehire === '0' ? 'selected' : ''}>No</option>
+                          <option value="1" ${
+                            interview.eligible_for_rehire === '1'
+                              ? 'selected'
+                              : ''
+                          }>Yes</option>
+                          <option value="0" ${
+                            interview.eligible_for_rehire === '0'
+                              ? 'selected'
+                              : ''
+                          }>No</option>
                       </select>
                   </div>
                   <div class="form-group button-group" style="grid-column: span 2;">
@@ -1260,7 +1527,8 @@ function updateExitInterview(selectedInterviewId = null) {
           form.addEventListener('submit', function (event) {
             event.preventDefault();
 
-            const lastWorkingDate = form.querySelector('#last_working_date').value;
+            const lastWorkingDate =
+              form.querySelector('#last_working_date').value;
             const today = new Date().toISOString().split('T')[0];
             if (lastWorkingDate < today) {
               alert('Last working date cannot be in the past.');
@@ -1297,7 +1565,10 @@ function updateExitInterview(selectedInterviewId = null) {
                 }
               })
               .catch((error) =>
-                showError('Network error: ' + error.message, 'profile-update-form')
+                showError(
+                  'Network error: ' + error.message,
+                  'profile-update-form'
+                )
               );
           });
         }
@@ -1332,13 +1603,25 @@ function updateExitInterview(selectedInterviewId = null) {
                             <tr style="transition: background-color 0.3s;"
                                 onmouseover="this.style.backgroundColor='#f9f9f9'"
                                 onmouseout="this.style.backgroundColor='transparent'">
-                                <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.first_name} ${ei.last_name}</td>
-                                <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.interview_date || 'N/A'}</td>
-                                <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.last_working_date || 'N/A'}</td>
-                                <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.manager_rating || 'N/A'}</td>
-                                <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${ei.eligible_for_rehire == 1 ? 'Yes' : 'No'}</td>
+                                <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
+                                  ei.first_name
+                                } ${ei.last_name}</td>
+                                <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
+                                  ei.interview_date || 'N/A'
+                                }</td>
+                                <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
+                                  ei.last_working_date || 'N/A'
+                                }</td>
+                                <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
+                                  ei.manager_rating || 'N/A'
+                                }</td>
+                                <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
+                                  ei.eligible_for_rehire == 1 ? 'Yes' : 'No'
+                                }</td>
                                 <td style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd;">
-                                    <button class="update-exit-interview-btn" data-interview-id="${ei.interview_id}">Update</button>
+                                    <button class="update-exit-interview-btn" data-interview-id="${
+                                      ei.interview_id
+                                    }">Update</button>
                                 </td>
                             </tr>
                         `;
@@ -1357,7 +1640,9 @@ function updateExitInterview(selectedInterviewId = null) {
 
         profileUpdateForm.innerHTML = tableHTML;
 
-        const updateButtons = profileUpdateForm.querySelectorAll('.update-exit-interview-btn');
+        const updateButtons = profileUpdateForm.querySelectorAll(
+          '.update-exit-interview-btn'
+        );
         updateButtons.forEach((button) => {
           button.addEventListener('click', function () {
             const interviewId = this.getAttribute('data-interview-id');
@@ -1367,7 +1652,10 @@ function updateExitInterview(selectedInterviewId = null) {
       }
     })
     .catch((error) =>
-      showError('Error fetching exit interviews: ' + error.message, 'profile-update-form')
+      showError(
+        'Error fetching exit interviews: ' + error.message,
+        'profile-update-form'
+      )
     );
 }
 
@@ -1404,10 +1692,18 @@ function showDepartment() {
     departments.forEach((dept) => {
       html += `
                 <tr>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_id}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_name}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_description || 'No description'}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${dept.employee_count}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${
+                      dept.department_id
+                    }</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${
+                      dept.department_name
+                    }</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${
+                      dept.department_description || 'No description'
+                    }</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${
+                      dept.employee_count
+                    }</td>
                 </tr>
             `;
     });

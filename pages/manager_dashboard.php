@@ -375,172 +375,112 @@ $employee_trainings = $data['employee_trainings'] ?? [];
         </div>
         <!-- Projects Section -->
         <div id="projects-section" style="display: none;" class="card">
-            <h2>Project Status</h2>
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Status</th>
-                        <th>Budget</th>
-                        <th>Actual Cost</th>
-                        <th>Start Date</th>
-                        <th>Expected End</th>
-                        <th>Actual End</th>
-                        <th>Client</th>
-                    </tr>
-                </thead>
-                <tbody id="projects-table"></tbody>
-            </table>
+            <h2 style="font-size: 24px; color: #fff; background-color: #003087; padding: 10px; border-radius: 6px;">Project Status</h2>
+            <div style="overflow-x: auto;">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Budget</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Client</th>
+                        </tr>
+                    </thead>
+                    <tbody id="projects-table"></tbody>
+                </table>
+            </div>
             <div class="form-group button-group">
                 <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
             </div>
         </div>
-        <!-- Assign Employees Section -->
-        <div id="assign-employees-section" style="display: none;" class="card">
-            <h2>Assign Employees to Project</h2>
-            <form id="assign-employees-form" method="POST">
+        <!-- View/Edit Project Assignments Section -->
+        <div id="project-assignments-section" style="display: none;" class="card">
+            <h2 style="font-size: 24px; color: #fff; background-color: #003087; padding: 10px; border-radius: 6px;">View/Edit Project Assignments</h2>
+            <div class="form-group">
+                <label for="project_id_view">Select Project:</label>
+                <select id="project_id_view" name="project_id_view">
+                    <option value="">Select a project</option>
+                </select>
+            </div>
+            <div style="overflow-x: auto; max-height: 400px; overflow-y: auto;">
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Project Name</th>
+                            <th>Employee Name</th>
+                            <th>Role in Project</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="assignments-table"></tbody>
+                </table>
+            </div>
+            <div class="form-group button-group">
+                <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px; background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Back</button>
+            </div>
+        </div>
+        <!-- Edit Assignment Form (Hidden by Default) -->
+        <div id="edit-assignment-section" style="display: none;" class="card">
+            <h2 style="font-size: 24px; color: #fff; background-color: #003087; padding: 10px; border-radius: 6px;">Edit Assignment</h2>
+            <form id="edit-assignment-form" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+                <input type="hidden" id="assignment_id" name="assignment_id">
                 <div class="form-group">
-                    <label for="project_id_assign">Project:</label>
-                    <select id="project_id_assign" name="project_id" required>
-                        <option value="">Select a project</option>
-                        <?php foreach ($projects as $project): ?>
-                            <option value="<?php echo htmlspecialchars($project['project_id']); ?>">
-                                <?php echo htmlspecialchars($project['project_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label for="edit_project_id">Project:</label>
+                    <input type="text" id="edit_project_id" name="project_name" readonly>
                 </div>
                 <div class="form-group">
-                    <label for="employee_id_assign">Employee:</label>
-                    <select id="employee_id_assign" name="employee_id" required>
-                        <option value="">Select an employee</option>
-                        <?php foreach ($employees as $emp): ?>
-                            <option value="<?php echo htmlspecialchars($emp['employee_id']); ?>">
-                                <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
+                    <label for="edit_employee_id">Employee:</label>
+                    <input type="text" id="edit_employee_id" name="employee_name" readonly>
                 </div>
                 <div class="form-group">
-                    <label for="role_in_project">Role in Project:</label>
-                    <input type="text" id="role_in_project" name="role_in_project" required>
+                    <label for="edit_role_in_project">Role in Project:</label>
+                    <input type="text" id="edit_role_in_project" name="role_in_project" required>
                 </div>
                 <div class="form-group button-group">
-                    <button type="submit" style="margin: 10px;">Assign Employee</button>
-                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+                    <button type="submit" style="margin: 10px; background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Save Changes</button>
+                    <button type="button" onclick="showAssignedEmployeesSection()" style="margin: 10px; background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Back</button>
                 </div>
             </form>
         </div>
-        <!-- View/Edit Project Assignments Section -->
-        <div id="project-assignments-section" style="display: none;" class="card">
-            <h2>View/Edit Project Assignments</h2>
-            <div class="form-group">
-                <label for="project_id_view">Select Project:</label>
-                <select id="project_id_view" name="project_id" onchange="loadAssignments()">
-                    <option value="">Select a project</option>
-                    <?php foreach ($projects as $project): ?>
-                        <option value="<?php echo htmlspecialchars($project['project_id']); ?>">
-                            <?php echo htmlspecialchars($project['project_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
+        <!-- Subtasks Section -->
+        <div id="subtasks-section" style="display: none;" class="card">
+            <h2 style="font-size: 24px; color: #fff; background-color: #003087; padding: 10px; border-radius: 6px;">Manage Subtasks</h2>
+            <form id="subtask-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                <input type="hidden" id="task_id" name="task_id">
+                <div class="form-group">
+                    <label for="project_id_subtask">Project:</label>
+                    <select id="project_id_subtask" name="project_id" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="task_description">Task Description:</label>
+                    <input type="text" id="task_description" name="task_description" required>
+                </div>
+                <div class="form-group">
+                    <label for="employee_id_subtask">Assignee:</label>
+                    <select id="employee_id_subtask" name="employee_id"></select>
+                </div>
+                <div class="form-group">
+                    <label for="due_date">Due Date:</label>
+                    <input type="date" id="due_date" name="due_date" required>
+                </div>
+                <div class="form-group">
+                    <label for="task_status">Status:</label>
+                    <select id="task_status" name="status" required>
+                        <option value="To Do">To Do</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Done">Done</option>
                     </select>
                 </div>
-                <div id="assignments-content">
-                    <table class="report-table">
-                        <thead>
-                            <tr>
-                                <th>Project Name</th>
-                                <th>Employee Name</th>
-                                <th>Role in Project</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="assignments-table"></tbody>
-                    </table>
-                </div>
-                <div class="form-group button-group">
+                <div class="form-group button-group" style="grid-column: span 2;">
+                    <button type="submit" id="save-task-btn" style="margin: 10px;">Save Task</button>
+                    <button type="button" id="delete-task-btn" style="display: none; margin: 10px;" onclick="deleteTask()">Delete Task</button>
                     <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
                 </div>
-            </div>
-            <!-- Edit Assignment Section -->
-            <div id="edit-assignment-section" style="display: none;" class="card">
-                <h2>Edit Assignment</h2>
-                <form id="edit-assignment-form">
-                    <div class="form-group">
-                        <label for="edit_employee_name">Employee:</label>
-                        <input type="text" id="edit_employee_name" name="employee_name" readonly>
-                        <input type="hidden" id="edit_assignment_id" name="assignment_id">
-                    </div>
-                    <div class="form-group">
-                        <label for="edit_project_name">Project:</label>
-                        <input type="text" id="edit_project_name" name="project_name" readonly>
-                    </div>
-                    <div class="form-group">
-                        <label for="edit_role_in_project">Role in Project:</label>
-                        <input type="text" id="edit_role_in_project" name="role_in_project" required>
-                    </div>
-                    <div class="form-group button-group">
-                        <button type="submit" style="margin: 10px;">Update</button>
-                        <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
-                    </div>
-                </form>
-            </div>
-            <!-- Subtasks Section -->
-            <div id="subtasks-section" style="display: none;" class="card">
-                <h2>Create/Update Subtasks</h2>
-                <form id="subtask-form" method="POST">
-                    <div class="form-group">
-                        <label for="project_id_subtask">Project:</label>
-                        <select id="project_id_subtask" name="project_id" required onchange="loadTasks()">
-                            <option value="">Select a project</option>
-                            <?php foreach ($projects as $project): ?>
-                                <option value="<?php echo htmlspecialchars($project['project_id']); ?>">
-                                    <?php echo htmlspecialchars($project['project_name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="task_id">Task (Optional):</label>
-                        <select id="task_id" name="task_id">
-                            <option value="">Create new task</option>
-                            <!-- Populated dynamically by JS -->
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="task_description">Task Description:</label>
-                        <input type="text" id="task_description" name="task_description" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="employee_id_subtask">Assignee:</label>
-                        <select id="employee_id_subtask" name="employee_id">
-                            <option value="">Unassigned</option>
-                            <?php foreach ($employees as $emp): ?>
-                                <option value="<?php echo htmlspecialchars($emp['employee_id']); ?>">
-                                    <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>
-                                </option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label for="due_date">Due Date:</label>
-                        <input type="date" id="due_date" name="due_date" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="task_status">Status:</label>
-                        <select id="task_status" name="status" required>
-                            <option value="To Do">To Do</option>
-                            <option value="In Progress">In Progress</option>
-                            <option value="Done">Done</option>
-                        </select>
-                    </div>
-                    <div class="form-group button-group">
-                        <button type="submit" id="save-task-btn" style="margin: 10px;">Save Task</button>
-                        <button type="button" id="delete-task-btn" style="display: none;" onclick="deleteTask()" style="margin: 10px;">Delete Task</button>
-                        <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
-                    </div>
-                </form>
-                <h3>Existing Subtasks</h3>
+            </form>
+            <h3 style="margin-top: 20px;">Existing Subtasks</h3>
+            <div style="overflow-x: auto;">
                 <table class="report-table">
                     <thead>
                         <tr>
@@ -549,22 +489,36 @@ $employee_trainings = $data['employee_trainings'] ?? [];
                             <th>Assignee</th>
                             <th>Due Date</th>
                             <th>Status</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="tasks-table"></tbody>
                 </table>
             </div>
-            <?php
-            if (isset($_SESSION['success'])) {
-                echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';
-                unset($_SESSION['success']);
-            }
-            if (isset($_SESSION['error'])) {
-                echo '<div class="alert alert-error" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['error']) . '</div>';
-                unset($_SESSION['error']);
-            }
-            ?>
         </div>
+        <!-- Assign Employees Section -->
+        <div id="assign-employees-section" style="display: none;" class="card">
+            <h2 style="font-size: 24px; color: #fff; background-color: #003087; padding: 10px; border-radius: 6px;">Assign Employee to Project</h2>
+            <form id="assign-employees-form" style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+                <div class="form-group">
+                    <label for="project_id">Project:</label>
+                    <select id="project_id" name="project_id" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="employee_id">Employee:</label>
+                    <select id="employee_id" name="employee_id" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="role_in_project">Role in Project:</label>
+                    <input type="text" id="role_in_project" name="role_in_project" required>
+                </div>
+                <div class="form-group button-group">
+                    <button type="submit" style="margin: 10px; background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Assign Employee</button>
+                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px; background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Back</button>
+                </div>
+            </form>
+        </div>
+
     </div>
     <script>
         const departments = <?php echo json_encode($departments ?: []); ?>;
