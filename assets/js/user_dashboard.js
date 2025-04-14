@@ -12,9 +12,13 @@ function showSection(sectionId) {
     'hr-contact-section',
     'profile-update-form',
     'salary-details-section',
-    'feedback-section',               // Add this
-    'submit-exit-interview-section',  // Add this
-    'exit-interview-details-section'  // Add this
+    'feedback-section',               
+    'submit-exit-interview-section',  
+    'exit-interview-details-section',  
+    'salary-details-section',
+    'enroll-training-section',
+    'update-training-status-section'
+
   ];
   sections.forEach(id => {
     const section = document.getElementById(id);
@@ -520,6 +524,10 @@ document.addEventListener('DOMContentLoaded', function () {
   window.showHRContact = showHRContact;
   window.showProjectsTasks = showProjectsTasks;
   window.showSalaryDetails = showSalaryDetails;
+  window.showEnrollTraining = showEnrollTraining;
+  window.showUpdateTrainingStatus = showUpdateTrainingStatus;
+  console.log('Global functions assigned to window object');
+
 
   // Add hover effects for sidebar items (matching manager dashboard)
   const sidebarLinks = document.querySelectorAll('.sidebar ul li a');
@@ -1529,5 +1537,407 @@ function fetchExitInterviewDetails() {
             <button type="button" onclick="showWelcomeMessage()">Back</button>
           </div>
       `;
+    });
+}
+
+
+
+
+// Show Salary Details section
+function showSalaryDetails() {
+  showSection('salary-details-section');
+  fetchSalaryDetails();
+}
+
+// Fetch and display salary details
+function fetchSalaryDetails() {
+  const salarySection = document.getElementById('salary-details-section');
+  if (!salarySection) {
+    console.error('Salary details section not found');
+    return;
+  }
+
+  // Display a loading message while fetching data
+  salarySection.innerHTML = `
+    <div class="card">
+      <h2>Salary Details</h2>
+      <p>Loading salary details...</p>
+    </div>
+  `;
+
+  fetch('../pages/features/fetch_salary_details.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'fetch_salary_details',
+    }),
+  })
+    .then((response) => {
+      console.log('Salary response status:', response.status);
+      if (!response.ok) throw new Error('Network response was not ok');
+      return response.json();
+    })
+    .then((data) => {
+      console.log('Salary data:', data);
+      if (data.success && data.salary_details) {
+        const salary = data.salary_details.salary || 'N/A';
+        const employeeId = data.salary_details.employee_id || 'N/A';
+        const jobTitle = data.salary_details.emp_job_title || 'N/A';
+        const hireDate = data.salary_details.emp_hire_date || 'N/A';
+        const departmentId = data.salary_details.department_id || 'N/A';
+
+        // Display the salary details in a dashboard format
+        salarySection.innerHTML = `
+          <div class="card">
+            <h2>Salary Details</h2>
+            <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-top: 20px;">
+              <div style="flex: 1; min-width: 250px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <h3 style="font-size: 18px; color: #333; margin-bottom: 10px;">Overview</h3>
+                <p><strong>Employee ID:</strong> ${employeeId}</p>
+                <p><strong>Job Title:</strong> ${jobTitle}</p>
+                <p><strong>Hire Date:</strong> ${hireDate}</p>
+                <p><strong>Department ID:</strong> ${departmentId}</p>
+              </div>
+              <div style="flex: 1; min-width: 250px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                <h3 style="font-size: 18px; color: #333; margin-bottom: 10px;">Compensation</h3>
+                <p><strong>Current Salary:</strong> $${parseFloat(salary).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+              </div>
+            </div>
+            <div class="form-group button-group" style="margin-top: 20px;">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+          </div>
+        `;
+      } else {
+        salarySection.innerHTML = `
+          <div class="card">
+            <h2>Salary Details</h2>
+            <p style="color: #ff0000;">${data.error || 'No salary details found.'}</p>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+          </div>
+        `;
+      }
+    })
+    .catch((error) => {
+      console.error('Error fetching salary details:', error);
+      salarySection.innerHTML = `
+        <div class="card">
+          <h2>Salary Details</h2>
+          <p style="color: #ff0000;">Error fetching salary details: ${error.message}</p>
+          <div class="form-group button-group">
+            <button type="button" onclick="showWelcomeMessage()">Back</button>
+          </div>
+        </div>
+      `;
+    });
+}
+
+
+// Show Enroll in Training Programs section
+function showEnrollTraining() {
+    console.log('showEnrollTraining called');
+    showSection('enroll-training-section');
+    fetchDepartments(); // Fetch departments to populate the filter
+    fetchAvailableTrainings();
+}
+
+// Fetch departments for the training filter
+function fetchDepartments() {
+    console.log('fetchDepartments called');
+    const trainingFilter = document.getElementById('training_filter');
+    if (!trainingFilter) {
+        console.error('training_filter element not found');
+        return;
+    }
+    console.log('training_filter element found');
+    fetch('../pages/user_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            action: 'fetch_departments'
+        })
+    })
+    .then(response => {
+        console.log('fetchDepartments response received:', response);
+        return response.json();
+    })
+    .then(data => {
+        console.log('fetchDepartments data:', data);
+        trainingFilter.innerHTML = '<option value="">All Departments</option>';
+        if (data.success && data.departments) {
+            data.departments.forEach(dept => {
+                const option = document.createElement('option');
+                option.value = dept.department_id;
+                option.textContent = dept.department_name;
+                trainingFilter.appendChild(option);
+            });
+            if (employeeDepartmentId) {
+                trainingFilter.value = employeeDepartmentId;
+                console.log('Set training_filter value to employeeDepartmentId:', employeeDepartmentId);
+            }
+        } else {
+            console.error('fetchDepartments failed:', data.error || 'No departments found');
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching departments:', error);
+    });
+}
+
+// Fetch available training programs
+function fetchAvailableTrainings() {
+    console.log('fetchAvailableTrainings called');
+    const tableBody = document.getElementById('available-trainings-table-body');
+    const departmentId = document.getElementById('training_filter').value;
+    if (!tableBody) {
+        console.error('available-trainings-table-body element not found');
+        return;
+    }
+    console.log('Department ID for fetch:', departmentId);
+    fetch('../pages/user_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            action: 'fetch_available_trainings',
+            department_id: departmentId
+        })
+    })
+    .then(response => {
+        console.log('fetchAvailableTrainings response received:', response);
+        return response.json();
+    })
+    .then(data => {
+        console.log('fetchAvailableTrainings data:', data);
+        tableBody.innerHTML = '';
+        if (data.success && data.trainings && data.trainings.length > 0) {
+            data.trainings.forEach(training => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${training.training_name}</td>
+                    <td>${training.training_date}</td>
+                    <td>${training.end_date}</td>
+                    <td>${training.certificate || 'N/A'}</td>
+                    <td>${training.department_id}</td>
+                    <td>
+                        <button onclick="enrollInTraining(${training.training_id})">Enroll</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } else {
+            tableBody.innerHTML = '<tr><td colspan="6">No training programs available.</td></tr>';
+            console.log('No trainings available or fetch failed:', data.error || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching available trainings:', error);
+        tableBody.innerHTML = '<tr><td colspan="6">Error fetching training programs.</td></tr>';
+    });
+}
+
+// Enroll in a training program
+function enrollInTraining(trainingId) {
+    console.log('enrollInTraining called with trainingId:', trainingId);
+    fetch('../pages/user_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            action: 'enroll_training',
+            training_id: trainingId
+        })
+    })
+    .then(response => {
+        console.log('enrollInTraining response received:', response);
+        return response.json();
+    })
+    .then(data => {
+        console.log('enrollInTraining data:', data);
+        if (data.success) {
+            alert(data.message);
+            fetchAvailableTrainings();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to enroll in training'));
+        }
+    })
+    .catch(error => {
+        console.error('Error enrolling in training:', error);
+        alert('An error occurred while enrolling in training.');
+    });
+}
+
+// Show Update Training Status section
+function showUpdateTrainingStatus() {
+    console.log('showUpdateTrainingStatus called');
+    showSection('update-training-status-section');
+    fetchEnrolledTrainings();
+}
+
+// Fetch enrolled training programs
+function fetchEnrolledTrainings() {
+    console.log('fetchEnrolledTrainings called');
+    const tableBody = document.getElementById('enrolled-trainings-table-body');
+    if (!tableBody) {
+        console.error('enrolled-trainings-table-body element not found');
+        return;
+    }
+    fetch('../pages/user_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            action: 'fetch_enrolled_trainings'
+        })
+    })
+    .then(response => {
+        console.log('fetchEnrolledTrainings response received:', response);
+        return response.json();
+    })
+    .then(data => {
+        console.log('fetchEnrolledTrainings data:', data);
+        tableBody.innerHTML = '';
+        if (data.success && data.enrolled_trainings && data.enrolled_trainings.length > 0) {
+            data.enrolled_trainings.forEach(training => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${training.training_name}</td>
+                    <td>${training.enrollment_date}</td>
+                    <td>
+                        <select onchange="updateTrainingStatus(${training.employee_training_id}, this.value)">
+                            <option value="Not Started" ${training.completion_status === 'Not Started' ? 'selected' : ''}>Not Started</option>
+                            <option value="In Progress" ${training.completion_status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                            <option value="Completed" ${training.completion_status === 'Completed' ? 'selected' : ''}>Completed</option>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" value="${training.score || ''}" min="0" max="100" onchange="updateTrainingScore(${training.employee_training_id}, this.value)" placeholder="Enter score (0-100)">
+                    </td>
+                    <td>
+                        <button onclick="updateTraining(${training.employee_training_id})">Update</button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } else {
+            tableBody.innerHTML = '<tr><td colspan="5">No enrolled training programs found.</td></tr>';
+            console.log('No enrolled trainings found or fetch failed:', data.error || 'Unknown error');
+        }
+    })
+    .catch(error => {
+        console.error('Error fetching enrolled trainings:', error);
+        tableBody.innerHTML = '<tr><td colspan="5">Error fetching enrolled trainings.</td></tr>';
+    });
+}
+
+// Update training status
+function updateTrainingStatus(employeeTrainingId, newStatus) {
+    console.log('updateTrainingStatus called with employeeTrainingId:', employeeTrainingId, 'newStatus:', newStatus);
+    fetch('../pages/user_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            action: 'update_training_status',
+            employee_training_id: employeeTrainingId,
+            completion_status: newStatus
+        })
+    })
+    .then(response => {
+        console.log('updateTrainingStatus response received:', response);
+        return response.json();
+    })
+    .then(data => {
+        console.log('updateTrainingStatus data:', data);
+        if (data.success) {
+            alert(data.message);
+            fetchEnrolledTrainings();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to update training status'));
+        }
+    })
+    .catch(error => {
+        console.error('Error updating training status:', error);
+        alert('An error occurred while updating training status.');
+    });
+}
+
+// Update training score
+function updateTrainingScore(employeeTrainingId, newScore) {
+    console.log('updateTrainingScore called with employeeTrainingId:', employeeTrainingId, 'newScore:', newScore);
+    if (newScore < 0 || newScore > 100) {
+        alert('Score must be between 0 and 100.');
+        return;
+    }
+    fetch('../pages/user_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            action: 'update_training_score',
+            employee_training_id: employeeTrainingId,
+            score: newScore
+        })
+    })
+    .then(response => {
+        console.log('updateTrainingScore response received:', response);
+        return response.json();
+    })
+    .then(data => {
+        console.log('updateTrainingScore data:', data);
+        if (data.success) {
+            alert(data.message);
+            fetchEnrolledTrainings();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to update training score'));
+        }
+    })
+    .catch(error => {
+        console.error('Error updating training score:', error);
+        alert('An error occurred while updating training score.');
+    });
+}
+
+// Update both status and score (called when clicking the "Update" button)
+function updateTraining(employeeTrainingId) {
+    console.log('updateTraining called with employeeTrainingId:', employeeTrainingId);
+    const statusSelect = document.querySelector(`select[onchange="updateTrainingStatus(${employeeTrainingId}, this.value)"]`);
+    const scoreInput = document.querySelector(`input[onchange="updateTrainingScore(${employeeTrainingId}, this.value)"]`);
+    const newStatus = statusSelect ? statusSelect.value : null;
+    const newScore = scoreInput ? scoreInput.value : null;
+    console.log('updateTraining - newStatus:', newStatus, 'newScore:', newScore);
+
+    if (!newStatus) {
+        alert('Please select a status.');
+        return;
+    }
+    if (newScore && (newScore < 0 || newScore > 100)) {
+        alert('Score must be between 0 and 100.');
+        return;
+    }
+
+    fetch('../pages/user_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({
+            action: 'update_training',
+            employee_training_id: employeeTrainingId,
+            completion_status: newStatus,
+            score: newScore || null
+        })
+    })
+    .then(response => {
+        console.log('updateTraining response received:', response);
+        return response.json();
+    })
+    .then(data => {
+        console.log('updateTraining data:', data);
+        if (data.success) {
+            alert(data.message);
+            fetchEnrolledTrainings();
+        } else {
+            alert('Error: ' + (data.error || 'Failed to update training'));
+        }
+    })
+    .catch(error => {
+        console.error('Error updating training:', error);
+        alert('An error occurred while updating training.');
     });
 }

@@ -24,8 +24,8 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'training-dropdown')"><i class="fas fa-graduation-cap"></i> Training and Performance</a>
             <ul id="training-dropdown" class="dropdown">
-                <li><a href="#">Enroll in training programs</a></li>
-                <li><a href="#">Update training status</a></li>
+                <li><a href="#" onclick="event.preventDefault(); console.log('Enroll in training programs clicked'); showEnrollTraining()">Enroll in training programs</a></li>
+                <li><a href="#" onclick="event.preventDefault(); console.log('Update training status clicked'); showUpdateTrainingStatus()">Update training status</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'feedback-dropdown')"><i class="fas fa-comment"></i> Feedback and Exit Interviews</a>

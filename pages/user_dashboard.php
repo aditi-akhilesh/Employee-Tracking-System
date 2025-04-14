@@ -7,6 +7,12 @@ $page_title = "Employee Dashboard";
 // Fetch employee_id from session
 $employee_id = $_SESSION['employee_id'];
 
+// Fetch the employee's department_id
+$stmt = $con->prepare("SELECT department_id FROM Employees WHERE employee_id = ?");
+$stmt->execute([$employee_id]);
+$employee = $stmt->fetch(PDO::FETCH_ASSOC);
+$department_id = $employee['department_id'] ?? null;
+
 // Helper function to fetch data with error handling
 function fetchData($con, $query, $params = [], $errorMessage) {
     try {
@@ -294,6 +300,218 @@ if (isset($_POST['action'])) {
             ];
             $response['success'] = true;
         }
+        elseif ($_POST['action'] === 'fetch_departments') {
+    error_log("fetch_departments action called");
+    $departments = fetchData($con, "SELECT department_id, department_name FROM Department WHERE department_name != 'Head'", [], "Failed to fetch departments");
+    error_log("Fetched departments: " . json_encode($departments)); // Log the departments to verify
+    $response['departments'] = $departments;
+    $response['success'] = true;
+} elseif ($_POST['action'] === 'fetch_available_trainings') {
+    error_log("fetch_available_trainings action called, department_id: " . ($_POST['department_id'] ?? 'none'));
+    $department_id = $_POST['department_id'] ?? '';
+    $query = "
+        SELECT t.training_id, t.training_name, t.training_date, t.end_date, t.certificate, t.department_id
+        FROM Training t
+        WHERE t.training_id NOT IN (
+            SELECT et.training_id 
+            FROM Employee_Training et 
+            WHERE et.employee_id = ?
+        )
+        AND t.department_id NOT IN (SELECT department_id FROM Department WHERE department_name = 'Head')
+    ";
+    $params = [$employee_id];
+
+    if ($department_id) {
+        $query .= " AND t.department_id = ?";
+        $params[] = $department_id;
+    }
+
+    $trainings = fetchData($con, $query, $params, "Failed to fetch available trainings");
+    error_log("Fetched trainings: " . json_encode($trainings)); // Log the fetched trainings
+    $response['trainings'] = $trainings;
+    $response['success'] = true;
+} elseif ($_POST['action'] === 'enroll_training') {
+    error_log("enroll_training action called, training_id: " . ($_POST['training_id'] ?? 'none'));
+    $training_id = $_POST['training_id'] ?? null;
+    if (!$training_id) {
+        $response['error'] = "Training ID is required.";
+        echo json_encode($response);
+        exit;
+    }
+
+    // Check if the employee is already enrolled
+    $stmt = $con->prepare("
+        SELECT COUNT(*) 
+        FROM Employee_Training 
+        WHERE employee_id = ? AND training_id = ?
+    ");
+    $stmt->execute([$employee_id, $training_id]);
+    $already_enrolled = $stmt->fetchColumn();
+
+    if ($already_enrolled > 0) {
+        $response['error'] = "You are already enrolled in this training program.";
+        echo json_encode($response);
+        exit;
+    }
+
+    // Check if the training belongs to the employee's department
+    $stmt = $con->prepare("
+        SELECT t.department_id 
+        FROM Training t 
+        WHERE t.training_id = ?
+    ");
+    $stmt->execute([$training_id]);
+    $training = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $stmt = $con->prepare("
+        SELECT department_id 
+        FROM Employees 
+        WHERE employee_id = ?
+    ");
+    $stmt->execute([$employee_id]);
+    $employee = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($training['department_id'] != $employee['department_id']) {
+        $response['error'] = "This training program is not available for your department.";
+        echo json_encode($response);
+        exit;
+    }
+
+    // Enroll the employee
+    $stmt = $con->prepare("
+        INSERT INTO Employee_Training (employee_id, training_id, enrollment_date, completion_status)
+        VALUES (?, ?, CURDATE(), 'Not Started')
+    ");
+    $success = $stmt->execute([$employee_id, $training_id]);
+
+    if ($success) {
+        $response['success'] = true;
+        $response['message'] = "Successfully enrolled in the training program.";
+    } else {
+        $response['error'] = "Failed to enroll in the training program.";
+    }
+} elseif ($_POST['action'] === 'fetch_enrolled_trainings') {
+    error_log("fetch_enrolled_trainings action called");
+    $query = "
+        SELECT 
+            et.employee_training_id, et.employee_id, et.training_id, et.enrollment_date, 
+            et.completion_status, et.score, t.training_name
+        FROM Employee_Training et
+        JOIN Training t ON et.training_id = t.training_id
+        WHERE et.employee_id = ?
+    ";
+    $enrolled_trainings = fetchData($con, $query, [$employee_id], "Failed to fetch enrolled trainings");
+    $response['enrolled_trainings'] = $enrolled_trainings;
+    $response['success'] = true;
+} elseif ($_POST['action'] === 'update_training_status') {
+    error_log("update_training_status action called, employee_training_id: " . ($_POST['employee_training_id'] ?? 'none'));
+    $employee_training_id = $_POST['employee_training_id'] ?? null;
+    $completion_status = $_POST['completion_status'] ?? null;
+
+    if (!$employee_training_id || !$completion_status) {
+        $response['error'] = "Employee training ID and completion status are required.";
+        echo json_encode($response);
+        exit;
+    }
+
+    $valid_statuses = ['Not Started', 'In Progress', 'Completed'];
+    if (!in_array($completion_status, $valid_statuses)) {
+        $response['error'] = "Invalid completion status.";
+        echo json_encode($response);
+        exit;
+    }
+
+    $stmt = $con->prepare("
+        UPDATE Employee_Training 
+        SET completion_status = ?
+        WHERE employee_training_id = ? AND employee_id = ?
+    ");
+    $success = $stmt->execute([$completion_status, $employee_training_id, $employee_id]);
+
+    if ($success) {
+        $response['success'] = true;
+        $response['message'] = "Training status updated successfully.";
+    } else {
+        $response['error'] = "Failed to update training status.";
+    }
+} elseif ($_POST['action'] === 'update_training_score') {
+    error_log("update_training_score action called, employee_training_id: " . ($_POST['employee_training_id'] ?? 'none'));
+    $employee_training_id = $_POST['employee_training_id'] ?? null;
+    $score = $_POST['score'] ?? null;
+
+    if (!$employee_training_id || $score === null) {
+        $response['error'] = "Employee training ID and score are required.";
+        echo json_encode($response);
+        exit;
+    }
+
+    if (!is_numeric($score) || $score < 0 || $score > 100) {
+        $response['error'] = "Score must be a number between 0 and 100.";
+        echo json_encode($response);
+        exit;
+    }
+
+    $stmt = $con->prepare("
+        UPDATE Employee_Training 
+        SET score = ?
+        WHERE employee_training_id = ? AND employee_id = ?
+    ");
+    $success = $stmt->execute([$score, $employee_training_id, $employee_id]);
+
+    if ($success) {
+        $response['success'] = true;
+        $response['message'] = "Training score updated successfully.";
+    } else {
+        $response['error'] = "Failed to update training score.";
+    }
+} elseif ($_POST['action'] === 'update_training') {
+    error_log("update_training action called, employee_training_id: " . ($_POST['employee_training_id'] ?? 'none'));
+    $employee_training_id = $_POST['employee_training_id'] ?? null;
+    $completion_status = $_POST['completion_status'] ?? null;
+    $score = $_POST['score'] ?? null;
+
+    if (!$employee_training_id || !$completion_status) {
+        $response['error'] = "Employee training ID and completion status are required.";
+        echo json_encode($response);
+        exit;
+    }
+
+    $valid_statuses = ['Not Started', 'In Progress', 'Completed'];
+    if (!in_array($completion_status, $valid_statuses)) {
+        $response['error'] = "Invalid completion status.";
+        echo json_encode($response);
+        exit;
+    }
+
+    if ($score !== null && (!is_numeric($score) || $score < 0 || $score > 100)) {
+        $response['error'] = "Score must be a number between 0 and 100.";
+        echo json_encode($response);
+        exit;
+    }
+
+    $query = "
+        UPDATE Employee_Training 
+        SET completion_status = ?
+        " . ($score !== null ? ", score = ?" : "") . "
+        WHERE employee_training_id = ? AND employee_id = ?
+    ";
+    $params = [$completion_status];
+    if ($score !== null) {
+        $params[] = $score;
+    }
+    $params[] = $employee_training_id;
+    $params[] = $employee_id;
+
+    $stmt = $con->prepare($query);
+    $success = $stmt->execute($params);
+
+    if ($success) {
+        $response['success'] = true;
+        $response['message'] = "Training updated successfully.";
+    } else {
+        $response['error'] = "Failed to update training.";
+    }
+}
     } catch (PDOException $e) {
         $response['error'] = "Database error: " . $e->getMessage();
     }
@@ -476,10 +694,10 @@ $leave_balances = fetchData($con, "
             <p>You are in Employee Dashboard, select an option from the menu on the left to get started.</p>
         </div>
 
-        <!-- Salary Details Section (This should be present) -->
-  <div id="salary-details-section" style="display: none;" class="card">
+        <!-- Salary Details Section (This should be present) 
+  <div id="salary-details-section" style="display: none;" class="card">-->
     <!-- Content will be populated dynamically by fetchSalaryDetails -->
-  </div>
+ <!-- </div> -->
 <!-- Feedback Section -->
   <div id="feedback-section" style="display: none;" class="card">
     <!-- Content will be populated dynamically by fetchFeedback -->
@@ -706,6 +924,57 @@ $leave_balances = fetchData($con, "
                 <tbody id="leave-requests-table"></tbody>
             </table>
         </div>
+	
+	<!-- Salary Details Section -->
+        <div id="salary-details-section" style="display: none;"></div>
+
+        <!-- Enroll in Training Programs Section -->
+        <div id="enroll-training-section" style="display: none;" class="card">
+            <h2>Enroll in Training Programs</h2>
+            <div class="form-group">
+                <label for="training_filter">Filter by Department:</label>
+                <select id="training_filter" onchange="fetchAvailableTrainings()">
+                    <option value="">All Departments</option>
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+            <table id="available-trainings-table">
+                <thead>
+                    <tr>
+                        <th>Training Name</th>
+                        <th>Training Date</th>
+                        <th>End Date</th>
+                        <th>Certificate</th>
+                        <th>Department ID</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="available-trainings-table-body"></tbody>
+            </table>
+            <div class="form-group button-group">
+                <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
+            </div>
+        </div>
+
+        <!-- Update Training Status Section -->
+        <div id="update-training-status-section" style="display: none;" class="card">
+            <h2>Update Training Status</h2>
+            <table id="enrolled-trainings-table">
+                <thead>
+                    <tr>
+                        <th>Training Name</th>
+                        <th>Enrollment Date</th>
+                        <th>Status</th>
+                        <th>Score</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="enrolled-trainings-table-body"></tbody>
+            </table>
+            <div class="form-group button-group">
+                <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
+            </div>
+        </div>
 
         <!-- FAQs Section -->
         <div id="faqs-section" style="display: none;" class="card">
@@ -760,6 +1029,9 @@ $leave_balances = fetchData($con, "
 
 <script>     
 const userName = <?php echo json_encode(htmlspecialchars($_SESSION['user_name'])); ?>;
+const employeeDepartmentId = <?php echo json_encode($department_id); ?>;
+console.log('userName:', userName);
+console.log('employeeDepartmentId:', employeeDepartmentId);
 document.addEventListener('click', function(event) {
         const alerts = document.querySelectorAll('.alert');
         alerts.forEach(alert => {
