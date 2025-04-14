@@ -5,6 +5,7 @@ function showSection(sectionToShowId) {
   const sections = [
     'main-content',
     'profile-update-form',
+    'Department_content',
     'reports-analytics',
     'projects-section',
     'assign-employees-section',
@@ -1671,9 +1672,9 @@ document.querySelectorAll('.sidebar-menu a').forEach((link) => {
 
 function showDepartment() {
   console.log('showDepartmentInfo called');
-  if (!showSection('main-content')) return;
+  if (!showSection('Department_content')) return;
 
-  const mainContent = document.getElementById('main-content');
+  const mainContent = document.getElementById('Department_content');
 
   let html = `
         <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Department Information</h2>

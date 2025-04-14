@@ -282,6 +282,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
             <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Manager'); ?> (Manager)</h2>
             <p>Select an option from the menu on the left to get started.</p>
         </div>
+        <div id="Department_content" style="display: none;"></div>
         <div id="profile-update-form" style="display: none;"></div>
         <div id="reports-analytics" style="display: none;" class="card">
             <h2>Reports and Analytics</h2>
