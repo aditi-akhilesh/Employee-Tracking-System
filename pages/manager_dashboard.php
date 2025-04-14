@@ -278,7 +278,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
 <div class="dashboard-container">
     <?php include '../includes/sidebar_manager.php'; ?>
     <div class="content" id="content-area">
-        <div id="main-content" class="card">
+        <div id="main-content">
             <h2>Welcome, <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'Manager'); ?> (Manager)</h2>
             <p>Select an option from the menu on the left to get started.</p>
         </div>
