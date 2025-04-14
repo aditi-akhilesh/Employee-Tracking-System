@@ -94,7 +94,7 @@ if (isset($_POST['action'])) {
                 FROM Leaves l
                 JOIN Employees e ON l.employee_id = e.employee_id
                 JOIN Users u ON e.user_id = u.user_id
-                WHERE l.status = ?
+                WHERE l.status = ?  and u.role!='Super Admin'
             ");
             $stmt->execute([$leave_filter]);
             $response['leave_applications'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -120,7 +120,7 @@ if (isset($_POST['action'])) {
                 JOIN Employees e ON a.employee_id = e.employee_id
                 JOIN Users u ON e.user_id = u.user_id
                 JOIN Department d ON e.department_id = d.department_id
-                WHERE 1=1
+                WHERE 1=1 and u.role!='Super Admin'
             ";
             $params = [];
             if ($employee_id) {
