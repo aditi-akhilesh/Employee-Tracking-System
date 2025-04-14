@@ -40,6 +40,15 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     file_put_contents('session_debug.log', date('Y-m-d H:i:s') . " - Warning: No employee_id found for user_id: " . $user['user_id'] . "\n", FILE_APPEND);
                 }
 
+                // Insert into Audit_log table
+                $action = "Login";
+                $action_date = date('Y-m-d H:i:s'); // Current timestamp
+                $stmt_audit = $con->prepare("INSERT INTO Audit_Log (user_id, action, action_date) VALUES (:user_id, :action, :action_date)");
+                $stmt_audit->bindParam(':user_id', $user['user_id']);
+                $stmt_audit->bindParam(':action', $action);
+                $stmt_audit->bindParam(':action_date', $action_date);
+                $stmt_audit->execute();
+
                 switch ($user['role']) {
                     case 'Super Admin':
                         header("Location: ../pages/superadmin_dashboard.php");
