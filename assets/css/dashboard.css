@@ -505,3 +505,29 @@ table tr:hover {
   margin-right: 8px;
 }
 
+.salary-details-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  .salary-details-box {
+    flex: 1;
+    min-width: 250px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  .salary-details-box h3 {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  .salary-details-box p {
+    margin: 5px 0;
+    color: #6C757D;
+  }
+  .salary-details-box p strong {
+    color: #003087;
+  }

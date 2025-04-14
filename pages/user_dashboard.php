@@ -476,7 +476,10 @@ $leave_balances = fetchData($con, "
             <p>You are in Employee Dashboard, select an option from the menu on the left to get started.</p>
         </div>
 
-        
+        <!-- Salary Details Section (This should be present) -->
+  <div id="salary-details-section" style="display: none;" class="card">
+    <!-- Content will be populated dynamically by fetchSalaryDetails -->
+  </div>
         <!-- Projects and Tasks Section -->
         <div id="projects-tasks-section" style="display: none;" class="card">
             <h2>Projects and Tasks</h2>
