@@ -545,17 +545,13 @@ document.addEventListener('DOMContentLoaded', function () {
   });
 });
 
-// user_dashboard.js (update showProfileForm)
-
 function showProfileForm() {
-  // Use the profile-update-form div instead of content-area
   const profileUpdateForm = document.getElementById('profile-update-form');
   if (!profileUpdateForm) {
     console.error('Profile update form container not found');
     return;
   }
 
-  // Show the profile-update-form section and hide others
   showSection('profile-update-form');
 
   fetch('../pages/features/fetch_user_details.php')
@@ -563,7 +559,7 @@ function showProfileForm() {
       console.log('Response Status:', response.status);
       console.log('Response Headers:', response.headers.get('Content-Type'));
       return response.text().then(text => {
-        console.log('Raw response:', text);
+        //console.log('Raw response:', text);
         try {
           const data = JSON.parse(text);
           return { response, data };
@@ -598,7 +594,6 @@ function showProfileForm() {
         return;
       }
 
-      // Render the form in view mode (read-only) with two fields side by side
       profileUpdateForm.innerHTML = `
         <div class="card">
           <h2>Profile Details</h2>
@@ -678,20 +673,17 @@ function showProfileForm() {
         </div>
       `;
 
-      // Add event listener for the Edit button
       const editProfileBtn = document.getElementById('editProfileBtn');
       const form = document.getElementById('profileForm');
 
       if (editProfileBtn && form) {
         editProfileBtn.addEventListener('click', function() {
-          // Toggle to edit mode
           form.querySelectorAll('input, textarea').forEach(field => {
             if (['email', 'phone_number', 'dob'].includes(field.id)) {
               field.removeAttribute('readonly');
             }
           });
 
-          // Replace emergency contacts with editable fields
           const emergencyContactsDiv = document.getElementById('emergency_contacts');
           emergencyContactsDiv.innerHTML = `
             <div id="emergency_contacts_list">
@@ -721,7 +713,6 @@ function showProfileForm() {
             <button type="button" id="add_contact_btn">Add Emergency Contact</button>
           `;
 
-          // Add event listener for adding new emergency contacts
           const addContactBtn = document.getElementById('add_contact_btn');
           if (addContactBtn) {
             addContactBtn.addEventListener('click', function() {
@@ -750,7 +741,6 @@ function showProfileForm() {
             });
           }
 
-          // Add event listeners for removing contacts
           function addRemoveContactListeners() {
             document.querySelectorAll('.remove-contact-btn').forEach(btn => {
               btn.addEventListener('click', function() {
@@ -761,28 +751,32 @@ function showProfileForm() {
           }
           addRemoveContactListeners();
 
-          // Change the button to Save and Cancel
           editProfileBtn.outerHTML = `
             <button type="submit" id="saveProfileBtn">Save Changes</button>
             <button type="button" id="cancelEditBtn">Cancel</button>
           `;
 
-          // Add event listener for Cancel button
           const cancelEditBtn = document.getElementById('cancelEditBtn');
           if (cancelEditBtn) {
             cancelEditBtn.addEventListener('click', function() {
-              showProfileForm(); // Reload the form in view mode
+              showProfileForm();
             });
           }
         });
 
-        // Add event listener for form submission with DOB validation
         form.addEventListener('submit', function(event) {
           event.preventDefault();
 
           // Validate DOB (must be 18 years or older)
-          const dobmanduInput = document.getElementById('dob');
-          if (dobInput && dobInput.value) {
+          const dobInput = document.getElementById('dob');
+
+          if (!dobInput) {
+            console.error('DOB input element not found',dobInput);
+            alert('Error: Date of Birth field is missing.');
+            return;
+          }
+
+          if (dobInput.value) {
             const dobValue = new Date(dobInput.value);
             const currentDate = new Date();
             if (isNaN(dobValue.getTime())) {
@@ -803,6 +797,26 @@ function showProfileForm() {
             }
           }
 
+          // Validate emergency contacts
+          const emergencyContacts = document.querySelectorAll('.emergency-contact');
+          for (let i = 0; i < emergencyContacts.length; i++) {
+            const contact = emergencyContacts[i];
+            const index = contact.getAttribute('data-index');
+            const contactName = document.getElementById(`contact_name_${index}`).value.trim();
+            const contactPhone = document.getElementById(`contact_phone_${index}`).value.trim();
+            const relationship = document.getElementById(`relationship_${index}`).value.trim();
+
+            if (!contactName || !contactPhone || !relationship) {
+              alert(`All fields are required for Emergency Contact ${i + 1}.`);
+              return;
+            }
+
+            if (!/^[0-9]{10}$/.test(contactPhone)) {
+              alert(`Phone number for Emergency Contact ${i + 1} must be exactly 10 digits.`);
+              return;
+            }
+          }
+
           const formData = new FormData(this);
 
           fetch('../pages/features/update_user_details.php', {
@@ -813,7 +827,7 @@ function showProfileForm() {
           .then(result => {
             if (result.success) {
               alert(result.message);
-              showProfileForm(); // Reload the form with updated data
+              showProfileForm();
             } else {
               alert(result.error || 'Failed to update profile');
             }
@@ -835,7 +849,6 @@ function showProfileForm() {
       `;
     });
 }
-
 
 // user_dashboard.js (update showUpdatePasswordForm)
 
