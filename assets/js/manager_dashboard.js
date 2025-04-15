@@ -70,6 +70,35 @@ function refreshData(callback) {
     .catch((error) => showError('Network error: ' + error.message));
 }
 
+function refreshTasksData(projectId, callback) {
+  fetch('manager_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=refresh_data&section=tasks', // Fixed syntax: replaced § with &
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      if (data.success) {
+        window.tasks = data.tasks || [];
+        window.projectAssignments = data.project_assignments || [];
+        if (callback) callback(projectId);
+      } else {
+        showError(
+          data.error || 'Failed to refresh tasks data',
+          'subtasks-section'
+        );
+      }
+    })
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'subtasks-section')
+    );
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   refreshData();
 });
@@ -870,7 +899,12 @@ function fetchUpdatedAssignments(successMessage = '') {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'action=refresh_data',
   })
-    .then((response) => response.json())
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
     .then((data) => {
       if (data.success) {
         window.projectAssignments = data.project_assignments || [];
@@ -948,40 +982,6 @@ function loadAssignments() {
   };
 
   renderTable(projectSelect.value);
-}
-
-function fetchUpdatedAssignments() {
-  fetch('manager_dashboard.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data�ion=project_assignments',
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((data) => {
-      if (data.success) {
-        window.projectAssignments = data.project_assignments || [];
-        showAssignedEmployeesSection();
-        const projectSelect = document.getElementById('project_id_view');
-        const selectedProjectId = projectSelect ? projectSelect.value : '';
-        renderAssignmentsTable(selectedProjectId);
-      } else {
-        showError(
-          data.error || 'Failed to fetch updated assignments',
-          'project-assignments-section'
-        );
-      }
-    })
-    .catch((error) => {
-      showError(
-        'Network error: ' + error.message,
-        'project-assignments-section'
-      );
-    });
 }
 
 function renderAssignmentsTable(selectedProjectId) {
@@ -1062,7 +1062,7 @@ function showSubtasksForm() {
     return;
   }
 
-  // Reset form
+  // Reset form and UI
   form.reset();
   document.getElementById('task_id').value = '';
   document.getElementById('delete-task-btn').style.display = 'none';
@@ -1073,6 +1073,10 @@ function showSubtasksForm() {
     window.projects.forEach((project) => {
       projectSelect.innerHTML += `<option value="${project.project_id}">${project.project_name}</option>`;
     });
+  } else {
+    console.error('Projects data not loaded');
+    showError('Projects data not available', 'subtasks-section');
+    return;
   }
 
   // Populate employee dropdown
@@ -1082,17 +1086,29 @@ function showSubtasksForm() {
     window.employees.forEach((emp) => {
       employeeSelect.innerHTML += `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`;
     });
+  } else {
+    console.error('Employees data not loaded');
+    showError('Employees data not available', 'subtasks-section');
+    return;
   }
 
   // Render tasks table based on selected project
   function renderTasksTable(projectId = '') {
     tasksTable.innerHTML = '';
+    // Show all tasks if no project is selected, otherwise filter by project
     const filteredTasks = projectId
       ? (window.tasks || []).filter((task) => task.project_id == projectId)
       : window.tasks || [];
 
+    if (!window.tasks) {
+      tasksTable.innerHTML = `<tr><td colspan="6">Tasks data not loaded. Please refresh the page.</td></tr>`;
+      return;
+    }
+
     if (filteredTasks.length === 0) {
-      tasksTable.innerHTML = `<tr><td colspan="6">No tasks found for this project.</td></tr>`;
+      tasksTable.innerHTML = `<tr><td colspan="6">${
+        projectId ? 'No tasks found for this project.' : 'No tasks available.'
+      }</td></tr>`;
       return;
     }
 
@@ -1122,19 +1138,27 @@ function showSubtasksForm() {
   }
 
   // Initial table render
-  renderTasksTable();
+  refreshTasksData('', renderTasksTable);
 
   // Update table when project changes
-  projectSelect.addEventListener('change', () =>
-    renderTasksTable(projectSelect.value)
-  );
+  projectSelect.removeEventListener('change', projectSelect.onchange);
+  projectSelect.onchange = () => {
+    refreshTasksData(projectSelect.value, renderTasksTable);
+  };
+
+  // Remove previous form submit listeners to prevent duplicates
+  const newForm = form.cloneNode(true);
+  form.parentNode.replaceChild(newForm, form);
 
   // Handle form submission (create/update task)
-  form.addEventListener('submit', function (event) {
+  newForm.addEventListener('submit', function (event) {
     event.preventDefault();
+    const submitButton = newForm.querySelector('button[type="submit"]');
+    submitButton.disabled = true;
 
     const taskId = document.getElementById('task_id').value;
     const formData = new FormData(this);
+    formData.append('action', taskId ? 'update' : 'create');
     if (taskId) {
       formData.append('task_id', taskId);
     }
@@ -1152,22 +1176,24 @@ function showSubtasksForm() {
               : 'Task created successfully!',
             'subtasks-section'
           );
-          refreshData(() => {
-            form.reset();
-            document.getElementById('task_id').value = '';
-            document.getElementById('delete-task-btn').style.display = 'none';
+          refreshTasksData(projectSelect.value, () => {
             renderTasksTable(projectSelect.value);
           });
+          newForm.reset();
+          document.getElementById('task_id').value = '';
+          document.getElementById('delete-task-btn').style.display = 'none';
         } else {
           showError(data.error || 'Failed to save task', 'subtasks-section');
         }
       })
       .catch((error) =>
         showError('Network error: ' + error.message, 'subtasks-section')
-      );
+      )
+      .finally(() => {
+        submitButton.disabled = false;
+      });
   });
 }
-
 // Edit Task
 function editTask(taskId) {
   const task = window.tasks.find((t) => t.task_id == taskId);
@@ -1176,6 +1202,7 @@ function editTask(taskId) {
     return;
   }
 
+  // Populate form with task details
   document.getElementById('task_id').value = task.task_id;
   document.getElementById('project_id_subtask').value = task.project_id || '';
   document.getElementById('task_description').value =
@@ -1187,13 +1214,14 @@ function editTask(taskId) {
 
   // Refresh tasks table to reflect current project
   const projectSelect = document.getElementById('project_id_subtask');
-  const tasksTable = document.getElementById('tasks-table');
-  if (projectSelect && tasksTable) {
-    const renderTasksTable = () => {
+  if (projectSelect) {
+    refreshTasksData(projectSelect.value, (projectId) => {
+      const tasksTable = document.getElementById('tasks-table');
+      if (!tasksTable) return;
       tasksTable.innerHTML = '';
-      const filteredTasks = (window.tasks || []).filter(
-        (t) => t.project_id == projectSelect.value
-      );
+      const filteredTasks = projectId
+        ? (window.tasks || []).filter((t) => t.project_id == projectId)
+        : window.tasks || [];
       if (filteredTasks.length === 0) {
         tasksTable.innerHTML = `<tr><td colspan="6">No tasks found for this project.</td></tr>`;
         return;
@@ -1221,8 +1249,7 @@ function editTask(taskId) {
         `;
         tasksTable.appendChild(row);
       });
-    };
-    renderTasksTable();
+    });
   }
 }
 
