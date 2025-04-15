@@ -19,13 +19,13 @@ function fetchData($con, $query, $errorMessage) {
 // Fetch departments with description and employee count
 try {
     $stmt = $con->query("
-        SELECT 
+        SELECT distinct
             d.department_id, 
             d.department_name, 
             d.department_description, 
             COUNT(e.employee_id) AS employee_count
         FROM Department d
-        LEFT JOIN Employees e ON d.department_id = e.department_id
+        LEFT JOIN Employees e ON d.department_id = e.department_id where d.department_id!= 'D00' and d.department_name!= 'Head'
         GROUP BY d.department_id, d.department_name, d.department_description
     ");
     $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -68,7 +68,7 @@ try {
             e.employee_id, u.first_name, u.last_name, u.email, u.role, 
             e.department_id, e.emp_hire_date, e.salary, e.emp_status,e.manager_id,e.is_manager
         FROM Employees e
-        JOIN Users u ON e.user_id = u.user_id
+        JOIN Users u ON e.user_id = u.user_id where u.role!='Super Admin'
     ");
     $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -94,7 +94,7 @@ if (isset($_POST['action'])) {
                 FROM Leaves l
                 JOIN Employees e ON l.employee_id = e.employee_id
                 JOIN Users u ON e.user_id = u.user_id
-                WHERE l.status = ?  and u.role!='Super Admin'
+                WHERE l.status = ?  and u.role not in ('Super Admin', 'HR')
             ");
             $stmt->execute([$leave_filter]);
             $response['leave_applications'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -120,7 +120,7 @@ if (isset($_POST['action'])) {
                 JOIN Employees e ON a.employee_id = e.employee_id
                 JOIN Users u ON e.user_id = u.user_id
                 JOIN Department d ON e.department_id = d.department_id
-                WHERE 1=1 and u.role!='Super Admin'
+                WHERE 1=1 and u.role not in ('Super Admin', 'HR')
             ";
             $params = [];
             if ($employee_id) {
@@ -262,12 +262,12 @@ if (isset($_POST['action'])) {
     const userName = <?php echo json_encode(htmlspecialchars($_SESSION['user_name'])); ?>;
 
     // Log the data for debugging
-    console.log('Departments:', departments);
-    console.log('Projects:', projects);
-    console.log('Trainings:', trainings);
-    console.log('Employee Trainings:', employeeTrainings);
-    console.log('Employees:', employees);
-    console.log('User Name:', userName);
+    //console.log('Departments:', departments);
+   // console.log('Projects:', projects);
+   // console.log('Trainings:', trainings);
+   // console.log('Employee Trainings:', employeeTrainings);
+   // console.log('Employees:', employees);
+  //  console.log('User Name:', userName);
 
     // Check if data is available
     if (!departments.length || !projects.length || !trainings.length || !employeeTrainings.length || !employees.length) {
