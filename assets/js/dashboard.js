@@ -155,7 +155,7 @@ function showCreateUserForm() {
     );
 
     // Log managers for debugging
-    console.log('Filtered managers:', managers);
+    //console.log('Filtered managers:', managers);
 
     profileUpdateForm.innerHTML = `
         <h2>Create New User</h2>
@@ -293,8 +293,8 @@ function showCreateUserForm() {
       managerSelect.addEventListener('change', function () {
         const selectedOption = this.options[this.selectedIndex];
         const managerDepartmentId = selectedOption.getAttribute('data-department-id');
-        console.log('Selected manager ID:', this.value);
-        console.log('Manager department ID:', managerDepartmentId);
+        //console.log('Selected manager ID:', this.value);
+       // console.log('Manager department ID:', managerDepartmentId);
         if (managerDepartmentId && validDepartmentIds.includes(String(managerDepartmentId))) {
           departmentDisplaySelect.value = managerDepartmentId;
           departmentHiddenInput.value = managerDepartmentId;
@@ -316,7 +316,7 @@ function showCreateUserForm() {
 
         // Log form data for debugging
         const formData = new FormData(this);
-        console.log('Form data on submit:');
+       // console.log('Form data on submit:');
         for (let [key, value] of formData.entries()) {
           console.log(`${key}: ${value}`);
         }
