@@ -2322,22 +2322,12 @@ function showAssignTraining(event) {
   if (event) event.preventDefault();
   console.log('showAssignTraining called');
 
- // Log the loggedInUserId and employees array for debugging
-  //console.log('Logged-in User ID:', loggedInUserId);
-  //console.log('Employees Array:', employees);
-
-  // Filter employees to exclude the logged-in user (HR) and Super Admins (already excluded in PHP)
-  const filteredEmployees = employees.filter(emp => {
-    // Exclude the logged-in user by comparing user_id
-    return emp.user_id !== loggedInUserId;
-  });
-
- // console.log('Employees Array WITHOUT hr:', filteredEmployees );
-
+  // Filter employees to exclude the logged-in user (HR)
+  const filteredEmployees = employees.filter(emp => emp.user_id !== loggedInUserId);
 
   const formContent = `
         <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Assign Training to Employees</h2>
-        <form action="../pages/features/manage_training.php" method="POST">
+        <form id="assignTrainingForm" method="POST">
             <input type="hidden" name="action" value="assign">
             <div class="form-group">
                 <label for="training_id">Training Program:</label>
@@ -2390,13 +2380,80 @@ function showAssignTraining(event) {
             </table>
         </div>
     `;
+
+  // Use navigateToForm to render the content
   navigateToForm(
     'content-area',
     'profile-update-form',
     formContent,
     showWelcomeMessage
   );
+
+  // Ensure the form exists before attaching the event listener
+  const assignForm = document.getElementById('assignTrainingForm');
+  if (assignForm) {
+    // Remove any existing submit listeners to prevent duplicates
+    assignForm.removeEventListener('submit', handleAssignTrainingSubmit);
+    assignForm.addEventListener('submit', handleAssignTrainingSubmit);
+  } else {
+    console.error('Assign training form not found');
+  }
 }
+
+function handleAssignTrainingSubmit(event) {
+  event.preventDefault();
+  console.log('Assign training form submitted');
+
+  const assignForm = event.target;
+  const formData = new FormData(assignForm);
+  const selectedTraining = document.getElementById('training_id').value;
+
+  fetch('../pages/features/manage_training.php', {
+    method: 'POST',
+    body: formData
+  })
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+    return response.json();
+  })
+  .then(data => {
+    if (data.success) {
+      alert('Employee assigned to training successfully!');
+      // Refresh the employeeTrainings array
+      return fetch('../pages/features/fetch_employee_trainings.php', {
+        method: 'GET',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error fetching employee trainings! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(updatedData => {
+        // Check if updatedData is an array
+        if (!Array.isArray(updatedData)) {
+          throw new Error('Fetched employee trainings data is not an array: ' + JSON.stringify(updatedData));
+        }
+        employeeTrainings.length = 0;
+        updatedData.forEach(et => employeeTrainings.push(et));
+        showAssignedEmployees(selectedTraining);
+        assignForm.reset();
+        // Ensure we stay on the same page by re-rendering the form
+        showAssignTraining(new Event('custom'));
+      });
+    } else {
+      alert(data.error || 'Failed to assign employee to training.');
+    }
+  })
+  .catch(error => {
+    console.error('Error assigning training:', error);
+    alert('Error: ' + error.message);
+  });
+}
+
 function showAssignedEmployees(trainingId) {
   if (!trainingId) {
     const tbody = document.getElementById('assigned-employees-table');
@@ -2440,6 +2497,8 @@ function showAssignedEmployees(trainingId) {
       `;
   }
 }
+
+
 function showAssignEmployees() {
   const mainContent = document.getElementById('content-area');
   const profileUpdateForm = document.getElementById('profile-update-form');
