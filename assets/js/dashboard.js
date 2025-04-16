@@ -1738,190 +1738,291 @@ function showDepartmentInfo() {
 // Training Management Functions
 
 function showAddTrainingForm() {
-  const contentArea = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  if (contentArea && profileUpdateForm) {
-    const welcomeHeading = contentArea.querySelector('h2');
-    const welcomeMessage = contentArea.querySelector('p');
-    if (welcomeHeading) welcomeHeading.style.display = 'none';
-    if (welcomeMessage) welcomeMessage.style.display = 'none';
-
-    const departmentMap = new Map(
-      departments.map((d) => [d.department_id, d.department_name])
-    );
-
-    profileUpdateForm.style.display = 'block';
-    profileUpdateForm.innerHTML = `
-            <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Manage Training Programs</h2>
-            <h3 style="font-size: 18px; color: #555;">Add New Training</h3>
-            <form action="../pages/features/manage_training.php" method="POST" onsubmit="return validateTrainingForm(this)">
-                <input type="hidden" name="action" value="add">
-                <div class="form-group">
-                    <label for="training_name">Training Name:</label>
-                    <input type="text" id="training_name" name="training_name" required>
-                </div>
-                <div class="form-group">
-                    <label for="training_date">Start Date:</label>
-                    <input type="date" id="training_date" name="training_date" required>
-                </div>
-                <div class="form-group">
-                    <label for="end_date">End Date:</label>
-                    <input type="date" id="end_date" name="end_date" required>
-                </div>
-                <div class="form-group">
-                    <label for="certificate">Certificate:</label>
-                    <input type="text" id="certificate" name="certificate" required>
-                </div>
-                <div class="form-group">
-                    <label for="department_id">Department:</label>
-                    <select id="department_id" name="department_id" required>
-                        <option value="">Select a department</option>
-                        ${departments
-                          .map(
-                            (dept) =>
-                              `<option value="${dept.department_id}">${dept.department_name}</option>`
-                          )
-                          .join('')}
-                    </select>
-                </div>
-                <div class="form-group button-group">
-                    <button type="submit">Add Training</button>
-                    <button type="button" onclick="showWelcomeMessage()">Back</button>
-                </div>
-            </form>
-            <h3 style="font-size: 18px; color: #555; margin-top: 30px;">Existing Training Programs</h3>
-            <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-                <thead>
-                    <tr style="background-color: #f5f5f5; color: #333;">
-                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Training Name</th>
-                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Start Date</th>
-                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">End Date</th>
-                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Department</th>
-                        <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Actions</th>
+  console.log('showAddTrainingForm called');
+  const departmentMap = new Map(
+    departments.map((d) => [d.department_id, d.department_name])
+  );
+  const formContent = `
+        <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Manage Training Programs</h2>
+        <h3 style="font-size: 18px; color: #555;">Add New Training</h3>
+        <form id="addTrainingForm">
+            <input type="hidden" name="action" value="add">
+            <div class="form-group">
+                <label for="training_name">Training Name:</label>
+                <input type="text" id="training_name" name="training_name" required>
+            </div>
+            <div class="form-group">
+                <label for="training_date">Start Date:</label>
+                <input type="date" id="training_date" name="training_date" required>
+            </div>
+            <div class="form-group">
+                <label for="end_date">End Date:</label>
+                <input type="date" id="end_date" name="end_date" required>
+            </div>
+            <div class="form-group">
+                <label for="certificate">Certificate:</label>
+                <input type="text" id="certificate" name="certificate" required>
+            </div>
+            <div class="form-group">
+                <label for="department_id">Department:</label>
+                <select id="department_id" name="department_id" required>
+                    <option value="">Select a department</option>
+                    ${departments
+                      .map(
+                        (dept) =>
+                          `<option value="${dept.department_id}">${dept.department_name}</option>`
+                      )
+                      .join('')}
+                </select>
+            </div>
+            <div class="form-group button-group">
+                <button type="submit">Add Training</button>
+                <button type="button">Back</button>
+            </div>
+        </form>
+        <h3 style="font-size: 18px; color: #555; margin-top: 30px;">Existing Training Programs</h3>
+        <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            <thead>
+                <tr style="background-color: #f5f5f5; color: #333;">
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Training Name</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Start Date</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">End Date</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Department</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 700; border-bottom: 2px solid #ddd;">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${
+                  trainings.length > 0
+                    ? trainings
+                        .map(
+                          (training) => `
+                    <tr style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='#fff'">
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">${
+                          training.training_name
+                        }</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">${
+                          training.training_date
+                        }</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">${
+                          training.end_date
+                        }</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">${
+                          departmentMap.get(training.department_id) ||
+                          training.department_id
+                        }</td>
+                        <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                            <button style="padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                                    onmouseover="this.style.backgroundColor='#0056b3'" 
+                                    onmouseout="this.style.backgroundColor='#007bff'"
+                                    onclick="showEditTrainingForm(${
+                                      training.training_id
+                                    })">Edit</button>
+                            <button style="padding: 6px 12px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                                    onmouseover="this.style.backgroundColor='#c82333'" 
+                                    onmouseout="this.style.backgroundColor='#dc3545'"
+                                    onclick="deleteTraining(${
+                                      training.training_id
+                                    })">Delete</button>
+                        </td>
                     </tr>
-                </thead>
-                <tbody>
-                    ${
-                      trainings.length > 0
-                        ? trainings
-                            .map(
-                              (training) => `
-                        <tr style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='#fff'">
-                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${
-                              training.training_name
-                            }</td>
-                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${
-                              training.training_date
-                            }</td>
-                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${
-                              training.end_date
-                            }</td>
-                            <td style="padding: 12px; border-bottom: 1px solid #eee;">${
-                              departmentMap.get(training.department_id) ||
-                              training.department_id
-                            }</td>
-                            <td style="padding: 12px; border-bottom: 1px solid #eee;">
-                                <button style="padding: 6px 12px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer;" 
-                                        onmouseover="this.style.backgroundColor='#0056b3'" 
-                                        onmouseout="this.style.backgroundColor='#007bff'"
-                                        onclick="showEditTrainingForm(${
-                                          training.training_id
-                                        })">Edit</button>
-                                <button style="padding: 6px 12px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;" 
-                                        onmouseover="this.style.backgroundColor='#c82333'" 
-                                        onmouseout="this.style.backgroundColor='#dc3545'"
-                                        onclick="deleteTraining(${
-                                          training.training_id
-                                        })">Delete</button>
-                            </td>
-                        </tr>
-                    `
-                            )
-                            .join('')
-                        : `
-                        <tr>
-                            <td colspan="5" style="padding: 20px; text-align: center; color: #666; border-bottom: 1px solid #eee;">No training programs found.</td>
-                        </tr>
-                    `
-                    }
-                </tbody>
-            </table>
-        `;
-  } else {
-    console.error('content-area or profile-update-form not found');
+                `
+                        )
+                        .join('')
+                    : `
+                    <tr>
+                        <td colspan="5" style="padding: 20px; text-align: center; color: #666; border-bottom: 1px solid #eee;">No training programs found.</td>
+                    </tr>
+                `
+                }
+            </tbody>
+        </table>
+    `;
+  navigateToForm(
+    'content-area',
+    'profile-update-form',
+    formContent,
+    showWelcomeMessage
+  );
+
+  // Add event listener for form submission
+  const form = document.getElementById('addTrainingForm');
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      if (!validateTrainingForm(this)) {
+        return;
+      }
+
+      const formData = new FormData(this);
+
+      fetch('/pages/features/manage_training.php', {
+        method: 'POST',
+        body: formData,
+      })
+        .then(response => response.json())
+        .then(data => {
+          if (data.success) {
+            alert(data.message);
+            fetchTrainings(() => {
+              showAddTrainingForm();
+            });
+          } else {
+            alert(data.error);
+            fetchTrainings(() => {
+              showAddTrainingForm();
+            });
+          }
+        })
+        .catch(error => {
+          alert('Error adding training: ' + error.message);
+          fetchTrainings(() => {
+            showAddTrainingForm();
+          });
+        });
+    });
   }
 }
 
 function showEditTrainingForm(trainingId) {
+  console.log('showEditTrainingForm called for trainingId:', trainingId);
   const training = trainings.find((t) => t.training_id == trainingId);
   if (!training) {
     alert('Training not found!');
     return;
   }
-  const contentArea = document.getElementById('content-area');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  if (contentArea && profileUpdateForm) {
-    const welcomeHeading = contentArea.querySelector('h2');
-    const welcomeMessage = contentArea.querySelector('p');
-    if (welcomeHeading) welcomeHeading.style.display = 'none';
-    if (welcomeMessage) welcomeMessage.style.display = 'none';
 
-    profileUpdateForm.style.display = 'block';
-    profileUpdateForm.innerHTML = `
-            <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Edit Training Program</h2>
-            <form action="../pages/features/manage_training.php" method="POST" onsubmit="return validateTrainingForm(this)">
-                <input type="hidden" name="action" value="edit">
-                <input type="hidden" name="training_id" value="${
-                  training.training_id
-                }">
-                <div class="form-group">
-                    <label for="training_name">Training Name:</label>
-                    <input type="text" id="training_name" name="training_name" value="${
-                      training.training_name
-                    }" required>
-                </div>
-                <div class="form-group">
-                    <label for="training_date">Start Date:</label>
-                    <input type="date" id="training_date" name="training_date" value="${
-                      training.training_date
-                    }" required>
-                </div>
-                <div class="form-group">
-                    <label for="end_date">End Date:</label>
-                    <input type="date" id="end_date" name="end_date" value="${
-                      training.end_date
-                    }" required>
-                </div>
-                <div class="form-group">
-                    <label for="certificate">Certificate:</label>
-                    <input type="text" id="certificate" name="certificate" value="${
-                      training.certificate
-                    }" required>
-                </div>
-                <div class="form-group">
-                    <label for="department_id">Department:</label>
-                    <select id="department_id" name="department_id" required>
-                        <option value="">Select a department</option>
-                        ${departments
-                          .map(
-                            (dept) =>
-                              `<option value="${dept.department_id}" ${
-                                training.department_id === dept.department_id
-                                  ? 'selected'
-                                  : ''
-                              }>${dept.department_name}</option>`
-                          )
-                          .join('')}
-                    </select>
-                </div>
-                <div class="form-group button-group">
-                    <button type="submit">Update Training</button>
-                    <button type="button" onclick="showAddTrainingForm()">Back</button>
-                </div>
-            </form>
-        `;
+  const originalValues = {
+    training_name: training.training_name,
+    training_date: training.training_date,
+    end_date: training.end_date,
+    certificate: training.certificate,
+    department_id: training.department_id,
+  };
+
+  const formContent = `
+        <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Edit Training Program</h2>
+        <form id="editTrainingForm">
+            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="training_id" value="${
+              training.training_id
+            }">
+            <div class="form-group">
+                <label for="training_name">Training Name:</label>
+                <input type="text" id="training_name" name="training_name" value="${
+                  training.training_name
+                }" required>
+            </div>
+            <div class="form-group">
+                <label for="training_date">Start Date:</label>
+                <input type="date" id="training_date" name="training_date" value="${
+                  training.training_date
+                }" required>
+            </div>
+            <div class="form-group">
+                <label for="end_date">End Date:</label>
+                <input type="date" id="end_date" name="end_date" value="${
+                  training.end_date
+                }" required>
+            </div>
+            <div class="form-group">
+                <label for="certificate">Certificate:</label>
+                <input type="text" id="certificate" name="certificate" value="${
+                  training.certificate
+                }" required>
+            </div>
+            <div class="form-group">
+                <label for="department_id">Department:</label>
+                <select id="department_id" name="department_id" required>
+                    <option value="">Select a department</option>
+                    ${departments
+                      .map(
+                        (dept) =>
+                          `<option value="${dept.department_id}" ${
+                            training.department_id === dept.department_id
+                              ? 'selected'
+                              : ''
+                          }>${dept.department_name}</option>`
+                      )
+                      .join('')}
+                </select>
+            </div>
+            <div class="form-group button-group">
+                <button type="submit">Update Training</button>
+                <button type="button">Back</button>
+            </div>
+        </form>
+    `;
+  navigateToForm(
+    'content-area',
+    'profile-update-form',
+    formContent,
+    showAddTrainingForm
+  );
+
+  const form = document.getElementById('editTrainingForm');
+  if (form) {
+    form.addEventListener('submit', (event) =>
+      handleTrainingUpdate(event, form, originalValues)
+    );
   }
 }
+
+function handleTrainingUpdate(event, form, originalValues) {
+  event.preventDefault();
+
+  const formData = new FormData(form);
+  const currentValues = {
+    training_name: formData.get('training_name'),
+    training_date: formData.get('training_date'),
+    end_date: formData.get('end_date'),
+    certificate: formData.get('certificate'),
+    department_id: formData.get('department_id'),
+  };
+
+  const hasChanges = Object.keys(originalValues).some(
+    (key) => originalValues[key] !== currentValues[key]
+  );
+
+  if (!hasChanges) {
+    alert('No changes detected. Training remains unchanged.');
+    showAddTrainingForm();
+    return false;
+  }
+
+  if (!validateTrainingForm(form)) {
+    return false;
+  }
+
+  fetch('/pages/features/manage_training.php', {
+    method: 'POST',
+    body: formData,
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        alert(data.message);
+        fetchTrainings(() => {
+          showAddTrainingForm();
+        });
+      } else {
+        alert(data.error);
+        fetchTrainings(() => {
+          showAddTrainingForm();
+        });
+      }
+    })
+    .catch((error) => {
+      alert('Error updating training: ' + error.message);
+      fetchTrainings(() => {
+        showAddTrainingForm();
+      });
+    });
+
+  return false;
+}
+
 
 function deleteTraining(trainingId) {
   if (confirm('Are you sure you want to delete this training program?')) {
@@ -2197,66 +2298,6 @@ function showEditTrainingForm(trainingId) {
   );
 }
 
-function handleTrainingUpdate(event, form, originalValues) {
-  event.preventDefault();
-
-  // Get current form values
-  const formData = new FormData(form);
-  const currentValues = {
-    training_name: formData.get('training_name'),
-    training_date: formData.get('training_date'),
-    end_date: formData.get('end_date'),
-    certificate: formData.get('certificate'),
-    department_id: formData.get('department_id'),
-  };
-
-  // Compare values
-  const hasChanges = Object.keys(originalValues).some(
-    (key) => originalValues[key] !== currentValues[key]
-  );
-
-  if (!hasChanges) {
-    alert('No changes detected. Training remains unchanged.');
-    showAddTrainingForm();
-    return false;
-  }
-
-  // Validate dates if there are changes
-  if (!validateTrainingForm(form)) {
-    return false;
-  }
-
-  // Submit if there are changes
-  fetch(form.action, {
-    method: 'POST',
-    body: formData,
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        alert(data.message);
-        // Update local trainings array
-        const index = trainings.findIndex(
-          (t) => t.training_id == formData.get('training_id')
-        );
-        if (index !== -1) {
-          trainings[index] = {
-            ...trainings[index],
-            ...currentValues,
-          };
-        }
-        showAddTrainingForm();
-      } else {
-        alert(data.error);
-      }
-    })
-    .catch((error) => {
-      alert('Error updating training: ' + error.message);
-    });
-
-  return false; // Prevent default form submission
-}
-
 function deleteTraining(trainingId) {
   if (confirm('Are you sure you want to delete this training program?')) {
     const formData = new FormData();
@@ -2398,6 +2439,21 @@ function showAssignTraining(event) {
   );
 }
 
+function fetchEmployeeTrainings(callback) {
+  fetch('/pages/features/fetch_employee_trainings.php')
+    .then(response => response.json())
+    .then(data => {
+      if (data.success && Array.isArray(data.employeeTrainings)) {
+        employeeTrainings = data.employeeTrainings;
+        callback();
+      } else {
+        alert('Error fetching employee trainings: ' + (data.error || 'Invalid data format'));
+      }
+    })
+    .catch(error => {
+      alert('Error fetching employee trainings: ' + error.message);
+    });
+}
 function showAssignEmployees() {
   const mainContent = document.getElementById('content-area');
   const profileUpdateForm = document.getElementById('profile-update-form');
