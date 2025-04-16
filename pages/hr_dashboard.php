@@ -65,7 +65,7 @@ $employeeTrainings = fetchData($con, "
 try {
     $stmt = $con->query("
         SELECT 
-            e.employee_id, u.first_name, u.last_name, u.email, u.role, 
+            e.employee_id, e.user_id, u.first_name, u.last_name, u.email, u.role, 
             e.department_id, e.emp_hire_date, e.salary, e.emp_status,e.manager_id,e.is_manager
         FROM Employees e
         JOIN Users u ON e.user_id = u.user_id where u.role!='Super Admin'
@@ -259,6 +259,8 @@ if (isset($_POST['action'])) {
     const employeeTrainings = <?php echo json_encode($employeeTrainings ?: []); ?>;
     const employees = <?php echo json_encode($employees ?: []); ?>;
     const userName = <?php echo json_encode(htmlspecialchars($_SESSION['user_name'])); ?>;
+    const loggedInUserId = <?php echo json_encode($_SESSION['user_id'] ?? ''); ?>;
+
 
     // Log the data for debugging
     //console.log('Departments:', departments);

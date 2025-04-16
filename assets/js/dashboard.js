@@ -2321,6 +2321,20 @@ function showWelcomeMessage(event) {
 function showAssignTraining(event) {
   if (event) event.preventDefault();
   console.log('showAssignTraining called');
+
+ // Log the loggedInUserId and employees array for debugging
+  //console.log('Logged-in User ID:', loggedInUserId);
+  //console.log('Employees Array:', employees);
+
+  // Filter employees to exclude the logged-in user (HR) and Super Admins (already excluded in PHP)
+  const filteredEmployees = employees.filter(emp => {
+    // Exclude the logged-in user by comparing user_id
+    return emp.user_id !== loggedInUserId;
+  });
+
+ // console.log('Employees Array WITHOUT hr:', filteredEmployees );
+
+
   const formContent = `
         <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Assign Training to Employees</h2>
         <form action="../pages/features/manage_training.php" method="POST">
@@ -2341,7 +2355,7 @@ function showAssignTraining(event) {
                 <label for="employee_id">Employee:</label>
                 <select id="employee_id" name="employee_id" required>
                     <option value="">Select an employee</option>
-                    ${employees
+                    ${filteredEmployees 
                       .map(
                         (emp) =>
                           `<option value="${emp.employee_id}">${emp.employee_id} - ${emp.first_name} ${emp.last_name} (Dept: ${emp.department_id})</option>`
