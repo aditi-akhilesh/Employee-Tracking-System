@@ -256,7 +256,7 @@ if (isset($_POST['action'])) {
     const departments = <?php echo json_encode($departments ?: []); ?>;
     const projects = <?php echo json_encode($projects ?: []); ?>;
     let trainings = <?php echo json_encode($trainings ?: []); ?>;
-    const employeeTrainings = <?php echo json_encode($employeeTrainings ?: []); ?>;
+    let employeeTrainings = <?php echo json_encode($employeeTrainings ?: []); ?>;
     const employees = <?php echo json_encode($employees ?: []); ?>;
     const userName = <?php echo json_encode(htmlspecialchars($_SESSION['user_name'])); ?>;
     const loggedInUserId = <?php echo json_encode($_SESSION['user_id'] ?? ''); ?>;

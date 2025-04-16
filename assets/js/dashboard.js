@@ -2397,7 +2397,49 @@ function showAssignTraining(event) {
     showWelcomeMessage
   );
 }
+function showAssignedEmployees(trainingId) {
+  if (!trainingId) {
+    const tbody = document.getElementById('assigned-employees-table');
+    if (tbody) {
+      tbody.innerHTML = `
+        <tr>
+            <td colspan="3" style="padding: 20px; text-align: center; color: #666;">Select a training program to view assigned employees.</td>
+        </tr>
+      `;
+    }
+    return;
+  }
 
+  const assignedEmployeeTrainings = employeeTrainings.filter(
+    (et) => String(et.training_id) === String(trainingId)
+  );
+
+  const tbody = document.getElementById('assigned-employees-table');
+  if (tbody) {
+    tbody.innerHTML = assignedEmployeeTrainings.length > 0
+      ? assignedEmployeeTrainings.map((et) => `
+          <tr style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='#fff'">
+              <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                  ${et.first_name} ${et.last_name} (ID: ${et.employee_id})
+              </td>
+              <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                  ${et.enrollment_date || 'N/A'}
+              </td>
+              <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                  <button style="padding: 6px 12px; background-color: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                          onmouseover="this.style.backgroundColor='#c82333'" 
+                          onmouseout="this.style.backgroundColor='#dc3545'"
+                          onclick="removeEmployeeTraining(${et.employee_training_id})">Remove</button>
+              </td>
+          </tr>
+        `).join('')
+      : `
+        <tr>
+            <td colspan="3" style="padding: 20px; text-align: center; color: #666;">No employees assigned to this training.</td>
+        </tr>
+      `;
+  }
+}
 function showAssignEmployees() {
   const mainContent = document.getElementById('content-area');
   const profileUpdateForm = document.getElementById('profile-update-form');
