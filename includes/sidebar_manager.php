@@ -21,8 +21,7 @@
                 <li><a href="#" onclick="showProjects()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">View Project Status</a></li>
                 <li><a href="#" onclick="showAssignEmployees()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Assign Employees to Project</a></li>
                 <li><a href="#" onclick="showAssignedEmployeesSection()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">View/Edit Project Assignments</a></li>
-                <li><a href="#" onclick="showSubtasksForm()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Create/Update Subtasks</a></li>
-            </ul>
+                <li><a href="#" onclick="showSubtasks()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Create/Update Subtasks</a></li>            </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'feedback-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-comment" style="margin-right: 10px;"></i> Feedback and Exit interview</a>
             <ul id="feedback-dropdown" class="dropdown" style="display: none; padding-left: 20px;">

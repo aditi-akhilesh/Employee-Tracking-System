@@ -226,6 +226,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     
         echo json_encode($response);
         exit();
+    } elseif ($_POST['action'] === 'create_task' || $_POST['action'] === 'update_task') {
+        $task_id = $_POST['task_id'] ?? null;
+        $project_id = $_POST['project_id'] ?? null;
+        $task_description = $_POST['task_description'] ?? null;
+        $employee_id = $_POST['employee_id'] ?: null;
+        $due_date = $_POST['due_date'] ?? null;
+        $status = $_POST['status'] ?? null;
+    
+        // Basic validation for required fields
+        if (!$project_id || !$task_description || !$due_date || !$status) {
+            $response['error'] = 'Missing required fields for task';
+            echo json_encode($response);
+            exit;
+        }
+    
+        try {
+            if ($task_id && $_POST['action'] === 'update_task') {
+                // Update Task
+                $stmt = $con->prepare("UPDATE Task SET task_description = ?, status = ?, project_id = ? WHERE task_id = ?");
+                $stmt->execute([$task_description, $status, $project_id, $task_id]);
+    
+                if ($stmt->rowCount() === 0) {
+                    $response['error'] = 'Task not found';
+                    echo json_encode($response);
+                    exit;
+                }
+    
+                // Update Assignment_Task
+                $stmt = $con->prepare("DELETE FROM Assignment_Task WHERE task_id = ?");
+                $stmt->execute([$task_id]);
+    
+                if ($employee_id) {
+                    $stmt = $con->prepare("INSERT INTO Assignment_Task (task_id, employee_id, due_date) VALUES (?, ?, ?)");
+                    $stmt->execute([$task_id, $employee_id, $due_date]);
+                }
+            } else {
+                // Create Task
+                $stmt = $con->prepare("INSERT INTO Task (task_description, status, project_id) VALUES (?, ?, ?)");
+                $stmt->execute([$task_description, $status, $project_id]);
+                $task_id = $con->lastInsertId();
+    
+                // Insert into Assignment_Task if employee_id provided
+                if ($employee_id) {
+                    $stmt = $con->prepare("INSERT INTO Assignment_Task (task_id, employee_id, due_date) VALUES (?, ?, ?)");
+                    $stmt->execute([$task_id, $employee_id, $due_date]);
+                }
+            }
+    
+            $response['success'] = true;
+        } catch (PDOException $e) {
+            if ($e->getCode() == '23000' && strpos($e->getMessage(), 'Duplicate entry') !== false) {
+                $response['error'] = 'Task description already exists. Please use a unique description.';
+            } else {
+                $response['error'] = 'Database error: ' . $e->getMessage();
+            }
+            echo json_encode($response);
+            exit;
+        }
+    } elseif ($_POST['action'] === 'delete_task') {
+        $task_id = $_POST['task_id'] ?? null;
+        if (!$task_id) {
+            $response['error'] = 'Task ID is required';
+            echo json_encode($response);
+            exit;
+        }
+    
+        try {
+            $stmt = $con->prepare("DELETE FROM Assignment_Task WHERE task_id = ?");
+            $stmt->execute([$task_id]);
+    
+            $stmt = $con->prepare("DELETE FROM Task WHERE task_id = ?");
+            $stmt->execute([$task_id]);
+    
+            if ($stmt->rowCount() === 0) {
+                $response['error'] = 'Task not found';
+            } else {
+                $response['success'] = true;
+            }
+        } catch (PDOException $e) {
+            $response['error'] = 'Database error: ' . $e->getMessage();
+        }
+    
+        echo json_encode($response);
+        exit;
     }
     echo json_encode($response);
     exit();
@@ -451,36 +535,44 @@ $employee_trainings = $data['employee_trainings'] ?? [];
             <form id="subtask-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                 <input type="hidden" id="task_id" name="task_id">
                 <div class="form-group">
-                    <label for="project_id_subtask">Project:</label>
-                    <select id="project_id_subtask" name="project_id" required></select>
+                    <label for="project_id_subtask" style="font-weight: 500;">Project:</label>
+                    <select id="project_id_subtask" name="project_id" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;"></select>
                 </div>
                 <div class="form-group">
-                    <label for="task_description">Task Description:</label>
-                    <input type="text" id="task_description" name="task_description" required>
+                    <label for="task_description" style="font-weight: 500;">Task Description:</label>
+                    <input type="text" id="task_description" name="task_description" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                 </div>
                 <div class="form-group">
-                    <label for="employee_id_subtask">Assignee:</label>
-                    <select id="employee_id_subtask" name="employee_id"></select>
+                    <label for="employee_id_subtask" style="font-weight: 500;">Assignee:</label>
+                    <select id="employee_id_subtask" name="employee_id" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;"></select>
                 </div>
                 <div class="form-group">
-                    <label for="due_date">Due Date:</label>
-                    <input type="date" id="due_date" name="due_date" required>
+                    <label for="due_date" style="font-weight: 500;">Due Date:</label>
+                    <input type="date" id="due_date" name="due_date" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                 </div>
                 <div class="form-group">
-                    <label for="task_status">Status:</label>
-                    <select id="task_status" name="status" required>
+                    <label for="task_status" style="font-weight: 500;">Status:</label>
+                    <select id="task_status" name="status" required style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
                         <option value="To Do">To Do</option>
                         <option value="In Progress">In Progress</option>
                         <option value="Done">Done</option>
                     </select>
                 </div>
                 <div class="form-group button-group" style="grid-column: span 2;">
-                    <button type="submit" id="save-task-btn" style="margin: 10px;">Save Task</button>
-                    <button type="button" id="delete-task-btn" style="display: none; margin: 10px;" onclick="deleteTask()">Delete Task</button>
-                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px;">Back</button>
+                    <button type="button" id="save-task-btn" onclick="saveTask()" style="margin: 10px; background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Save Task</button>
+                    <button type="button" id="delete-task-btn" onclick="deleteTask()" style="display: none; margin: 10px; background-color: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Delete Task</button>
+                    <button type="button" onclick="resetSubtaskForm()" style="margin: 10px; background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Clear</button>
+                    <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px; background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Back</button>
                 </div>
             </form>
+            <div id="form-message" style="margin: 10px; color: #28a745;"></div>
             <h3 style="margin-top: 20px;">Existing Subtasks</h3>
+            <div class="form-group" style="margin-bottom: 20px;">
+                <label for="filter_project" style="font-weight: 500;">Filter by Project:</label>
+                <select id="filter_project" onchange="renderTasksTable()" style="width: 200px; padding: 8px; border-radius: 4px; border: 1px solid #ccc;">
+                    <option value="">All Projects</option>
+                </select>
+            </div>
             <div style="overflow-x: auto;">
                 <table class="report-table">
                     <thead>

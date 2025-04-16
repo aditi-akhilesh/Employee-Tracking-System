@@ -70,6 +70,35 @@ function refreshData(callback) {
     .catch((error) => showError('Network error: ' + error.message));
 }
 
+function refreshTasksData(projectId, callback) {
+  fetch('manager_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=refresh_data&section=tasks', // Fixed syntax: replaced § with &
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      if (data.success) {
+        window.tasks = data.tasks || [];
+        window.projectAssignments = data.project_assignments || [];
+        if (callback) callback(projectId);
+      } else {
+        showError(
+          data.error || 'Failed to refresh tasks data',
+          'subtasks-section'
+        );
+      }
+    })
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'subtasks-section')
+    );
+}
+
 document.addEventListener('DOMContentLoaded', function () {
   refreshData();
 });
@@ -870,7 +899,12 @@ function fetchUpdatedAssignments(successMessage = '') {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: 'action=refresh_data',
   })
-    .then((response) => response.json())
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
     .then((data) => {
       if (data.success) {
         window.projectAssignments = data.project_assignments || [];
@@ -950,40 +984,6 @@ function loadAssignments() {
   renderTable(projectSelect.value);
 }
 
-function fetchUpdatedAssignments() {
-  fetch('manager_dashboard.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data�ion=project_assignments',
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((data) => {
-      if (data.success) {
-        window.projectAssignments = data.project_assignments || [];
-        showAssignedEmployeesSection();
-        const projectSelect = document.getElementById('project_id_view');
-        const selectedProjectId = projectSelect ? projectSelect.value : '';
-        renderAssignmentsTable(selectedProjectId);
-      } else {
-        showError(
-          data.error || 'Failed to fetch updated assignments',
-          'project-assignments-section'
-        );
-      }
-    })
-    .catch((error) => {
-      showError(
-        'Network error: ' + error.message,
-        'project-assignments-section'
-      );
-    });
-}
-
 function renderAssignmentsTable(selectedProjectId) {
   const assignmentsTable = document.getElementById('assignments-table');
   if (!assignmentsTable) return;
@@ -1046,255 +1046,6 @@ function showProjects() {
       projectsTable.appendChild(row);
     });
   }
-}
-
-// Show Subtasks Section (Create/Update/Delete/View Tasks)
-function showSubtasksForm() {
-  if (!showSection('subtasks-section')) return;
-
-  const form = document.getElementById('subtask-form');
-  const tasksTable = document.getElementById('tasks-table');
-  const projectSelect = document.getElementById('project_id_subtask');
-
-  if (!form || !tasksTable || !projectSelect) {
-    console.error('Subtask form elements not found');
-    showError('Form setup error', 'subtasks-section');
-    return;
-  }
-
-  // Reset form
-  form.reset();
-  document.getElementById('task_id').value = '';
-  document.getElementById('delete-task-btn').style.display = 'none';
-
-  // Populate project dropdown
-  projectSelect.innerHTML = '<option value="">Select a project</option>';
-  if (window.projects && window.projects.length > 0) {
-    window.projects.forEach((project) => {
-      projectSelect.innerHTML += `<option value="${project.project_id}">${project.project_name}</option>`;
-    });
-  }
-
-  // Populate employee dropdown
-  const employeeSelect = document.getElementById('employee_id_subtask');
-  employeeSelect.innerHTML = '<option value="">Unassigned</option>';
-  if (window.employees && window.employees.length > 0) {
-    window.employees.forEach((emp) => {
-      employeeSelect.innerHTML += `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`;
-    });
-  }
-
-  // Render tasks table based on selected project
-  function renderTasksTable(projectId = '') {
-    tasksTable.innerHTML = '';
-    const filteredTasks = projectId
-      ? (window.tasks || []).filter((task) => task.project_id == projectId)
-      : window.tasks || [];
-
-    if (filteredTasks.length === 0) {
-      tasksTable.innerHTML = `<tr><td colspan="6">No tasks found for this project.</td></tr>`;
-      return;
-    }
-
-    filteredTasks.forEach((task) => {
-      const project =
-        window.projects.find((p) => p.project_id == task.project_id) || {};
-      const employee =
-        window.employees.find((e) => e.employee_id == task.employee_id) || {};
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${task.task_description || 'N/A'}</td>
-        <td>${project.project_name || 'N/A'}</td>
-        <td>${
-          employee.first_name
-            ? `${employee.first_name} ${employee.last_name}`
-            : 'Unassigned'
-        }</td>
-        <td>${task.due_date || 'N/A'}</td>
-        <td>${task.status || 'N/A'}</td>
-        <td>
-          <button onclick="editTask(${task.task_id})">Edit</button>
-          <button onclick="deleteTask(${task.task_id})">Delete</button>
-        </td>
-      `;
-      tasksTable.appendChild(row);
-    });
-  }
-
-  // Initial table render
-  renderTasksTable();
-
-  // Update table when project changes
-  projectSelect.addEventListener('change', () =>
-    renderTasksTable(projectSelect.value)
-  );
-
-  // Handle form submission (create/update task)
-  form.addEventListener('submit', function (event) {
-    event.preventDefault();
-
-    const taskId = document.getElementById('task_id').value;
-    const formData = new FormData(this);
-    if (taskId) {
-      formData.append('task_id', taskId);
-    }
-
-    fetch('../pages/features/manage_tasks.php', {
-      method: 'POST',
-      body: formData,
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.success) {
-          showSuccess(
-            taskId
-              ? 'Task updated successfully!'
-              : 'Task created successfully!',
-            'subtasks-section'
-          );
-          refreshData(() => {
-            form.reset();
-            document.getElementById('task_id').value = '';
-            document.getElementById('delete-task-btn').style.display = 'none';
-            renderTasksTable(projectSelect.value);
-          });
-        } else {
-          showError(data.error || 'Failed to save task', 'subtasks-section');
-        }
-      })
-      .catch((error) =>
-        showError('Network error: ' + error.message, 'subtasks-section')
-      );
-  });
-}
-
-// Edit Task
-function editTask(taskId) {
-  const task = window.tasks.find((t) => t.task_id == taskId);
-  if (!task) {
-    showError('Task not found', 'subtasks-section');
-    return;
-  }
-
-  document.getElementById('task_id').value = task.task_id;
-  document.getElementById('project_id_subtask').value = task.project_id || '';
-  document.getElementById('task_description').value =
-    task.task_description || '';
-  document.getElementById('employee_id_subtask').value = task.employee_id || '';
-  document.getElementById('due_date').value = task.due_date || '';
-  document.getElementById('task_status').value = task.status || 'To Do';
-  document.getElementById('delete-task-btn').style.display = 'block';
-
-  // Refresh tasks table to reflect current project
-  const projectSelect = document.getElementById('project_id_subtask');
-  const tasksTable = document.getElementById('tasks-table');
-  if (projectSelect && tasksTable) {
-    const renderTasksTable = () => {
-      tasksTable.innerHTML = '';
-      const filteredTasks = (window.tasks || []).filter(
-        (t) => t.project_id == projectSelect.value
-      );
-      if (filteredTasks.length === 0) {
-        tasksTable.innerHTML = `<tr><td colspan="6">No tasks found for this project.</td></tr>`;
-        return;
-      }
-      filteredTasks.forEach((t) => {
-        const project =
-          window.projects.find((p) => p.project_id == t.project_id) || {};
-        const employee =
-          window.employees.find((e) => e.employee_id == t.employee_id) || {};
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${t.task_description || 'N/A'}</td>
-          <td>${project.project_name || 'N/A'}</td>
-          <td>${
-            employee.first_name
-              ? `${employee.first_name} ${employee.last_name}`
-              : 'Unassigned'
-          }</td>
-          <td>${t.due_date || 'N/A'}</td>
-          <td>${t.status || 'N/A'}</td>
-          <td>
-            <button onclick="editTask(${t.task_id})">Edit</button>
-            <button onclick="deleteTask(${t.task_id})">Delete</button>
-          </td>
-        `;
-        tasksTable.appendChild(row);
-      });
-    };
-    renderTasksTable();
-  }
-}
-
-// Delete Task
-function deleteTask(taskId) {
-  if (!confirm('Are you sure you want to delete this task?')) return;
-
-  const formData = new FormData();
-  formData.append('action', 'delete');
-  formData.append('task_id', taskId);
-
-  fetch('../pages/features/manage_tasks.php', {
-    method: 'POST',
-    body: formData,
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        showSuccess('Task deleted successfully!', 'subtasks-section');
-        refreshData(() => {
-          document.getElementById('subtask-form').reset();
-          document.getElementById('task_id').value = '';
-          document.getElementById('delete-task-btn').style.display = 'none';
-          const projectSelect = document.getElementById('project_id_subtask');
-          const tasksTable = document.getElementById('tasks-table');
-          if (projectSelect && tasksTable) {
-            const renderTasksTable = () => {
-              tasksTable.innerHTML = '';
-              const filteredTasks = (window.tasks || []).filter(
-                (t) => t.project_id == projectSelect.value
-              );
-              if (filteredTasks.length === 0) {
-                tasksTable.innerHTML = `<tr><td colspan="6">No tasks found for this project.</td></tr>`;
-                return;
-              }
-              filteredTasks.forEach((t) => {
-                const project =
-                  window.projects.find((p) => p.project_id == t.project_id) ||
-                  {};
-                const employee =
-                  window.employees.find(
-                    (e) => e.employee_id == t.employee_id
-                  ) || {};
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                  <td>${t.task_description || 'N/A'}</td>
-                  <td>${project.project_name || 'N/A'}</td>
-                  <td>${
-                    employee.first_name
-                      ? `${employee.first_name} ${employee.last_name}`
-                      : 'Unassigned'
-                  }</td>
-                  <td>${t.due_date || 'N/A'}</td>
-                  <td>${t.status || 'N/A'}</td>
-                  <td>
-                    <button onclick="editTask(${t.task_id})">Edit</button>
-                    <button onclick="deleteTask(${t.task_id})">Delete</button>
-                  </td>
-                `;
-                tasksTable.appendChild(row);
-              });
-            };
-            renderTasksTable();
-          }
-        });
-      } else {
-        showError(data.error || 'Failed to delete task', 'subtasks-section');
-      }
-    })
-    .catch((error) =>
-      showError('Network error: ' + error.message, 'subtasks-section')
-    );
 }
 
 function addexitinterview() {
@@ -1726,6 +1477,194 @@ function showDepartment() {
         </div>
     `;
   mainContent.innerHTML = html;
+}
+
+// Show subtask section and initialize form
+function showSubtasks() {
+  showSection('subtasks-section');
+  resetSubtaskForm();
+  populateSubtaskForm();
+  renderTasksTable();
+}
+
+// Reset subtask form
+function resetSubtaskForm() {
+  const form = document.getElementById('subtask-form');
+  form.reset();
+  document.getElementById('task_id').value = '';
+  document.getElementById('delete-task-btn').style.display = 'none';
+  document.getElementById('form-message').textContent = '';
+  document.getElementById('filter_project').innerHTML =
+    '<option value="">All Projects</option>';
+}
+
+// Populate subtask form dropdowns
+function populateSubtaskForm() {
+  const projectSelect = document.getElementById('project_id_subtask');
+  const filterSelect = document.getElementById('filter_project');
+  const employeeSelect = document.getElementById('employee_id_subtask');
+
+  // Populate projects
+  projectSelect.innerHTML = '<option value="">Select a project</option>';
+  filterSelect.innerHTML = '<option value="">All Projects</option>';
+  window.projects.forEach((project) => {
+    const option = `<option value="${project.project_id}">${project.project_name}</option>`;
+    projectSelect.insertAdjacentHTML('beforeend', option);
+    filterSelect.insertAdjacentHTML('beforeend', option);
+  });
+
+  // Populate employees
+  employeeSelect.innerHTML = '<option value="">Unassigned</option>';
+  window.employees.forEach((emp) => {
+    employeeSelect.insertAdjacentHTML(
+      'beforeend',
+      `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`
+    );
+  });
+}
+
+// Render tasks table with optional project filter
+function renderTasksTable() {
+  const projectId = document.getElementById('filter_project').value;
+  const tbody = document.getElementById('tasks-table');
+  tbody.innerHTML = '';
+
+  const filteredTasks = projectId
+    ? window.tasks.filter((task) => task.project_id == projectId)
+    : window.tasks;
+
+  if (filteredTasks.length === 0) {
+    tbody.innerHTML =
+      '<tr><td colspan="6" style="text-align: center;">No tasks found.</td></tr>';
+    return;
+  }
+
+  filteredTasks.forEach((task) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+          <td>${task.task_description || 'N/A'}</td>
+          <td>${task.project_name || 'N/A'}</td>
+          <td>${
+            task.first_name
+              ? task.first_name + ' ' + task.last_name
+              : 'Unassigned'
+          }</td>
+          <td>${task.due_date || 'N/A'}</td>
+          <td>${task.status || 'N/A'}</td>
+          <td>
+              <button onclick="editSubtask(${
+                task.task_id
+              })" style="color: #007bff; background: none; border: none;">Edit</button>
+              <button onclick="confirmDeleteSubtask(${
+                task.task_id
+              })" style="color: #dc3545; background: none; border: none;">Delete</button>
+          </td>
+      `;
+    tbody.appendChild(row);
+  });
+}
+
+// Save task (create or update)
+function saveTask() {
+  const taskId = document.getElementById('task_id').value;
+  const taskData = {
+    action: taskId ? 'update_task' : 'create_task',
+    task_id: taskId,
+    project_id: document.getElementById('project_id_subtask').value,
+    task_description: document.getElementById('task_description').value.trim(),
+    employee_id: document.getElementById('employee_id_subtask').value || null,
+    due_date: document.getElementById('due_date').value,
+    status: document.getElementById('task_status').value,
+  };
+
+  // Client-side validation
+  if (
+    !taskData.project_id ||
+    !taskData.task_description ||
+    !taskData.due_date ||
+    !taskData.status
+  ) {
+    showFormMessage('Please fill all required fields.', true);
+    return;
+  }
+
+  fetch('../pages/manager_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams(taskData),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        refreshTasksData(null, () => {
+          showFormMessage(
+            `Task ${taskId ? 'updated' : 'created'} successfully!`
+          );
+          resetSubtaskForm();
+          populateSubtaskForm();
+          renderTasksTable();
+        });
+      } else {
+        showError(data.error || 'Failed to save task.');
+      }
+    })
+    .catch((error) => {
+      showError('Error saving task: ' + error.message);
+    });
+}
+
+// Edit subtask
+function editSubtask(taskId) {
+  const task = window.tasks.find((t) => t.task_id == taskId);
+  if (!task) {
+    showFormMessage('Task not found.', true);
+    return;
+  }
+
+  document.getElementById('task_id').value = task.task_id;
+  document.getElementById('project_id_subtask').value = task.project_id;
+  document.getElementById('task_description').value = task.task_description;
+  document.getElementById('employee_id_subtask').value = task.employee_id || '';
+  document.getElementById('due_date').value = task.due_date;
+  document.getElementById('task_status').value = task.status;
+  document.getElementById('delete-task-btn').style.display = 'inline-block';
+  document.getElementById('filter_project').value = task.project_id;
+  renderTasksTable();
+}
+
+// Confirm and delete subtask
+function confirmDeleteSubtask(taskId) {
+  if (!confirm('Are you sure you want to delete this task?')) return;
+
+  fetch('../pages/manager_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ action: 'delete_task', task_id: taskId }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        refreshTasksData(null, () => {
+          showFormMessage('Task deleted successfully!');
+          resetSubtaskForm();
+          populateSubtaskForm();
+          renderTasksTable();
+        });
+      } else {
+        showError(data.error || 'Failed to delete task.');
+      }
+    })
+    .catch((error) => {
+      showError('Error deleting task: ' + error.message);
+    });
+}
+
+// Show form message with color
+function showFormMessage(message, isError = false) {
+  const msgDiv = document.getElementById('form-message');
+  msgDiv.textContent = message;
+  msgDiv.style.color = isError ? '#dc3545' : '#28a745';
+  setTimeout(() => (msgDiv.textContent = ''), 5000);
 }
 
 // Show welcome message (default view)
