@@ -71,21 +71,36 @@ function refreshData(callback) {
 }
 
 function refreshTasksData(projectId, callback) {
+  // Ensure the request body uses the correct separator
+  const requestBody = 'action=refresh_data&section=tasks';
+
+  console.log('refreshTasksData - Request body:', requestBody);
+
   fetch('manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data&section=tasks', // Fixed syntax: replaced § with &
+    body: requestBody,
   })
     .then((response) => {
+      console.log('refreshTasksData - Response status:', response.status);
       if (!response.ok) {
+        response.text().then((text) => {
+          console.error('refreshTasksData - Response text:', text);
+        });
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       return response.json();
     })
     .then((data) => {
+      console.log('refreshTasksData - Server response:', data);
       if (data.success) {
         window.tasks = data.tasks || [];
         window.projectAssignments = data.project_assignments || [];
+        console.log('refreshTasksData - Updated tasks:', window.tasks);
+        console.log(
+          'refreshTasksData - Updated projectAssignments:',
+          window.projectAssignments
+        );
         if (callback) callback(projectId);
       } else {
         showError(
@@ -94,9 +109,10 @@ function refreshTasksData(projectId, callback) {
         );
       }
     })
-    .catch((error) =>
-      showError('Network error: ' + error.message, 'subtasks-section')
-    );
+    .catch((error) => {
+      console.error('refreshTasksData - Fetch error:', error);
+      showError('Network error: ' + error.message, 'subtasks-section');
+    });
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -119,7 +135,7 @@ function showSuccess(message, containerId = 'profile-update-form') {
     setTimeout(() => {
       const successDiv = container.querySelector('.alert-success');
       if (successDiv) successDiv.remove();
-    }, 5000);
+    }, 3000);
   }
 }
 
@@ -692,7 +708,6 @@ function showAssignEmployees() {
   });
 
   // Handle form submission
-  // Handle form submission in showAssignEmployees()
   form.addEventListener('submit', function (event) {
     event.preventDefault();
 
@@ -743,37 +758,40 @@ function showAssignedEmployeesSection() {
     return;
   }
 
-  // Store the current selected value (if any) to maintain state
-  const selectedProjectId = projectSelect.value || '';
+  // Ensure data is loaded before proceeding
+  refreshData(() => {
+    // Store the current selected value (if any) to maintain state
+    const selectedProjectId = projectSelect.value || '';
 
-  // Populate project dropdown
-  projectSelect.innerHTML = '<option value="">Select a project</option>';
-  if (window.projects && window.projects.length > 0) {
-    window.projects.forEach((project) => {
-      const option = document.createElement('option');
-      option.value = project.project_id;
-      option.textContent = project.project_name;
-      if (project.project_id === selectedProjectId) {
-        option.selected = true;
-      }
-      projectSelect.appendChild(option);
+    // Populate project dropdown
+    projectSelect.innerHTML = '<option value="">Select a project</option>';
+    if (window.projects && window.projects.length > 0) {
+      window.projects.forEach((project) => {
+        const option = document.createElement('option');
+        option.value = project.project_id;
+        option.textContent = project.project_name;
+        if (project.project_id === selectedProjectId) {
+          option.selected = true;
+        }
+        projectSelect.appendChild(option);
+      });
+    }
+
+    // Remove any existing change event listeners to prevent duplicates
+    const newProjectSelect = projectSelect.cloneNode(true);
+    projectSelect.parentNode.replaceChild(newProjectSelect, projectSelect);
+
+    // Update reference to the new projectSelect
+    const updatedProjectSelect = document.getElementById('project_id_view');
+
+    // Add a single change event listener
+    updatedProjectSelect.addEventListener('change', () => {
+      renderAssignmentsTable(updatedProjectSelect.value);
     });
-  }
 
-  // Remove any existing change event listeners to prevent duplicates
-  const newProjectSelect = projectSelect.cloneNode(true);
-  projectSelect.parentNode.replaceChild(newProjectSelect, projectSelect);
-
-  // Update reference to the new projectSelect
-  const updatedProjectSelect = document.getElementById('project_id_view');
-
-  // Add a single change event listener
-  updatedProjectSelect.addEventListener('change', () => {
-    renderAssignmentsTable(updatedProjectSelect.value);
+    // Initial table render with the maintained selected project ID
+    renderAssignmentsTable(selectedProjectId);
   });
-
-  // Initial table render with the maintained selected project ID
-  renderAssignmentsTable(selectedProjectId);
 }
 
 // Edit Assignment
@@ -928,7 +946,7 @@ function fetchUpdatedAssignments(successMessage = '') {
         const projectSelect = document.getElementById('project_id_view');
         const selectedProjectId = projectSelect ? projectSelect.value : '';
         renderAssignmentsTable(selectedProjectId);
-        if (successMessage) {
+        if (!!successMessage) {
           showSuccess(successMessage, 'project-assignments-section');
         }
       } else {
@@ -959,14 +977,40 @@ function renderAssignmentsTable(selectedProjectId) {
   if (!assignmentsTable) return;
 
   assignmentsTable.innerHTML = '';
+
+  // Ensure projectAssignments is defined, fallback to empty array if undefined
   let filteredAssignments = window.projectAssignments || [];
+
+  // Log for debugging
+  console.log(
+    'renderAssignmentsTable - selectedProjectId:',
+    selectedProjectId,
+    'Type:',
+    typeof selectedProjectId
+  );
+  console.log(
+    'renderAssignmentsTable - projectAssignments:',
+    filteredAssignments
+  );
+
+  // If no project is selected, show all assignments
   if (selectedProjectId) {
-    filteredAssignments = filteredAssignments.filter(
-      (assignment) => assignment.project_id == selectedProjectId
-    );
+    filteredAssignments = filteredAssignments.filter((assignment) => {
+      const projectIdMatch =
+        String(assignment.project_id) === String(selectedProjectId);
+      console.log(
+        `Comparing assignment.project_id (${
+          assignment.project_id
+        }, type: ${typeof assignment.project_id}) ` +
+          `with selectedProjectId (${selectedProjectId}, type: ${typeof selectedProjectId}) ` +
+          `Result: ${projectIdMatch}`
+      );
+      return projectIdMatch;
+    });
   }
 
-  if (filteredAssignments.length === 0) {
+  // Check if filteredAssignments is empty or undefined
+  if (!filteredAssignments || filteredAssignments.length === 0) {
     assignmentsTable.innerHTML = `<tr><td colspan="4">No assignments found for this project.</td></tr>`;
   } else {
     filteredAssignments.forEach((assignment) => {
@@ -1449,12 +1493,82 @@ function showDepartment() {
   mainContent.innerHTML = html;
 }
 
+// Function to populate employee dropdown (filters employees by project assignments)
+function updateEmployeeDropdown(employeeSelect, projectId = '') {
+  employeeSelect.innerHTML = '<option value="">Unassigned</option>';
+
+  console.log(
+    'updateEmployeeDropdown - projectId:',
+    projectId,
+    'Type:',
+    typeof projectId
+  );
+  console.log(
+    'updateEmployeeDropdown - projectAssignments:',
+    window.projectAssignments
+  );
+  console.log('updateEmployeeDropdown - employees:', window.employees);
+
+  const managerId = sessionStorage.getItem('employee_id');
+  let availableEmployees;
+
+  if (!projectId || projectId <= 0) {
+    // If projectId is invalid, show all employees under the manager
+    availableEmployees = (window.employees || []).filter(
+      (emp) => emp.manager_id == managerId
+    );
+    console.log(
+      'updateEmployeeDropdown - availableEmployees (no project):',
+      availableEmployees
+    );
+  } else {
+    // Filter employees assigned to the selected project
+    const assignedEmployeeIds = (window.projectAssignments || [])
+      .filter(
+        (assignment) => String(assignment.project_id) === String(projectId)
+      )
+      .map((assignment) => assignment.employee_id);
+
+    console.log(
+      'updateEmployeeDropdown - assignedEmployeeIds:',
+      assignedEmployeeIds
+    );
+
+    availableEmployees = (window.employees || []).filter((emp) =>
+      assignedEmployeeIds.includes(emp.employee_id)
+    );
+
+    // If no employees are assigned to the project, fall back to showing all employees under the manager
+    if (availableEmployees.length === 0) {
+      availableEmployees = (window.employees || []).filter(
+        (emp) => emp.manager_id == managerId
+      );
+      console.log(
+        'updateEmployeeDropdown - No employees assigned to project, falling back to all employees under manager:',
+        availableEmployees
+      );
+    } else {
+      console.log(
+        'updateEmployeeDropdown - availableEmployees (with project):',
+        availableEmployees
+      );
+    }
+  }
+
+  availableEmployees.forEach((emp) => {
+    employeeSelect.innerHTML += `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`;
+  });
+}
+
 // Show subtask section and initialize form
 function showSubtasks() {
   showSection('subtasks-section');
   resetSubtaskForm();
   populateSubtaskForm();
-  renderTasksTable();
+  // Delay rendering to ensure data is fetched
+  setTimeout(() => {
+    renderTasksTable();
+  }, 500);
 }
 
 // Reset subtask form
@@ -1483,68 +1597,17 @@ function populateSubtaskForm() {
     filterSelect.insertAdjacentHTML('beforeend', option);
   });
 
-  // Function to populate employees based on selected project
-  function updateEmployeeDropdown(selectedProjectId = '') {
-    employeeSelect.innerHTML = '<option value="">Unassigned</option>';
-
-    if (!selectedProjectId) {
-      employeeSelect.disabled = true;
-      return;
-    }
-
-    // Get employees assigned to the selected project
-    const assignedEmployeeIds = (window.projectAssignments || [])
-      .filter((assignment) => assignment.project_id == selectedProjectId)
-      .map((assignment) => assignment.employee_id);
-
-    // Get details of assigned employees from window.employees
-    const assignedEmployees = (window.employees || []).filter((emp) =>
-      assignedEmployeeIds.includes(emp.employee_id)
-    );
-
-    // Get manager's employee ID
-    const managerId = sessionStorage.getItem('employee_id');
-
-    // Check if the manager is assigned to the project
-    let managerDetails = null;
-    if (assignedEmployeeIds.includes(managerId)) {
-      managerDetails = (window.employees || []).find(
-        (emp) => emp.employee_id == managerId
-      );
-    }
-
-    // Combine assigned employees and manager (if applicable)
-    const employeesToShow = managerDetails
-      ? [...assignedEmployees, managerDetails]
-      : assignedEmployees;
-
-    // Remove duplicates (in case manager is already in assignedEmployees)
-    const uniqueEmployees = Array.from(
-      new Map(employeesToShow.map((emp) => [emp.employee_id, emp])).values()
-    );
-
-    if (uniqueEmployees.length === 0) {
-      employeeSelect.innerHTML +=
-        '<option value="">No employees assigned to this project</option>';
-      employeeSelect.disabled = true;
-    } else {
-      uniqueEmployees.forEach((emp) => {
-        const displayName =
-          emp.employee_id == managerId
-            ? `${emp.first_name} ${emp.last_name} (Manager)`
-            : `${emp.first_name} ${emp.last_name}`;
-        employeeSelect.innerHTML += `<option value="${emp.employee_id}">${displayName}</option>`;
-      });
-      employeeSelect.disabled = false;
-    }
-  }
-
   // Initial employee dropdown population (no project selected yet)
-  updateEmployeeDropdown();
+  updateEmployeeDropdown(employeeSelect);
 
   // Update employee dropdown when project changes
   projectSelect.addEventListener('change', () => {
-    updateEmployeeDropdown(projectSelect.value);
+    updateEmployeeDropdown(employeeSelect, projectSelect.value);
+  });
+
+  // Update tasks table when filter changes
+  filterSelect.addEventListener('change', () => {
+    renderTasksTable();
   });
 }
 
@@ -1594,7 +1657,7 @@ function saveTask() {
   const taskId = document.getElementById('task_id').value;
   const taskData = {
     action: taskId ? 'update_task' : 'create_task',
-    task_id: taskId,
+    task_id: taskId || '', // Ensure task_id is an empty string if not present
     project_id: document.getElementById('project_id_subtask').value,
     task_description: document.getElementById('task_description').value.trim(),
     employee_id: document.getElementById('employee_id_subtask').value || null,
@@ -1613,37 +1676,66 @@ function saveTask() {
     return;
   }
 
-  console.log('Saving task with data:', taskData); // Debugging log
+  // Validate due_date format (YYYY-MM-DD)
+  const dueDateRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!dueDateRegex.test(taskData.due_date)) {
+    showFormMessage('Due date must be in YYYY-MM-DD format.', true);
+    return;
+  }
 
+  // Log task data for debugging
+  console.log('saveTask - Task data being sent:', taskData);
+  console.log('saveTask - Current tasks in window.tasks:', window.tasks);
+
+  // Send the request to the server
   fetch('../pages/manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams(taskData),
   })
     .then((response) => {
-      console.log('Fetch response status:', response.status); // Debugging log
+      console.log('saveTask - Fetch response status:', response.status);
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       return response.json();
     })
     .then((data) => {
-      console.log('Server response:', data); // Debugging log
+      console.log('saveTask - Server response:', data);
       if (data.success) {
-        refreshTasksData(null, () => {
-          showFormMessage(
-            `Task ${taskId ? 'updated' : 'created'} successfully!`
-          );
-          resetSubtaskForm();
-          populateSubtaskForm();
-          renderTasksTable();
-        });
+        // Delay the refresh to avoid race conditions
+        setTimeout(() => {
+          refreshTasksData(null, () => {
+            showFormMessage(
+              taskId
+                ? 'Task updated successfully!'
+                : 'Task created successfully!'
+            );
+            resetSubtaskForm();
+            populateSubtaskForm();
+            renderTasksTable();
+          });
+        }, 500);
       } else {
-        showFormMessage(data.error || 'Failed to save task.', true);
+        // Provide more specific error messages based on server response
+        const errorMessage = data.error || 'Failed to save task.';
+        if (errorMessage.includes('Task not found')) {
+          showFormMessage(
+            'Task not found on server. It may have been deleted.',
+            true
+          );
+        } else if (errorMessage.includes('Invalid project ID')) {
+          showFormMessage(
+            'Invalid project selected. Please refresh and try again.',
+            true
+          );
+        } else {
+          showFormMessage(errorMessage, true);
+        }
       }
     })
     .catch((error) => {
-      console.error('Fetch error:', error); // Debugging log
+      console.error('saveTask - Fetch error:', error);
       showFormMessage('Error saving task: ' + error.message, true);
     });
 }
@@ -1656,14 +1748,49 @@ function editSubtask(taskId) {
     return;
   }
 
+  const employeeSelect = document.getElementById('employee_id_subtask');
+  const projectSelect = document.getElementById('project_id_subtask');
+
+  console.log('editSubtask - Task data:', task);
+  console.log('editSubtask - Project ID:', task.project_id);
+  console.log('editSubtask - Employee ID:', task.employee_id);
+
+  // Validate project_id
+  const project = window.projects.find((p) => p.project_id == task.project_id);
+  if (!project) {
+    showFormMessage(
+      'Invalid project ID for this task. Please refresh the page.',
+      true
+    );
+    return;
+  }
+
   document.getElementById('task_id').value = task.task_id;
-  document.getElementById('project_id_subtask').value = task.project_id;
+  projectSelect.value = task.project_id;
   document.getElementById('task_description').value = task.task_description;
-  document.getElementById('employee_id_subtask').value = task.employee_id || '';
   document.getElementById('due_date').value = task.due_date;
   document.getElementById('task_status').value = task.status;
   document.getElementById('delete-task-btn').style.display = 'inline-block';
   document.getElementById('filter_project').value = task.project_id;
+
+  // Refresh project assignments data to ensure employee dropdown is populated correctly
+  refreshTasksData(task.project_id, () => {
+    // Ensure the employee dropdown is populated
+    updateEmployeeDropdown(employeeSelect, task.project_id);
+
+    // Set the employee dropdown value after ensuring options are populated
+    setTimeout(() => {
+      const validEmployee = window.employees.find(
+        (emp) => emp.employee_id == task.employee_id
+      );
+      employeeSelect.value = validEmployee ? task.employee_id : '';
+      console.log(
+        'editSubtask - Employee dropdown set to:',
+        employeeSelect.value
+      );
+    }, 500);
+  });
+
   renderTasksTable();
 }
 
@@ -1688,12 +1815,15 @@ function confirmDeleteSubtask(taskId) {
     .then((data) => {
       console.log('Delete server response:', data); // Debugging log
       if (data.success) {
-        refreshTasksData(null, () => {
-          showFormMessage('Task deleted successfully!');
-          resetSubtaskForm();
-          populateSubtaskForm();
-          renderTasksTable();
-        });
+        // Delay the refresh to avoid race conditions
+        setTimeout(() => {
+          refreshTasksData(null, () => {
+            showFormMessage('Task deleted successfully!');
+            resetSubtaskForm();
+            populateSubtaskForm();
+            renderTasksTable();
+          });
+        }, 500);
       } else {
         showFormMessage(data.error || 'Failed to delete task.', true);
       }
@@ -1709,7 +1839,7 @@ function showFormMessage(message, isError = false) {
   const msgDiv = document.getElementById('form-message');
   msgDiv.textContent = message;
   msgDiv.style.color = isError ? '#dc3545' : '#28a745';
-  setTimeout(() => (msgDiv.textContent = ''), 5000);
+  setTimeout(() => (msgDiv.textContent = ''), 3000);
 }
 
 // Show welcome message (default view)
