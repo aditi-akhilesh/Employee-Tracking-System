@@ -743,21 +743,37 @@ function showAssignedEmployeesSection() {
     return;
   }
 
+  // Store the current selected value (if any) to maintain state
+  const selectedProjectId = projectSelect.value || '';
+
   // Populate project dropdown
   projectSelect.innerHTML = '<option value="">Select a project</option>';
   if (window.projects && window.projects.length > 0) {
     window.projects.forEach((project) => {
-      projectSelect.innerHTML += `<option value="${project.project_id}">${project.project_name}</option>`;
+      const option = document.createElement('option');
+      option.value = project.project_id;
+      option.textContent = project.project_name;
+      if (project.project_id === selectedProjectId) {
+        option.selected = true;
+      }
+      projectSelect.appendChild(option);
     });
   }
 
-  // Initial table render
-  renderAssignmentsTable();
+  // Remove any existing change event listeners to prevent duplicates
+  const newProjectSelect = projectSelect.cloneNode(true);
+  projectSelect.parentNode.replaceChild(newProjectSelect, projectSelect);
 
-  // Update table when project changes
-  projectSelect.addEventListener('change', () =>
-    renderAssignmentsTable(projectSelect.value)
-  );
+  // Update reference to the new projectSelect
+  const updatedProjectSelect = document.getElementById('project_id_view');
+
+  // Add a single change event listener
+  updatedProjectSelect.addEventListener('change', () => {
+    renderAssignmentsTable(updatedProjectSelect.value);
+  });
+
+  // Initial table render with the maintained selected project ID
+  renderAssignmentsTable(selectedProjectId);
 }
 
 // Edit Assignment
@@ -840,8 +856,8 @@ function deleteAssignment(assignmentId) {
           'project-assignments-section'
         );
         refreshData(() => {
-          const projectSelect = document.getElementById('project_id_view');
-          renderAssignmentsTable(projectSelect.value);
+          // Reinitialize the entire section to ensure dropdown and table are in sync
+          showAssignedEmployeesSection();
           // Refresh the employee dropdown in the assign form
           const assignProjectSelect = document.getElementById('project_id');
           if (assignProjectSelect) {
@@ -936,52 +952,6 @@ function loadScript(url, callback) {
   script.onload = () => callback();
   script.onerror = () => callback(new Error(`Failed to load script: ${url}`));
   document.head.appendChild(script);
-}
-
-function loadAssignments() {
-  const projectSelect = document.getElementById('project_id_view');
-  if (!projectSelect) return;
-  renderAssignmentsTable(projectSelect.value);
-  const assignmentsTable = document.getElementById('assignments-table');
-  if (!assignmentsTable || !projectSelect) {
-    console.error('Assignments table or project select not found!');
-    return;
-  }
-
-  const renderTable = (selectedProjectId) => {
-    assignmentsTable.innerHTML = '';
-    let filteredAssignments = projectAssignments;
-    if (selectedProjectId) {
-      filteredAssignments = projectAssignments.filter(
-        (assignment) => assignment.project_id == selectedProjectId
-      );
-    }
-
-    if (filteredAssignments.length === 0) {
-      assignmentsTable.innerHTML = `<tr><td colspan="4">No assignments found for this project.</td></tr>`;
-      return;
-    }
-
-    filteredAssignments.forEach((assignment) => {
-      const row = document.createElement('tr');
-      row.innerHTML = `
-        <td>${assignment.project_name}</td>
-        <td>${assignment.first_name} ${assignment.last_name}</td>
-        <td>${assignment.role_in_project || 'N/A'}</td>
-        <td>
-          <button onclick="editAssignment(${
-            assignment.assignment_id
-          })">Edit</button>
-          <button onclick="deleteAssignment(${
-            assignment.assignment_id
-          })">Delete</button>
-        </td>
-      `;
-      assignmentsTable.appendChild(row);
-    });
-  };
-
-  renderTable(projectSelect.value);
 }
 
 function renderAssignmentsTable(selectedProjectId) {
