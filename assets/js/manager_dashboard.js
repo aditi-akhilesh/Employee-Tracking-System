@@ -1513,13 +1513,68 @@ function populateSubtaskForm() {
     filterSelect.insertAdjacentHTML('beforeend', option);
   });
 
-  // Populate employees
-  employeeSelect.innerHTML = '<option value="">Unassigned</option>';
-  window.employees.forEach((emp) => {
-    employeeSelect.insertAdjacentHTML(
-      'beforeend',
-      `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`
+  // Function to populate employees based on selected project
+  function updateEmployeeDropdown(selectedProjectId = '') {
+    employeeSelect.innerHTML = '<option value="">Unassigned</option>';
+
+    if (!selectedProjectId) {
+      employeeSelect.disabled = true;
+      return;
+    }
+
+    // Get employees assigned to the selected project
+    const assignedEmployeeIds = (window.projectAssignments || [])
+      .filter((assignment) => assignment.project_id == selectedProjectId)
+      .map((assignment) => assignment.employee_id);
+
+    // Get details of assigned employees from window.employees
+    const assignedEmployees = (window.employees || []).filter((emp) =>
+      assignedEmployeeIds.includes(emp.employee_id)
     );
+
+    // Get manager's employee ID
+    const managerId = sessionStorage.getItem('employee_id');
+
+    // Check if the manager is assigned to the project
+    let managerDetails = null;
+    if (assignedEmployeeIds.includes(managerId)) {
+      managerDetails = (window.employees || []).find(
+        (emp) => emp.employee_id == managerId
+      );
+    }
+
+    // Combine assigned employees and manager (if applicable)
+    const employeesToShow = managerDetails
+      ? [...assignedEmployees, managerDetails]
+      : assignedEmployees;
+
+    // Remove duplicates (in case manager is already in assignedEmployees)
+    const uniqueEmployees = Array.from(
+      new Map(employeesToShow.map((emp) => [emp.employee_id, emp])).values()
+    );
+
+    if (uniqueEmployees.length === 0) {
+      employeeSelect.innerHTML +=
+        '<option value="">No employees assigned to this project</option>';
+      employeeSelect.disabled = true;
+    } else {
+      uniqueEmployees.forEach((emp) => {
+        const displayName =
+          emp.employee_id == managerId
+            ? `${emp.first_name} ${emp.last_name} (Manager)`
+            : `${emp.first_name} ${emp.last_name}`;
+        employeeSelect.innerHTML += `<option value="${emp.employee_id}">${displayName}</option>`;
+      });
+      employeeSelect.disabled = false;
+    }
+  }
+
+  // Initial employee dropdown population (no project selected yet)
+  updateEmployeeDropdown();
+
+  // Update employee dropdown when project changes
+  projectSelect.addEventListener('change', () => {
+    updateEmployeeDropdown(projectSelect.value);
   });
 }
 
