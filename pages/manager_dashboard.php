@@ -560,8 +560,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
                 </div>
                 <div class="form-group button-group" style="grid-column: span 2;">
                     <button type="button" id="save-task-btn" onclick="saveTask()" style="margin: 10px; background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Save Task</button>
-                    <button type="button" id="delete-task-btn" onclick="deleteTask()" style="display: none; margin: 10px; background-color: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Delete Task</button>
-                    <button type="button" onclick="resetSubtaskForm()" style="margin: 10px; background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Clear</button>
+                    <button type="button" id="delete-task-btn" onclick="confirmDeleteSubtask(document.getElementById('task_id').value)" style="display: none; margin: 10px; background-color: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Delete Task</button>                    <button type="button" onclick="resetSubtaskForm()" style="margin: 10px; background-color: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Clear</button>
                     <button type="button" onclick="showWelcomeMessage(event)" style="margin: 10px; background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Back</button>
                 </div>
             </form>

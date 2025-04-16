@@ -1588,13 +1588,22 @@ function saveTask() {
     return;
   }
 
+  console.log('Saving task with data:', taskData); // Debugging log
+
   fetch('../pages/manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams(taskData),
   })
-    .then((response) => response.json())
+    .then((response) => {
+      console.log('Fetch response status:', response.status); // Debugging log
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
     .then((data) => {
+      console.log('Server response:', data); // Debugging log
       if (data.success) {
         refreshTasksData(null, () => {
           showFormMessage(
@@ -1605,11 +1614,12 @@ function saveTask() {
           renderTasksTable();
         });
       } else {
-        showError(data.error || 'Failed to save task.');
+        showFormMessage(data.error || 'Failed to save task.', true);
       }
     })
     .catch((error) => {
-      showError('Error saving task: ' + error.message);
+      console.error('Fetch error:', error); // Debugging log
+      showFormMessage('Error saving task: ' + error.message, true);
     });
 }
 
@@ -1636,13 +1646,22 @@ function editSubtask(taskId) {
 function confirmDeleteSubtask(taskId) {
   if (!confirm('Are you sure you want to delete this task?')) return;
 
+  console.log('Deleting task with ID:', taskId); // Debugging log
+
   fetch('../pages/manager_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({ action: 'delete_task', task_id: taskId }),
   })
-    .then((response) => response.json())
+    .then((response) => {
+      console.log('Delete response status:', response.status); // Debugging log
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
     .then((data) => {
+      console.log('Delete server response:', data); // Debugging log
       if (data.success) {
         refreshTasksData(null, () => {
           showFormMessage('Task deleted successfully!');
@@ -1651,11 +1670,12 @@ function confirmDeleteSubtask(taskId) {
           renderTasksTable();
         });
       } else {
-        showError(data.error || 'Failed to delete task.');
+        showFormMessage(data.error || 'Failed to delete task.', true);
       }
     })
     .catch((error) => {
-      showError('Error deleting task: ' + error.message);
+      console.error('Delete fetch error:', error); // Debugging log
+      showFormMessage('Error deleting task: ' + error.message, true);
     });
 }
 

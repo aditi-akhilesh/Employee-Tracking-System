@@ -63,9 +63,6 @@ try {
         if (!in_array($status, ['To Do', 'In Progress', 'Done'])) {
             throw new Exception('Invalid status');
         }
-        if ($employee_id && !is_numeric($employee_id)) {
-            throw new Exception('Invalid employee ID');
-        }
 
         $pdo->beginTransaction();
         try {
@@ -86,7 +83,7 @@ try {
                 $stmt = $pdo->prepare("DELETE FROM Assignment_Task WHERE task_id = ?");
                 $stmt->execute([$task_id]);
 
-                if ($employee_id) {
+                if ($employee_id && is_numeric($employee_id)) {
                     $stmt = $pdo->prepare("
                         INSERT INTO Assignment_Task (task_id, employee_id, due_date)
                         VALUES (?, ?, ?)
@@ -103,7 +100,7 @@ try {
                 $task_id = $pdo->lastInsertId();
 
                 // Insert into Assignment_Task if employee_id provided
-                if ($employee_id) {
+                if ($employee_id && is_numeric($employee_id)) {
                     $stmt = $pdo->prepare("
                         INSERT INTO Assignment_Task (task_id, employee_id, due_date)
                         VALUES (?, ?, ?)
@@ -114,12 +111,9 @@ try {
 
             $pdo->commit();
             $response['success'] = true;
-        } catch (PDOException $e) {
+        } catch (Exception $e) {
             $pdo->rollBack();
-            if ($e->getCode() == '23000' && strpos($e->getMessage(), 'Duplicate entry') !== false) {
-                throw new Exception('Task description already exists. Please use a unique description.');
-            }
-            throw new Exception('Database error: ' . $e->getMessage());
+            throw new Exception('Failed to save task: ' . $e->getMessage());
         }
     }
 } catch (Exception $e) {
