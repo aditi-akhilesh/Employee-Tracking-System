@@ -1,21 +1,13 @@
 <div class="sidebar" style="background: #003087; width: 250px; padding: 20px; color: #fff; box-shadow: 2px 0 5px rgba(0,0,0,0.1);">
     <ul style="list-style: none; padding: 0;">
-        <li><a href="#" onclick="toggleDropdown(event, 'manage-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-users" style="margin-right: 10px;"></i> Manage Users</a>
-            <ul id="manage-dropdown" class="dropdown" style="display: none; padding-left: 20px;">
-                <li><a href="#" onclick="showProfileForm()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Employees assigned to me</a></li>
-            </ul>
-        </li>
+        <li><a href="#" onclick="showProfileForm()" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-users" style="margin-right: 10px;"></i> Employees Assigned to Me</a></li>
         <li><a href="#" onclick="toggleDropdown(event, 'attendance-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-clock" style="margin-right: 10px;"></i> Attendance and Leave</a>
             <ul id="attendance-dropdown" class="dropdown" style="display: none; padding-left: 20px;">
                 <li><a href="#" onclick="showAttendanceRecords()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">View attendance records</a></li>
                 <li><a href="#" onclick="showLeaveRequests()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Approve/reject leave requests</a></li>
             </ul>
         </li>
-        <li><a href="#" onclick="toggleDropdown(event, 'department-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-building" style="margin-right: 10px;"></i> Department Management</a>
-            <ul id="department-dropdown" class="dropdown" style="display: none; padding-left: 20px;">
-                <li><a href="#" onclick="showDepartment()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Track department information</a></li>
-            </ul>
-        </li>
+        <li><a href="#" onclick="showDepartment()" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-building" style="margin-right: 10px;"></i> Track Department Information</a></li>
         <li><a href="#" onclick="toggleDropdown(event, 'project-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-tasks" style="margin-right: 10px;"></i> Projects and Tasks</a>
             <ul id="project-dropdown" class="dropdown" style="display: none; padding-left: 20px;">
                 <li><a href="#" onclick="showProjects()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">View Project Status</a></li>
@@ -31,11 +23,7 @@
                 <li><a href="#" onclick="updateExitInterview()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">update exit interview</a></li>
             </ul>
         </li>
-        <li><a href="#" onclick="toggleDropdown(event, 'reports-dropdown')" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-chart-bar" style="margin-right: 10px;"></i> Reports & Analytics</a>
-            <ul id="reports-dropdown" class="dropdown" style="display: none; padding-left: 20px;">
-                <li><a href="#" onclick="showReportsAnalytics()" style="padding: 10px; color: #ddd; text-decoration: none; display: block; transition: color 0.3s;">Generate reports of an employee</a></li>
-            </ul>
-        </li>
+        <li><a href="#" onclick="showReportsAnalytics()" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-chart-bar" style="margin-right: 10px;"></i> Generate Employee Reports</a></li>
     </ul>
 </div>
 <script>

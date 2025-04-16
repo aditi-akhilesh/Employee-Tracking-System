@@ -14,11 +14,7 @@
                 <li><a href="#" onclick="showTrackLeaveRequests()">Track leave requests</a></li>
             </ul>
         </li>
-        <li><a href="#" onclick="toggleDropdown(event, 'payroll-dropdown')"><i class="fas fa-money-bill"></i> Payroll and Salary</a>
-            <ul id="payroll-dropdown" class="dropdown">
-                <li><a href="#" onclick="showSalaryDetails()">View salary details</a></li>
-           </ul>
-        </li>
+        <li><a href="#" onclick="showSalaryDetails()" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-chart-bar" style="margin-right: 10px;"></i> View salary details</a></li>
         <li>
             <a href="#" onclick="showProjectsTasks()"><i class="fas fa-tasks"></i> Projects and Tasks</a>
         </li>

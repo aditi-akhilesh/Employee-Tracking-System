@@ -14,11 +14,7 @@
                 <li><a href="#" onclick="showLeaveRequests()">Approve or reject leave requests</a></li>
             </ul>
         </li>
-        <li><a href="#" onclick="toggleDropdown(event, 'department-dropdown')"><i class="fas fa-building"></i> Department Management</a>
-            <ul id="department-dropdown" class="dropdown">
-                <li><a href="#" onclick="showDepartmentInfo()">Track Department Information</a></li>
-            </ul>
-        </li>
+        <li><a href="#" onclick="showDepartmentInfo()" style="display: flex; align-items: center; padding: 15px; color: #fff; text-decoration: none; border-radius: 6px; transition: background 0.3s;"><i class="fas fa-chart-bar" style="margin-right: 10px;"></i> Track Department Information</a></li>
         <li><a href="#" onclick="toggleDropdown(event, 'project-dropdown')"><i class="fas fa-tasks"></i> Projects and Tasks</a>
             <ul id="project-dropdown" class="dropdown">
                 <li><a href="#" onclick="showAddProjectForm()">Add New Project to Department</a></li>
