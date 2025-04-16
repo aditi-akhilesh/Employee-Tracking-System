@@ -712,6 +712,9 @@ $leave_balances = fetchData($con, "
   <div id="exit-interview-details-section" style="display: none;" class="card">
     <!-- Content will be populated dynamically by fetchExitInterviewDetails -->
   </div>
+<div id="update-address-section" style="display: none;" class="card">
+    <!-- Content will be populated dynamically by updateaddress() -->
+</div>
         <!-- Projects and Tasks Section -->
         <div id="projects-tasks-section" style="display: none;" class="card">
             <h2>Projects and Tasks</h2>
@@ -1030,6 +1033,7 @@ $leave_balances = fetchData($con, "
 <script>     
 const userName = <?php echo json_encode(htmlspecialchars($_SESSION['user_name'])); ?>;
 const employeeDepartmentId = <?php echo json_encode($department_id); ?>;
+const employeeId = <?php echo json_encode($employee_id); ?>;
 console.log('userName:', userName);
 console.log('employeeDepartmentId:', employeeDepartmentId);
 document.addEventListener('click', function(event) {

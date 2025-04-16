@@ -3,6 +3,7 @@
         <li><a href="#" onclick="toggleDropdown(event, 'profile-dropdown')"><i class="fas fa-user"></i> Profile Management</a>
             <ul id="profile-dropdown" class="dropdown">
                 <li><a href="#" onclick="showProfileForm()">View and update personal details</a></li>
+                <li><a href="#" onclick="updateaddress()">Update my address</a></li>
                 <li><a href="#" onclick="showUpdatePasswordForm()">Change password</a></li>
             </ul>
         </li>

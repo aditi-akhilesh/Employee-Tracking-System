@@ -17,7 +17,8 @@ function showSection(sectionId) {
     'exit-interview-details-section',  
     'salary-details-section',
     'enroll-training-section',
-    'update-training-status-section'
+    'update-training-status-section',
+    'update-address-section'
 
   ];
   sections.forEach(id => {
@@ -526,6 +527,7 @@ document.addEventListener('DOMContentLoaded', function () {
   window.showSalaryDetails = showSalaryDetails;
   window.showEnrollTraining = showEnrollTraining;
   window.showUpdateTrainingStatus = showUpdateTrainingStatus;
+window.updateaddress = updateaddress;
   console.log('Global functions assigned to window object');
 
 
@@ -1953,4 +1955,194 @@ function updateTraining(employeeTrainingId) {
         console.error('Error updating training:', error);
         alert('An error occurred while updating training.');
     });
+}
+
+function updateaddress() {
+  let employeeAddress = null;
+
+  if (!employeeId) {
+    console.error('Employee ID is not available');
+    alert('Error: Employee ID is not available. Please log in again.');
+    return;
+  }
+
+  showSection('update-address-section');
+
+  const addressSection = document.getElementById('update-address-section');
+  if (!addressSection) {
+    console.error('Update address section not found');
+    return;
+  }
+
+  addressSection.innerHTML = '<p>Loading address form...</p>';
+
+  // Fetch existing address for the logged-in employee
+  fetch('../pages/features/fetch_employee_address.php?employee_id=' + employeeId, {
+    method: 'GET',
+    headers: { 'Cache-Control': 'no-cache' }
+  })
+  .then(response => {
+    if (!response.ok) throw new Error('Server error: ' + response.status);
+    return response.json();
+  })
+  .then(data => {
+    if (data.success && Array.isArray(data.address) && data.address.length > 0) {
+      employeeAddress = data.address[0];
+      console.log('Employee Address:', employeeAddress); // Debug log
+    }
+    return fetch('../pages/features/fetch_reference_data.php', {
+      method: 'GET',
+      headers: { 'Cache-Control': 'no-cache' }
+    });
+  })
+  .then(response => {
+    if (!response.ok) throw new Error('Server error: ' + response.status);
+    return response.json();
+  })
+  .then(refData => {
+    const { cities, zips, states } = refData;
+
+    addressSection.innerHTML = `
+        <h2>Update My Address</h2>
+        <form id="updateAddressForm" method="POST">
+          <input type="hidden" name="action" value="${employeeAddress ? 'update' : 'insert'}">
+          <input type="hidden" name="employee_id" value="${employeeId}">
+          <div class="form-group">
+            <label for="street_name">Street Name:</label>
+            <input type="text" id="street_name" name="street_name" value="${employeeAddress?.street_name || ''}" required>
+          </div>
+          <div class="form-group">
+            <label for="apt">Apartment/Suite:</label>
+            <input type="text" id="apt" name="apt" value="${employeeAddress?.Apt || ''}">
+          </div>
+          <div class="form-group">
+            <label for="country">Country:</label>
+            <input type="text" id="country" name="country" value="${employeeAddress?.Country || 'USA'}" required>
+          </div>
+          <div class="form-group">
+            <label for="city_id">City:</label>
+            <select id="city_id" name="city_id" required onchange="updateCityStateZipOptions(${employeeId}, this.value, 'city')">
+              <option value="">Select a city or add new</option>
+              ${cities.map(city => `<option value="${city.city_id}" ${employeeAddress?.city_id == city.city_id ? 'selected' : ''}>${city.city_name}</option>`).join('')}
+              <option value="new">Add New City</option>
+            </select>
+            <input type="text" id="new_city" name="new_city" style="display:none;" placeholder="Enter new city name">
+          </div>
+          <div class="form-group">
+            <label for="zip_id">Zip Code:</label>
+            <select id="zip_id" name="zip_id" required onchange="updateCityStateZipOptions(${employeeId}, this.value, 'zip')">
+              <option value="">Select a zip code or add new</option>
+              ${zips.map(zip => `<option value="${zip.zip_id}" ${employeeAddress?.zip_id == zip.zip_id ? 'selected' : ''}>${zip.zip_code}</option>`).join('')}
+              <option value="new">Add New Zip</option>
+            </select>
+            <input type="text" id="new_zip" name="new_zip" style="display:none;" placeholder="Enter new zip code (5 digits)">
+          </div>
+          <div class="form-group">
+            <label for="state_id">State:</label>
+            <select id="state_id" name="state_id" required onchange="updateCityStateZipOptions(${employeeId}, this.value, 'state')">
+              <option value="">Select a state or add new</option>
+              ${states.map(state => `<option value="${state.state_id}" ${employeeAddress?.state_id == state.state_id ? 'selected' : ''}>${state.state_name}</option>`).join('')}
+              <option value="new">Add New State</option>
+            </select>
+            <input type="text" id="new_state" name="new_state" style="display:none;" placeholder="Enter new state name">
+          </div>
+          <div class="form-group button-group">
+            <button type="submit">Save Address</button>
+            <button type="button" onclick="showWelcomeMessage()">Back</button>
+          </div>
+        </form>
+    `;
+
+    const form = document.getElementById('updateAddressForm');
+    if (form) {
+      form.addEventListener('submit', function(event) {
+        event.preventDefault();
+        const formData = new FormData(this);
+        const action = formData.get('action');
+
+        fetch('../pages/features/manage_address.php', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => {
+          if (!response.ok) throw new Error('Server error: ' + response.status);
+          return response.json();
+        })
+        .then(data => {
+          if (data.success) {
+            alert('Address ' + (action === 'update' ? 'updated' : 'saved') + ' successfully!');
+            return fetch('../pages/features/fetch_employee_address.php?employee_id=' + employeeId, {
+              method: 'GET',
+              headers: { 'Cache-Control': 'no-cache' }
+            }).then(res => res.json());
+          } else {
+            throw new Error(data.error || 'Failed to save address.');
+          }
+        })
+        .then(data => {
+          if (data.success && Array.isArray(data.address) && data.address.length > 0) {
+            employeeAddress = data.address[0];
+            updateaddress(); // Re-render with updated data
+          }
+        })
+        .catch(error => {
+          console.error('Error saving address:', error);
+          alert('Error: ' + error.message);
+        });
+      });
+
+      // Initial call to populate zip options
+      updateCityStateZipOptions(employeeId, employeeAddress?.city_id || '', 'zip');
+    }
+  })
+  .catch(error => {
+    console.error('Error fetching data:', error);
+    addressSection.innerHTML = `
+      <div class="card">
+        <h2>Update My Address</h2>
+        <p style="color: #ff0000;">Error loading address form: ${error.message}. Please contact support.</p>
+        <div class="form-group button-group">
+          <button type="button" onclick="showWelcomeMessage()">Back</button>
+        </div>
+      </div>
+    `;
+  });
+}
+function updateCityStateZipOptions(employeeId, value, type) {
+  const select = document.getElementById(`${type}_id`);
+  const newInput = document.getElementById(`new_${type}`);
+
+  if (value === 'new') {
+    newInput.style.display = 'block';
+    select.style.display = 'none'; // Optionally hide the select when adding new
+  } else {
+    newInput.style.display = 'none';
+    select.style.display = 'block';
+    if (type === 'city' && value !== '') {
+      // Fetch and update zip options when a valid city is selected
+      fetch('../pages/features/fetch_reference_data.php?city_id=' + value, {
+        method: 'GET',
+        headers: { 'Cache-Control': 'no-cache' }
+      })
+      .then(response => {
+        if (!response.ok) throw new Error('Server error: ' + response.status);
+        return response.json();
+      })
+      .then(data => {
+        const { zips } = data;
+        const zipSelect = document.getElementById('zip_id');
+        zipSelect.innerHTML = '<option value="">Select a zip code or add new</option>';
+        if (zips && zips.length > 0) {
+          zips.forEach(zip => {
+            zipSelect.innerHTML += `<option value="${zip.zip_id}">${zip.zip_code}</option>`;
+          });
+        }
+        zipSelect.innerHTML += '<option value="new">Add New Zip</option>';
+      })
+      .catch(error => {
+        console.error('Error fetching zip options:', error);
+        alert('Error loading zip codes: ' + error.message);
+      });
+    }
+  }
 }
