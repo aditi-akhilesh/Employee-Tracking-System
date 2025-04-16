@@ -1672,14 +1672,14 @@ function saveTask() {
     !taskData.due_date ||
     !taskData.status
   ) {
-    showFormMessage('Please fill all required fields.', true);
+    showError('Please fill all required fields.', 'subtasks-section');
     return;
   }
 
   // Validate due_date format (YYYY-MM-DD)
   const dueDateRegex = /^\d{4}-\d{2}-\d{2}$/;
   if (!dueDateRegex.test(taskData.due_date)) {
-    showFormMessage('Due date must be in YYYY-MM-DD format.', true);
+    showError('Due date must be in YYYY-MM-DD format.', 'subtasks-section');
     return;
   }
 
@@ -1706,10 +1706,11 @@ function saveTask() {
         // Delay the refresh to avoid race conditions
         setTimeout(() => {
           refreshTasksData(null, () => {
-            showFormMessage(
+            showSuccess(
               taskId
                 ? 'Task updated successfully!'
-                : 'Task created successfully!'
+                : 'Task created successfully!',
+              'subtasks-section'
             );
             resetSubtaskForm();
             populateSubtaskForm();
@@ -1720,23 +1721,23 @@ function saveTask() {
         // Provide more specific error messages based on server response
         const errorMessage = data.error || 'Failed to save task.';
         if (errorMessage.includes('Task not found')) {
-          showFormMessage(
+          showError(
             'Task not found on server. It may have been deleted.',
-            true
+            'subtasks-section'
           );
         } else if (errorMessage.includes('Invalid project ID')) {
-          showFormMessage(
+          showError(
             'Invalid project selected. Please refresh and try again.',
-            true
+            'subtasks-section'
           );
         } else {
-          showFormMessage(errorMessage, true);
+          showError(errorMessage, 'subtasks-section');
         }
       }
     })
     .catch((error) => {
       console.error('saveTask - Fetch error:', error);
-      showFormMessage('Error saving task: ' + error.message, true);
+      showError('Error saving task: ' + error.message, 'subtasks-section');
     });
 }
 
@@ -1744,7 +1745,7 @@ function saveTask() {
 function editSubtask(taskId) {
   const task = window.tasks.find((t) => t.task_id == taskId);
   if (!task) {
-    showFormMessage('Task not found.', true);
+    showError('Task not found.', 'subtasks-section');
     return;
   }
 
@@ -1758,9 +1759,9 @@ function editSubtask(taskId) {
   // Validate project_id
   const project = window.projects.find((p) => p.project_id == task.project_id);
   if (!project) {
-    showFormMessage(
+    showError(
       'Invalid project ID for this task. Please refresh the page.',
-      true
+      'subtasks-section'
     );
     return;
   }
@@ -1818,28 +1819,20 @@ function confirmDeleteSubtask(taskId) {
         // Delay the refresh to avoid race conditions
         setTimeout(() => {
           refreshTasksData(null, () => {
-            showFormMessage('Task deleted successfully!');
+            showSuccess('Task deleted successfully!', 'subtasks-section');
             resetSubtaskForm();
             populateSubtaskForm();
             renderTasksTable();
           });
         }, 500);
       } else {
-        showFormMessage(data.error || 'Failed to delete task.', true);
+        showError(data.error || 'Failed to delete task.', 'subtasks-section');
       }
     })
     .catch((error) => {
       console.error('Delete fetch error:', error); // Debugging log
-      showFormMessage('Error deleting task: ' + error.message, true);
+      showError('Error deleting task: ' + error.message, 'subtasks-section');
     });
-}
-
-// Show form message with color
-function showFormMessage(message, isError = false) {
-  const msgDiv = document.getElementById('form-message');
-  msgDiv.textContent = message;
-  msgDiv.style.color = isError ? '#dc3545' : '#28a745';
-  setTimeout(() => (msgDiv.textContent = ''), 3000);
 }
 
 // Show welcome message (default view)
