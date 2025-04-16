@@ -7,8 +7,8 @@ error_reporting(E_ALL);
 require_once '../../auth/dbconnect.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    $_SESSION['error'] = "Invalid request method.";
-    header("Location: ../hr_dashboard.php"); // Adjusted redirect
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'error' => 'Invalid request method.']);
     exit();
 }
 
@@ -45,7 +45,7 @@ if ($action === 'add') {
     } catch (Exception $e) {
         $_SESSION['error'] = $e->getMessage();
     }
-    header("Location: ../hr_dashboard.php"); // Corrected redirect
+    header("Location: ../hr_dashboard.php");
     exit();
 }
 
@@ -75,7 +75,7 @@ if ($action === 'edit') {
     } catch (Exception $e) {
         $_SESSION['error'] = $e->getMessage();
     }
-    header("Location: ../hr_dashboard.php"); // Corrected redirect
+    header("Location: ../hr_dashboard.php");
     exit();
 }
 
@@ -102,6 +102,7 @@ if ($action === 'delete') {
 }
 
 if ($action === 'assign') {
+    header('Content-Type: application/json');
     $training_id = $_POST['training_id'];
     $employee_id = $_POST['employee_id'];
     $enrollment_date = $_POST['enrollment_date'];
@@ -116,11 +117,10 @@ if ($action === 'assign') {
             VALUES (?, ?, ?, 'Not Started')
         ");
         $stmt->execute([$employee_id, $training_id, $enrollment_date]);
-        $_SESSION['success'] = "Employee assigned to training successfully!";
+        echo json_encode(['success' => true, 'message' => 'Employee assigned to training successfully!']);
     } catch (Exception $e) {
-        $_SESSION['error'] = $e->getMessage();
+        echo json_encode(['success' => false, 'error' => $e->getMessage()]);
     }
-    header("Location: ../hr_dashboard.php"); // Corrected redirect
     exit();
 }
 
