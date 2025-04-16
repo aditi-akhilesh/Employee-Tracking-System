@@ -531,7 +531,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
         </div>
         <!-- Subtasks Section -->
         <div id="subtasks-section" style="display: none;" class="card">
-            <h2 style="font-size: 24px; color: #fff; background-color: #003087; padding: 10px; border-radius: 6px;">Manage Subtasks</h2>
+            <h2 style="font-size: 24px; color: #fff; background-color: #003087; padding: 10px; border-radius: 6px;">Create/Update Subtasks</h2>
             <form id="subtask-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                 <input type="hidden" id="task_id" name="task_id">
                 <div class="form-group">
