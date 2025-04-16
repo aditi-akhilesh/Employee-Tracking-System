@@ -120,7 +120,7 @@ if (isset($_POST['action'])) {
                 JOIN Employees e ON a.employee_id = e.employee_id
                 JOIN Users u ON e.user_id = u.user_id
                 JOIN Department d ON e.department_id = d.department_id
-                WHERE 1=1 and u.role not in ('Super Admin', 'HR')
+                WHERE u.role NOT IN ('Super Admin', 'HR')
             ";
             $params = [];
             if ($employee_id) {
@@ -220,14 +220,13 @@ if (isset($_POST['action'])) {
         .button-group { text-align: right; }
         .button-group button { padding: 10px 20px; margin-left: 10px; }
 
-
-
 	/* Add styles for Font Awesome sort icons */
     	th i.fas {
         margin-left: 5px;
         vertical-align: middle;
         font-size: 0.9em;
         color: #999999;
+    }
     </style>
 </head>
 <body>
@@ -283,7 +282,6 @@ if (isset($_POST['action'])) {
         });
     });
 </script>
-
 
 <script src="../assets/js/dashboard.js"></script>
 </body>
