@@ -403,98 +403,6 @@ function fetchLeaveBalance() {
     });
 }
 
-// Show apply for leave form
-function showApplyLeaveForm() {
-  showSection('apply-leave-section');
-  const form = document.getElementById('apply-leave-form');
-  form.reset(); // Reset the form when showing
-  form.removeEventListener('submit', handleApplyLeaveSubmit);
-  form.addEventListener('submit', handleApplyLeaveSubmit);
-
-  // Fetch the latest leave balance when showing the form
-  fetchLeaveBalance();
-}
-
-function handleApplyLeaveSubmit(event) {
-  event.preventDefault(); // Prevent default form submission
-  const leaveTypeId = document.getElementById('leave_type_id').value;
-  const startDate = document.getElementById('leave_start_date').value;
-  const endDate = document.getElementById('leave_end_date').value;
-
-  fetch('', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      action: 'apply_leave',
-      leave_type_id: leaveTypeId,
-      start_date: startDate,
-      end_date: endDate,
-    }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        alert(data.message);
-        form.reset(); // Reset the form
-        fetchLeaveBalance(); // Refresh leave balance after submission
-        showTrackLeaveRequests(); // Redirect to Track Leave Requests section
-      } else {
-        alert('Error: ' + (data.error || 'Failed to apply for leave'));
-      }
-    })
-    .catch((error) => {
-      console.error('Error:', error);
-      alert('An error occurred while applying for leave.');
-    });
-}
-
-// Show track leave requests
-function showTrackLeaveRequests() {
-  showSection('track-leave-section');
-  fetchLeaveRequests();
-}
-
-// Fetch and display leave requests
-function fetchLeaveRequests() {
-  const leaveFilter = document.getElementById('leave_filter').value;
-  const tableBody = document.getElementById('leave-requests-table');
-
-  fetch('', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      action: 'fetch_leave_requests',
-      leave_filter: leaveFilter,
-    }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      tableBody.innerHTML = ''; // Clear existing rows
-      if (data.success && data.leave_requests.length > 0) {
-        data.leave_requests.forEach((request) => {
-          const row = document.createElement('tr');
-          row.innerHTML = `
-                    <td>${request.leave_name}</td>
-                    <td>${request.leave_start_date}</td>
-                    <td>${request.leave_end_date}</td>
-                    <td><span class="status-badge status-${request.status.toLowerCase()}">${
-            request.status
-          }</span></td>
-                `;
-          tableBody.appendChild(row);
-        });
-      } else {
-        tableBody.innerHTML =
-          '<tr><td colspan="4">No leave requests found.</td></tr>';
-      }
-    })
-    .catch((error) => {
-      console.error('Error:', error);
-      tableBody.innerHTML =
-        '<tr><td colspan="4">Error fetching leave requests.</td></tr>';
-    });
-}
-
 // Show FAQs section
 function showFAQs() {
   showSection('faqs-section');
@@ -2145,4 +2053,300 @@ function updateCityStateZipOptions(employeeId, value, type) {
       });
     }
   }
+}
+
+// Ensure sections are rendered only once
+let sectionsRendered = false;
+
+// Render Leave Sections Dynamically
+function renderLeaveSections() {
+  if (sectionsRendered) return; // Prevent re-rendering
+
+  const container = document.getElementById('content-area'); // Target the correct container
+  if (!container) {
+    console.error('Container #content-area not found.');
+    return;
+  }
+
+  const leaveSections = `
+    <div id="apply-leave-section" class="dashboard-section card" style="display: none;">
+      <h2>Apply for Leave</h2>
+      <form id="apply-leave-form">
+        <div class="form-group">
+          <label for="leave_type_id">Leave Type:</label>
+          <select id="leave_type_id" name="leave_type_id" required>
+            <option value="">Select Leave Type</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="leave_start_date">Start Date:</label>
+          <input type="date" id="leave_start_date" name="leave_start_date" required>
+        </div>
+        <div class="form-group">
+          <label for="leave_end_date">End Date:</label>
+          <input type="date" id="leave_end_date" name="leave_end_date" required>
+        </div>
+        <div class="form-group">
+          <label for="leave_reason">Reason for Leave:</label>
+          <textarea id="leave_reason" name="leave_reason" rows="3" required></textarea>
+        </div>
+        <div class="form-group button-group">
+          <button type="submit">Apply</button>
+          <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
+        </div>
+      </form>
+      <h3>Leave Balance</h3>
+      <table id="leave-balance-table">
+        <thead>
+          <tr>
+            <th>Leave Type</th>
+            <th>Total Days Allocated</th>
+            <th>Days Used</th>
+            <th>Remaining Days</th>
+          </tr>
+        </thead>
+        <tbody id="leave-balance-table-body"></tbody>
+      </table>
+    </div>
+
+    <div id="track-leave-section" class="dashboard-section card" style="display: none;">
+      <h2>Track Leave Requests</h2>
+      <div class="form-group">
+        <label for="leave_filter">Filter by Status:</label>
+        <select id="leave_filter" onchange="fetchLeaveRequests()">
+          <option value="ispending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="rejected">Rejected</option>
+        </select>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Leave Type</th>
+            <th>Start Date</th>
+            <th>End Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="leave-requests-table"></tbody>
+      </table>
+      <div class="form-group button-group">
+        <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
+      </div>
+    </div>
+  `;
+  container.insertAdjacentHTML('beforeend', leaveSections);
+  sectionsRendered = true; // Mark as rendered
+}
+
+// Call this function on page load to render the sections
+document.addEventListener('DOMContentLoaded', () => {
+  renderLeaveSections();
+});
+
+// Show apply for leave form
+function showApplyLeaveForm() {
+  showSection('apply-leave-section');
+  const form = document.getElementById('apply-leave-form');
+  if (form) {
+    form.reset();
+    form.removeEventListener('submit', handleApplyLeaveSubmit);
+    form.addEventListener('submit', handleApplyLeaveSubmit);
+  }
+  fetchLeaveBalance();
+  fetchLeaveTypes();
+}
+
+// Fetch leave types for dropdown
+function fetchLeaveTypes() {
+  fetch('../pages/features/leave_request.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'fetch_leave_types',
+    }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      const leaveTypeSelect = document.getElementById('leave_type_id');
+      leaveTypeSelect.innerHTML = '<option value="">Select Leave Type</option>';
+      if (data.success && data.leave_types) {
+        data.leave_types.forEach((type) => {
+          const option = document.createElement('option');
+          option.value = type.leave_type_id;
+          option.text = type.leave_name;
+          option.dataset.leaveName = type.leave_name;
+          leaveTypeSelect.appendChild(option);
+        });
+        // Fetch leave balance after populating leave types to update remaining days
+        fetchLeaveBalance();
+      } else {
+        alert('Error: ' + (data.error || 'Failed to fetch leave types'));
+      }
+    })
+    .catch((error) => {
+      console.error('Error fetching leave types:', error);
+      alert('Error fetching leave types: ' + error.message);
+    });
+}
+
+function handleApplyLeaveSubmit(event) {
+  event.preventDefault();
+  const form = document.getElementById('apply-leave-form');
+  const leaveTypeId = document.getElementById('leave_type_id').value;
+  const startDate = document.getElementById('leave_start_date').value;
+  const endDate = document.getElementById('leave_end_date').value;
+  const leaveReason = document.getElementById('leave_reason').value;
+
+  // Client-side validation
+  const today = new Date().toISOString().split('T')[0];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  if (!leaveTypeId || !startDate || !endDate || !leaveReason) {
+    alert('All fields are required.');
+    return;
+  }
+  if (startDate < today) {
+    alert('Start date cannot be in the past.');
+    return;
+  }
+  if (start > end) {
+    alert('Start date must be before end date.');
+    return;
+  }
+
+  fetch('../pages/features/leave_request.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'apply_leave',
+      leave_type_id: leaveTypeId,
+      start_date: startDate,
+      end_date: endDate,
+      leave_reason: leaveReason,
+    }),
+  })
+    .then((response) => {
+      // Log the raw response text for debugging
+      return response.text().then((text) => {
+        console.log('Raw response:', text);
+        try {
+          return JSON.parse(text);
+        } catch (e) {
+          throw new Error('Failed to parse JSON: ' + text);
+        }
+      });
+    })
+    .then((data) => {
+      if (data.success) {
+        alert(data.message);
+        form.reset();
+        fetchLeaveBalance();
+        showTrackLeaveRequests();
+      } else {
+        alert('Error: ' + (data.error || 'Failed to apply for leave'));
+      }
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+      alert('An error occurred while applying for leave: ' + error.message);
+    });
+}
+
+// Fetch and display leave balance
+function fetchLeaveBalance() {
+  fetch('../pages/features/leave_request.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'fetch_leave_balance',
+    }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success && data.leave_balances) {
+        const leaveTypeSelect = document.getElementById('leave_type_id');
+        const options = leaveTypeSelect.options;
+
+        // Update dropdown with remaining days for all leave types
+        for (let i = 1; i < options.length; i++) {
+          const leaveTypeId = options[i].value;
+          const leaveName = options[i].dataset.leaveName;
+          const balance = data.leave_balances.find(
+            (b) => b.leave_type_id == leaveTypeId
+          );
+          if (balance) {
+            options[i].text = `${leaveName} (Remaining: ${balance.remaining_days} days)`;
+          }
+        }
+
+        // Update leave balance table
+        const tableBody = document.getElementById('leave-balance-table-body');
+        tableBody.innerHTML = '';
+        data.leave_balances.forEach((balance) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${balance.leave_name}</td>
+            <td>${balance.total_days_allocated}</td>
+            <td>${balance.days_used}</td>
+            <td>${balance.remaining_days}</td>
+          `;
+          tableBody.appendChild(row);
+        });
+      } else {
+        alert('Error: ' + (data.error || 'Failed to fetch leave balance'));
+      }
+    })
+    .catch((error) => {
+      console.error('Error fetching leave balance:', error);
+      alert('Error fetching leave balance: ' + error.message);
+    });
+}
+
+// Show track leave requests
+function showTrackLeaveRequests() {
+  showSection('track-leave-section');
+  fetchLeaveRequests();
+}
+
+// Fetch and display leave requests
+function fetchLeaveRequests() {
+  const leaveFilter = document.getElementById('leave_filter').value;
+  const tableBody = document.getElementById('leave-requests-table');
+
+  tableBody.innerHTML = '<tr><td colspan="4">Loading leave requests...</td></tr>';
+
+  fetch('../pages/features/leave_request.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'fetch_leave_requests',
+      leave_filter: leaveFilter,
+    }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      tableBody.innerHTML = '';
+      if (data.success && data.leave_requests.length > 0) {
+        data.leave_requests.forEach((request) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${request.leave_name}</td>
+            <td>${request.leave_start_date}</td>
+            <td>${request.leave_end_date}</td>
+            <td><span class="status-badge status-${request.status.toLowerCase()}">${request.status}</span></td>
+          `;
+          tableBody.appendChild(row);
+        });
+      } else {
+        tableBody.innerHTML =
+          '<tr><td colspan="4">No leave requests found.</td></tr>';
+      }
+    })
+    .catch((error) => {
+      console.error('Error:', error);
+      tableBody.innerHTML =
+        '<tr><td colspan="4">Error fetching leave requests.</td></tr>';
+    });
 }
