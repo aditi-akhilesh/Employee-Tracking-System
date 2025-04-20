@@ -25,10 +25,10 @@ employee-tracking-system/
    - Place it in your web server directory (e.g., `htdocs` for XAMPP).
    - Navigate to `http://localhost/employee-tracking-system/` in your browser.
 3. **Credentials**: Hardcoded in `auth/authenticate.php`:
-   - User: `aditya@gmail.com` / `password`
-   - Manager: `aditi@gmail.com` / `password123`
-   - HR: `vaishali@gmail.com` / `abc123`
-   - Super Admin: `amritha@gmail.com` / `abc123`
+   - User: `bob.brown@gmail.com` / `Bob@123`
+   - Manager: `alice.johnson@gmail.com` / `Alice@123`
+   - HR: `jane.smith@gmail.com` / `Jane@123`
+   - Super Admin: `john.doe@gmail.com` / `John@123`
 
 ## Future Enhancements
 - Replace hardcoded credentials with a database (e.g., MySQL).
