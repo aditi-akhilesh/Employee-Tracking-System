@@ -90,7 +90,8 @@ if (isset($_POST['action'])) {
                     CONCAT(u.first_name, ' ', u.last_name) AS employee_name, 
                     l.leave_start_date, 
                     l.leave_end_date, 
-                    l.status 
+                    l.status,
+                    l.leave_reason
                 FROM Leaves l
                 JOIN Employees e ON l.employee_id = e.employee_id
                 JOIN Users u ON e.user_id = u.user_id

@@ -2880,12 +2880,13 @@ function showLeaveRequests(event) {
                         <th style="padding: 10px; border: 1px solid #ddd;">Employee Name</th>
                         <th style="padding: 10px; border: 1px solid #ddd;">Start Date</th>
                         <th style="padding: 10px; border: 1px solid #ddd;">End Date</th>
+ 			<th style="padding: 10px; border: 1px solid #ddd;">Leave Reason</th>
                         <th style="padding: 10px; border: 1px solid #ddd;">Status</th>
                         <th style="padding: 10px; border: 1px solid #ddd;">Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr><td colspan="6">Loading...</td></tr>
+                    <tr><td colspan="7">Loading...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -2918,7 +2919,7 @@ function updateLeaveTable() {
   const leaveTable = document.getElementById('leaveTable');
   if (leaveTable) {
     leaveTable.querySelector('tbody').innerHTML =
-      '<tr><td colspan="6">Loading...</td></tr>';
+      '<tr><td colspan="7">Loading...</td></tr>';
   }
 
   fetch('hr_dashboard.php', {
@@ -2950,6 +2951,9 @@ function updateLeaveTable() {
                             }</td>
                             <td style="padding: 10px; border: 1px solid #ddd;">${
                               app.leave_end_date || 'N/A'
+                            }</td>
+			    <td style="padding: 10px; border: 1px solid #ddd;">${
+                              app.leave_reason  || 'N/A'
                             }</td>
                             <td style="padding: 10px; border: 1px solid #ddd;">
                                 <span class="status-badge ${
@@ -2987,14 +2991,14 @@ function updateLeaveTable() {
                     `
                             )
                             .join('')
-                        : '<tr><td colspan="6">No leave applications found for the selected status.</td></tr>'
+                        : '<tr><td colspan="7">No leave applications found for the selected status.</td></tr>'
                     }
                 `;
       } else {
         console.error('Error updating leave table:', data.error);
         if (leaveTable) {
           leaveTable.querySelector('tbody').innerHTML =
-            '<tr><td colspan="6">Error fetching data: ' +
+            '<tr><td colspan="7">Error fetching data: ' +
             (data.error || 'Unknown error') +
             '</td></tr>';
         }
@@ -3004,7 +3008,7 @@ function updateLeaveTable() {
       console.error('Fetch error:', error);
       if (leaveTable) {
         leaveTable.querySelector('tbody').innerHTML =
-          '<tr><td colspan="6">Network error: Unable to fetch data</td></tr>';
+          '<tr><td colspan="7">Network error: Unable to fetch data</td></tr>';
       }
     });
 }
