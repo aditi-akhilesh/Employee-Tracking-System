@@ -760,11 +760,9 @@ function showProfileForm() {
     });
 }
 
-// user_dashboard.js (update showUpdatePasswordForm)
 
 function showUpdatePasswordForm() {
   console.log('showUpdatePasswordForm called');
-  // Use the profile-update-form div instead of content-area
   const profileUpdateForm = document.getElementById('profile-update-form');
   console.log('profile-update-form element:', profileUpdateForm);
   if (!profileUpdateForm) {
@@ -772,7 +770,6 @@ function showUpdatePasswordForm() {
     return;
   }
 
-  // Show the profile-update-form section and hide others
   showSection('profile-update-form');
 
   profileUpdateForm.innerHTML = `
@@ -810,78 +807,59 @@ function showUpdatePasswordForm() {
           <button type="submit" id="savePasswordBtn">Save</button>
           <button type="button" onclick="showWelcomeMessage()">Back</button>
         </div>
+        <div id="passwordError" style="margin-top: 10px; color: red; font-size: 14px;"></div>
       </form>
     </div>
   `;
   console.log('Update Password form rendered in profile-update-form');
 
-  // Add event listener for the Show Password checkbox
   const showPasswordCheckbox = document.getElementById('showPassword');
   const newPasswordInput = document.getElementById('new_password');
   const confirmPasswordInput = document.getElementById('confirm_password');
+  const errorDiv = document.getElementById('passwordError');
+  const updatePasswordForm = document.getElementById('updatePasswordForm');
 
   if (showPasswordCheckbox && newPasswordInput && confirmPasswordInput) {
-    showPasswordCheckbox.addEventListener('change', function() {
+    showPasswordCheckbox.addEventListener('change', function () {
       const type = this.checked ? 'text' : 'password';
       newPasswordInput.type = type;
       confirmPasswordInput.type = type;
     });
   }
 
-  // Add event listener for form submission
-  const updatePasswordForm = document.getElementById('updatePasswordForm');
   if (updatePasswordForm) {
-    updatePasswordForm.addEventListener('submit', function(event) {
+    updatePasswordForm.addEventListener('submit', function (event) {
       event.preventDefault();
 
       const newPassword = newPasswordInput.value;
       const confirmPassword = confirmPasswordInput.value;
 
+      // Clear any previous error message
+      if (errorDiv) errorDiv.innerHTML = '';
+
       // Validation 1: Check if passwords match
       if (newPassword !== confirmPassword) {
-        profileUpdateForm.innerHTML = `
-          <div class="card">
-            <h2>Update Password</h2>
-            <div class="alert" style="color: red; padding: 10px; border: 1px solid red; border-radius: 4px; margin-bottom: 20px;">
-              Passwords do not match.
-            </div>
-            ${updatePasswordForm.outerHTML}
-          </div>
-        `;
-        // Reattach event listeners after re-rendering
-        reattachPasswordFormListeners();
+        if (errorDiv) {
+          errorDiv.innerHTML = 'Passwords do not match.';
+        }
         return;
       }
 
       // Validation 2: Strong password rules
       const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{12,}$/;
       if (!passwordRegex.test(newPassword)) {
-        profileUpdateForm.innerHTML = `
-          <div class="card">
-            <h2>Update Password</h2>
-            <div class="alert" style="color: red; padding: 10px; border: 1px solid red; border-radius: 4px; margin-bottom: 20px;">
-              Password must be at least 12 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*).
-            </div>
-            ${updatePasswordForm.outerHTML}
-          </div>
-        `;
-        reattachPasswordFormListeners();
+        if (errorDiv) {
+          errorDiv.innerHTML = 'Password must be at least 12 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*).';
+        }
         return;
       }
 
       // Validation 3: Check for repetitive patterns
       const repetitivePatternRegex = /(.)\1{3,}|(?:0123|1234|2345|3456|4567|5678|6789|7890)/;
       if (repetitivePatternRegex.test(newPassword)) {
-        profileUpdateForm.innerHTML = `
-          <div class="card">
-            <h2>Update Password</h2>
-            <div class="alert" style="color: red; padding: 10px; border: 1px solid red; border-radius: 4px; margin-bottom: 20px;">
-              Password contains repetitive or predictable patterns (e.g., "aaaa" or "1234"). Please use a more complex password.
-            </div>
-            ${updatePasswordForm.outerHTML}
-          </div>
-        `;
-        reattachPasswordFormListeners();
+        if (errorDiv) {
+          errorDiv.innerHTML = 'Password contains repetitive or predictable patterns (e.g., "aaaa" or "1234"). Please use a more complex password.';
+        }
         return;
       }
 
@@ -889,16 +867,9 @@ function showUpdatePasswordForm() {
       const commonWords = ['password', 'admin', 'user', '123456', 'qwerty'];
       const lowerCasePassword = newPassword.toLowerCase();
       if (commonWords.some(word => lowerCasePassword.includes(word))) {
-        profileUpdateForm.innerHTML = `
-          <div class="card">
-            <h2>Update Password</h2>
-            <div class="alert" style="color: red; padding: 10px; border: 1px solid red; border-radius: 4px; margin-bottom: 20px;">
-              Password contains a common word or phrase (e.g., "password", "admin"). Please use a more unique password.
-            </div>
-            ${updatePasswordForm.outerHTML}
-          </div>
-        `;
-        reattachPasswordFormListeners();
+        if (errorDiv) {
+          errorDiv.innerHTML = 'Password contains a common word or phrase (e.g., "password", "admin"). Please use a more unique password.';
+        }
         return;
       }
 
@@ -910,74 +881,38 @@ function showUpdatePasswordForm() {
         method: 'POST',
         body: formData,
       })
-      .then(response => response.json())
-      .then(result => {
-        if (result.success) {
-          profileUpdateForm.innerHTML = `
-            <div class="card">
-              <h2>Update Password</h2>
-              <div class="alert" style="color: green; padding: 10px; border: 1px solid green; border-radius: 4px; margin-bottom: 20px;">
-                ${result.message}
+        .then(response => response.json())
+        .then(result => {
+          if (result.success) {
+            profileUpdateForm.innerHTML = `
+              <div class="card">
+                <h2>Update Password</h2>
+                <div class="alert" style="color: green; padding: 10px; border: 1px solid green; border-radius: 4px; margin-bottom: 20px;">
+                  ${result.message}
+                </div>
+                <div class="form-group button-group">
+                  <button type="button" onclick="showWelcomeMessage()">Back</button>
+                </div>
               </div>
-              <div class="form-group button-group">
-                <button type="button" onclick="showWelcomeMessage()">Back</button>
-              </div>
-            </div>
-          `;
-          setTimeout(() => {
-            showWelcomeMessage();
-          }, 1500);
-        } else {
-          profileUpdateForm.innerHTML = `
-            <div class="card">
-              <h2>Update Password</h2>
-              <div class="alert" style="color: red; padding: 10px; border: 1px solid red; border-radius: 4px; margin-bottom: 20px;">
-                ${result.error || 'Failed to update password'}
-              </div>
-              ${updatePasswordForm.outerHTML}
-            </div>
-          `;
-          reattachPasswordFormListeners();
-        }
-      })
-      .catch(error => {
-        profileUpdateForm.innerHTML = `
-          <div class="card">
-            <h2>Update Password</h2>
-            <div class="alert" style="color: red; padding: 10px; border: 1px solid red; border-radius: 4px; margin-bottom: 20px;">
-              Network error: ${error.message}
-            </div>
-            ${updatePasswordForm.outerHTML}
-          </div>
-        `;
-        reattachPasswordFormListeners();
-      });
+            `;
+            setTimeout(() => {
+              showWelcomeMessage();
+            }, 1500);
+          } else {
+            if (errorDiv) {
+              errorDiv.innerHTML = result.error || 'Failed to update password';
+            }
+          }
+        })
+        .catch(error => {
+          if (errorDiv) {
+            errorDiv.innerHTML = `Network error: ${error.message}`;
+          }
+        });
     });
   }
 }
 
-// Helper function to reattach event listeners after re-rendering the password form
-function reattachPasswordFormListeners() {
-  const showPasswordCheckbox = document.getElementById('showPassword');
-  const newPasswordInput = document.getElementById('new_password');
-  const confirmPasswordInput = document.getElementById('confirm_password');
-  const updatePasswordForm = document.getElementById('updatePasswordForm');
-
-  if (showPasswordCheckbox && newPasswordInput && confirmPasswordInput) {
-    showPasswordCheckbox.addEventListener('change', function() {
-      const type = this.checked ? 'text' : 'password';
-      newPasswordInput.type = type;
-      confirmPasswordInput.type = type;
-    });
-  }
-
-  if (updatePasswordForm) {
-    updatePasswordForm.addEventListener('submit', function(event) {
-      event.preventDefault();
-      showUpdatePasswordForm(); // Re-call the function to handle form submission
-    });
-  }
-}
 // Show Salary Details section
 function showSalaryDetails() {
   showSection('salary-details-section');
