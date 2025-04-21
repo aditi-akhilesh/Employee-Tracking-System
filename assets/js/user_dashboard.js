@@ -1092,7 +1092,6 @@ function fetchFeedback() {
     });
 }
 
-// Show Submit Exit Interview Form
 function showSubmitExitInterviewForm() {
   showSection('submit-exit-interview-section');
   const exitInterviewSection = document.getElementById('submit-exit-interview-section');
@@ -1101,7 +1100,7 @@ function showSubmitExitInterviewForm() {
     return;
   }
 
-  // Check if an exit interview already exists
+  // Check if an exit interview exists
   fetch('../pages/features/fetch_employee_exit_interview.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -1114,7 +1113,19 @@ function showSubmitExitInterviewForm() {
       return response.json();
     })
     .then(data => {
-      if (data.success && data.exit_interview) {
+      if (data.error === 'You don\'t have any exit interview to submit. Contact your manager for any queries.') {
+        // No exit interview record exists, show message
+        exitInterviewSection.innerHTML = `
+            <h2>Submit Exit Interview Details</h2>
+            <div style="color: #ff0000; line-height: 1.6;">
+              <p>You don't have any exit interview to submit.</p>
+              <p>Contact your manager for any queries.</p>
+            </div>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+        `;
+      } else if (data.success && data.exit_interview) {
         // Exit interview is fully submitted, show message
         exitInterviewSection.innerHTML = `
             <h2>Submit Exit Interview Details</h2>
@@ -1132,6 +1143,7 @@ function showSubmitExitInterviewForm() {
         // If the record exists but is incomplete, prefill the form with existing data
         const existingData = data.exit_interview || {};
         exitInterviewSection.innerHTML = `
+          <div class="card">
             <h2>Submit Exit Interview Details</h2>
             <form id="exit-interview-form">
               <div class="form-group">
@@ -1174,6 +1186,7 @@ function showSubmitExitInterviewForm() {
                 <button type="button" onclick="showWelcomeMessage()">Back</button>
               </div>
             </form>
+          </div>
         `;
 
         // Add event listener for form submission
@@ -1196,6 +1209,8 @@ function showSubmitExitInterviewForm() {
       `;
     });
 }
+
+
 function submitExitInterview() {
   const exitInterviewSection = document.getElementById('submit-exit-interview-section');
   if (!exitInterviewSection) {
