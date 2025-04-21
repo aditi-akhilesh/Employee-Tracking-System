@@ -30,10 +30,5 @@ employee-tracking-system/
    - HR: `jane.smith@gmail.com` / `Jane@123`
    - Super Admin: `john.doe@gmail.com` / `John@123`
 
-## Future Enhancements
-- Replace hardcoded credentials with a database (e.g., MySQL).
-- Add form submission handling for dashboard actions.
-- Implement CSRF protection and input sanitization.
-
 ## Contributing
 Feel free to fork this repository and submit pull requests for improvements!
