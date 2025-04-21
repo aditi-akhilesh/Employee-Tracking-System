@@ -24,7 +24,7 @@ employee-tracking-system/
    - Clone or download this repository.
    - Place it in your web server directory (e.g., `htdocs` for XAMPP).
    - Navigate to `http://localhost/employee-tracking-system/` in your browser.
-3. **Credentials**: Hardcoded in `auth/authenticate.php`:
+3. **Credentials**:
    - User: `bob.brown@gmail.com` / `Bob@123`
    - Manager: `alice.johnson@gmail.com` / `Alice@123`
    - HR: `jane.smith@gmail.com` / `Jane@123`
