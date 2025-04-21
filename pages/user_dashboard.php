@@ -465,6 +465,34 @@ if (isset($_POST['action'])) {
 
         <!-- Feedback Section -->
         <div id="feedback-section" style="display: none;" class="card"></div>
+		 <!-- Enroll in Training Programs Section -->
+        <div id="enroll-training-section" style="display: none;" class="card">
+            <h2>Enroll in Training Programs</h2>
+            <div class="form-group">
+                <label for="training_filter">Filter by Department:</label>
+                <select id="training_filter" onchange="fetchAvailableTrainings()">
+                    <option value="">All Departments</option>
+                    <!-- Populated dynamically -->
+                </select>
+            </div>
+			<table id="available-trainings-table">
+                <thead>
+                    <tr>
+                        <th>Training Name</th>
+                        <th>Training Date</th>
+                        <th>End Date</th>
+                        <th>Certificate</th>
+                        <th>Department ID</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="available-trainings-table-body"></tbody>
+            </table>
+            <div class="form-group button-group">
+                <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
+            </div>
+        </div>
+
 
         <!-- Submit Exit Interview Section -->
         <div id="submit-exit-interview-section" style="display: none;" class="card"></div>
