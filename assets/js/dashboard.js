@@ -1180,6 +1180,7 @@ function showUpdateRemoveUserForm() {
 
     // Initial HTML with filter dropdown
     let html = `
+            <div class="card">
             <h2>Update or Remove User</h2>
             <p>Select a role to Filter:</p>
             <div style="margin-bottom: 20px;">
@@ -1214,6 +1215,7 @@ function showUpdateRemoveUserForm() {
                         onmouseout="this.style.backgroundColor='#6c757d'"
                         onclick="showWelcomeMessage()">Back</button>
             </div>
+</div>
         `;
 
     mainContent.innerHTML = html;

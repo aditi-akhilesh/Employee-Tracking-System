@@ -12,7 +12,6 @@ ob_start();
 session_start();
 require_once '../../auth/dbconnect.php';
 
-
 header('Content-Type: application/json');
 
 try {
@@ -103,6 +102,15 @@ try {
 
     // Commit transaction
     $con->commit();
+
+    // Insert into Audit_Log table for profile update
+    $action = "Update Profile";
+    $action_date = date('Y-m-d H:i:s');
+    $stmt_audit = $con->prepare("INSERT INTO Audit_Log (user_id, action, action_date) VALUES (:user_id, :action, :action_date)");
+    $stmt_audit->bindParam(':user_id', $user_id);
+    $stmt_audit->bindParam(':action', $action);
+    $stmt_audit->bindParam(':action_date', $action_date);
+    $stmt_audit->execute();
 
     ob_end_clean();
     echo json_encode(['success' => true, 'message' => 'Profile updated successfully']);

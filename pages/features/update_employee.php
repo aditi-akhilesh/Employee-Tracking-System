@@ -23,6 +23,17 @@ try {
         throw new Exception("Invalid request method");
     }
 
+    // Check if the user is authenticated and has HR role
+    if (!isset($_SESSION['user_id'])) {
+        throw new Exception("Unauthorized: User is not authenticated");
+    }
+
+    if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'HR') {
+        throw new Exception("Unauthorized: Only HR can update employee details");
+    }
+
+    $current_user_id = $_SESSION['user_id'];
+
     // safeLog("Starting update_employee.php");
     // safeLog("Received POST data: " . json_encode($_POST));
 
@@ -156,6 +167,19 @@ try {
     ]);
 
     $con->commit();
+
+    // Insert into Audit_Log table for employee update with error handling
+    $action = "Update Employee";
+    $action_date = date('Y-m-d H:i:s');
+    $stmt_audit = $con->prepare("INSERT INTO Audit_Log (user_id, action, action_date) VALUES (:user_id, :action, :action_date)");
+    $stmt_audit->bindParam(':user_id', $current_user_id);
+    $stmt_audit->bindParam(':action', $action);
+    $stmt_audit->bindParam(':action_date', $action_date);
+    try {
+        $stmt_audit->execute();
+    } catch (PDOException $e) {
+        safeLog("Audit log insertion failed in " . __FILE__ . " on line " . __LINE__ . ": " . $e->getMessage());
+    }
 
     // safeLog("Employee updated successfully");
 

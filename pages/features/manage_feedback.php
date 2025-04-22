@@ -5,8 +5,15 @@ require_once '../../auth/dbconnect.php'; // Uses $con
 header('Content-Type: application/json');
 $response = ['success' => false];
 
+// Check if the user is authenticated
+if (!isset($_SESSION['user_id'])) {
+    $response['error'] = 'Unauthorized: User is not authenticated';
+    echo json_encode($response);
+    exit();
+}
+
 if ($_SESSION['role'] !== 'Manager') {
-    $response['error'] = 'Unauthorized';
+    $response['error'] = 'Unauthorized: Only Managers can submit feedback';
     echo json_encode($response);
     exit();
 }
@@ -17,6 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $feedback_type = $_POST['feedback_type'] ?? '';
     $feedback_text = $_POST['feedback_text'] ?? '';
     $reviewer_id = $_SESSION['employee_id']; // From authenticate.php
+    $current_user_id = $_SESSION['user_id']; // The manager's user_id for audit logging
 
     // Validation
     if (!$employee_id || !$rating || !$feedback_type || !$feedback_text) {
@@ -49,6 +57,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'feedback_type' => $feedback_type,
         'feedback_text' => $feedback_text
     ]);
+
+    // Insert into Audit_Log table for feedback submission
+    $action = "Submit Feedback";
+    $action_date = date('Y-m-d H:i:s');
+    $stmt_audit = $con->prepare("INSERT INTO Audit_Log (user_id, action, action_date) VALUES (:user_id, :action, :action_date)");
+    $stmt_audit->bindParam(':user_id', $current_user_id);
+    $stmt_audit->bindParam(':action', $action);
+    $stmt_audit->bindParam(':action_date', $action_date);
+    try {
+        $stmt_audit->execute();
+    } catch (PDOException $e) {
+        error_log("Audit log insertion failed in " . __FILE__ . " on line " . __LINE__ . ": " . $e->getMessage());
+    }
 
     $response['success'] = true;
     $response['message'] = 'Feedback submitted successfully';

@@ -23,6 +23,17 @@ try {
         throw new Exception("Invalid request");
     }
 
+    // Check if the user is authenticated and has HR role
+    if (!isset($_SESSION['user_id'])) {
+        throw new Exception("Unauthorized: User is not authenticated");
+    }
+
+    if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'HR') {
+        throw new Exception("Unauthorized: Only HR can deactivate employees");
+    }
+
+    $current_user_id = $_SESSION['user_id'];
+
     // safeLog("Starting remove_employee.php");
     // safeLog("Received POST data: " . print_r($_POST, true));
 
@@ -68,6 +79,19 @@ try {
 
     // Commit the transaction
     $con->commit();
+
+    // Insert into Audit_Log table for employee deactivation
+    $action = "Deactivate Employee";
+    $action_date = date('Y-m-d H:i:s');
+    $stmt_audit = $con->prepare("INSERT INTO Audit_Log (user_id, action, action_date) VALUES (:user_id, :action, :action_date)");
+    $stmt_audit->bindParam(':user_id', $current_user_id);
+    $stmt_audit->bindParam(':action', $action);
+    $stmt_audit->bindParam(':action_date', $action_date);
+    try {
+        $stmt_audit->execute();
+    } catch (PDOException $e) {
+        safeLog("Audit log insertion failed in " . __FILE__ . " on line " . __LINE__ . ": " . $e->getMessage());
+    }
 
     // safeLog("Employee deactivated successfully");
 

@@ -10,9 +10,16 @@ require_once '../../auth/dbconnect.php';
 header('Content-Type: application/json');
 
 try {
+    // Check if the user is authenticated
+    if (!isset($_SESSION['user_id'])) {
+        throw new Exception('Unauthorized: User is not authenticated');
+    }
+
     if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'Manager') {
         throw new Exception('Unauthorized: User is not a manager');
     }
+
+    $current_user_id = $_SESSION['user_id'];
 
     $interview_id = $_POST['interview_id'] ?? null;
     $last_working_date = $_POST['last_working_date'] ?? null;
@@ -46,6 +53,19 @@ try {
         'eligible_for_rehire' => $eligible_for_rehire,
         'interview_id' => $interview_id
     ]);
+
+    // Insert into Audit_Log table for exit interview update
+    $action = "Update Exit Interview";
+    $action_date = date('Y-m-d H:i:s');
+    $stmt_audit = $con->prepare("INSERT INTO Audit_Log (user_id, action, action_date) VALUES (:user_id, :action, :action_date)");
+    $stmt_audit->bindParam(':user_id', $current_user_id);
+    $stmt_audit->bindParam(':action', $action);
+    $stmt_audit->bindParam(':action_date', $action_date);
+    try {
+        $stmt_audit->execute();
+    } catch (PDOException $e) {
+        error_log("Audit log insertion failed in " . __FILE__ . " on line " . __LINE__ . ": " . $e->getMessage());
+    }
 
     echo json_encode(['success' => true, 'message' => 'Exit interview updated successfully']);
 } catch (Exception $e) {

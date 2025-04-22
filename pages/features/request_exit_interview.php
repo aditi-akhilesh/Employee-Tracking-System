@@ -5,8 +5,15 @@ require_once '../../auth/dbconnect.php';
 header('Content-Type: application/json');
 $response = ['success' => false];
 
+// Check if the user is authenticated
+if (!isset($_SESSION['user_id'])) {
+    $response['error'] = 'Unauthorized: User is not authenticated';
+    echo json_encode($response);
+    exit();
+}
+
 if ($_SESSION['role'] !== 'Manager') {
-    $response['error'] = 'Unauthorized';
+    $response['error'] = 'Unauthorized: Only Managers can request exit interviews';
     echo json_encode($response);
     exit();
 }
@@ -22,6 +29,7 @@ $last_working_date = $_POST['last_working_date'] ?? '';
 $manager_rating = isset($_POST['manager_rating']) && $_POST['manager_rating'] !== '' ? floatval($_POST['manager_rating']) : null;
 $eligible_for_rehire = isset($_POST['eligible_for_rehire']) ? intval($_POST['eligible_for_rehire']) : null;
 $interviewer_id = $_SESSION['employee_id'];
+$current_user_id = $_SESSION['user_id']; // The manager's user_id for audit logging
 
 // Validation
 if (!$employee_id || !$last_working_date || !isset($eligible_for_rehire)) {
@@ -84,6 +92,19 @@ try {
         'manager_rating' => $manager_rating,
         'eligible_for_rehire' => $eligible_for_rehire
     ]);
+
+    // Insert into Audit_Log table for exit interview request
+    $action = "Request Exit Interview";
+    $action_date = date('Y-m-d H:i:s');
+    $stmt_audit = $con->prepare("INSERT INTO Audit_Log (user_id, action, action_date) VALUES (:user_id, :action, :action_date)");
+    $stmt_audit->bindParam(':user_id', $current_user_id);
+    $stmt_audit->bindParam(':action', $action);
+    $stmt_audit->bindParam(':action_date', $action_date);
+    try {
+        $stmt_audit->execute();
+    } catch (PDOException $e) {
+        error_log("Audit log insertion failed in " . __FILE__ . " on line " . __LINE__ . ": " . $e->getMessage());
+    }
 
     $response['success'] = true;
     $response['message'] = 'Exit interview request submitted successfully';
