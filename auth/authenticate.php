@@ -5,10 +5,42 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 include '../auth/dbconnect.php'; // Uses $con
 
+// Rate limiting setup
+$max_attempts = 5; // Maximum login attempts allowed
+$lockout_time = 300; // Lockout duration in seconds (5 minutes)
+
+// Initialize the attempts array if not set
+if (!isset($_SESSION['login_attempts_by_user'])) {
+    $_SESSION['login_attempts_by_user'] = [];
+}
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST['email']);
     $password = trim($_POST['password']);
     $role = trim($_POST['role']);
+
+    // Check for rate limiting for this specific user (based on email)
+    if (!isset($_SESSION['login_attempts_by_user'][$email])) {
+        $_SESSION['login_attempts_by_user'][$email] = [
+            'attempts' => 0,
+            'last_attempt_time' => time()
+        ];
+    }
+
+    $user_attempts = &$_SESSION['login_attempts_by_user'][$email];
+
+    if ($user_attempts['attempts'] >= $max_attempts) {
+        $time_since_last_attempt = time() - $user_attempts['last_attempt_time'];
+        if ($time_since_last_attempt < $lockout_time) {
+            $_SESSION['error'] = "Too many login attempts for this user. Please try again after " . ($lockout_time - $time_since_last_attempt) . " seconds.";
+            header("Location: ../pages/login.php");
+            exit();
+        } else {
+            // Reset attempts after lockout period
+            $user_attempts['attempts'] = 0;
+            $user_attempts['last_attempt_time'] = time();
+        }
+    }
 
     try {
         $stmt = $con->prepare("SELECT user_id, email, password_hash, role, first_name, last_name FROM Users WHERE email = :email AND role = :role");
@@ -20,6 +52,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         if ($user) {
             // Use password_verify for hashed password comparison
             if (password_verify($password, $user['password_hash'])) {
+                // Reset login attempts for this user on successful login
+                $user_attempts['attempts'] = 0;
+                $user_attempts['last_attempt_time'] = time();
+
                 $_SESSION['user_id'] = $user['user_id'];
                 $_SESSION['user_name'] = $user['first_name'] . " " . $user['last_name'];
                 $_SESSION['user_email'] = $user['email'];
@@ -69,9 +105,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 }
                 exit();
             } else {
+                // Increment login attempts for this user on failure
+                $user_attempts['attempts']++;
+                $user_attempts['last_attempt_time'] = time();
+
                 $_SESSION['error'] = "Incorrect password.";
             }
         } else {
+            // Increment login attempts for this user on failure
+            $user_attempts['attempts']++;
+            $user_attempts['last_attempt_time'] = time();
+
             $_SESSION['error'] = "User not found or role mismatch.";
         }
     } catch (PDOException $e) {
