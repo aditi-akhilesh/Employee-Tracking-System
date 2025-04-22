@@ -25,7 +25,7 @@ try {
             d.department_description, 
             COUNT(e.employee_id) AS employee_count
         FROM Department d
-        LEFT JOIN Employees e ON d.department_id = e.department_id where d.department_id!= 'D00' and d.department_name!= 'Head'
+        LEFT JOIN Employees e ON d.department_id = e.department_id where d.department_id not in ('D00','DO2') and d.department_name not in ('Head','HR Department')
         GROUP BY d.department_id, d.department_name, d.department_description
     ");
     $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
