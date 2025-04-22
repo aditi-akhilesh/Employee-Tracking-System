@@ -197,6 +197,15 @@ try {
     // Commit transaction
     $con->commit();
 
+    // Insert into Audit_Log table for user creation
+    $action = "Create User";
+    $action_date = date('Y-m-d H:i:s');
+    $stmt_audit = $con->prepare("INSERT INTO Audit_Log (user_id, action, action_date) VALUES (:user_id, :action, :action_date)");
+    $stmt_audit->bindParam(':user_id', $current_user_id);
+    $stmt_audit->bindParam(':action', $action);
+    $stmt_audit->bindParam(':action_date', $action_date);
+    $stmt_audit->execute();
+
     ob_end_clean();
     echo json_encode(['success' => true, 'message' => "User created successfully! Temporary password: $password"]);
 } catch (Exception $e) {
