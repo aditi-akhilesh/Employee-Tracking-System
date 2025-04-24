@@ -1,52 +1,49 @@
 // superadmin_dashboard.js
 
-// Centralized function to manage section visibility
-function showSection(sectionToShowId) {
+// Reset all sections
+function resetAllSections() {
   const sections = [
     'main-content',
-    'reports-analytics',
     'create-user-form',
     'attendance-records',
     'leave-requests',
-    'department-metrics'
-'profile-update-form'
-
+    'department-metrics',
+    'profile-update-form',
+    'reports-analytics',
+    'project-task-content',
   ];
-
-  const mainContent = document.getElementById('content-area');
-  if (!mainContent) {
-    console.error('content-area not found');
-    return false;
-  }
-
-  // Hide all sections
   sections.forEach((sectionId) => {
-    const section = document.getElementById(sectionId);
-    if (section) {
-      section.style.display = 'none';
-    }
+    document.getElementById(sectionId).style.display = 'none';
   });
 
-  // Show the content-area and the specified section
-  mainContent.style.display = 'block';
-  const sectionToShow = document.getElementById(sectionToShowId);
-  if (sectionToShow) {
-    sectionToShow.style.display = 'block';
-  } else {
-    console.error(`${sectionToShowId} not found`);
-    return false;
-  }
+  // Reset report sections
+  const reportSections = [
+    'avg-ratings-section',
+    'feedback-types-section',
+    'work-summary-section',
+    'training-certificates-section',
+    'feedback-summary-section',
+  ];
+  reportSections.forEach((sectionId) => {
+    document.getElementById(sectionId).style.display = 'none';
+  });
 
-  return true;
+  // Reset project/task sections
+  const projectTaskSections = [
+    'project-overview-section',
+    'project-budget-section',
+    'task-assignments-section',
+    'training-overview-section',
+  ];
+  projectTaskSections.forEach((sectionId) => {
+    document.getElementById(sectionId).style.display = 'none';
+  });
 }
 
-// Function to show error messages
-function showError(message, containerId = 'content-area') {
-  const container = document.getElementById(containerId);
-  if (container) {
-    container.innerHTML =
-      `<div class="alert alert-error">${message}</div>` + container.innerHTML;
-  }
+// Show Welcome Message (Main Dashboard)
+function showWelcomeMessage() {
+  resetAllSections();
+  document.getElementById('main-content').style.display = 'block';
 }
 
 // Function to show success messages
@@ -217,7 +214,9 @@ function generateReport(selectedEmployeeId) {
   }
 
   // Populate Feedback Summary Table
-  const feedbackSummaryTable = document.getElementById('feedback-summary-table');
+  const feedbackSummaryTable = document.getElementById(
+    'feedback-summary-table'
+  );
   feedbackSummaryTable.innerHTML = '';
   if (filteredFeedback.length === 0) {
     feedbackSummaryTable.innerHTML = `<tr><td colspan="5">No feedback data available for this employee.</td></tr>`;
@@ -240,11 +239,220 @@ function generateReport(selectedEmployeeId) {
 
 // Show Reports and Analytics Section
 function showReportsAnalytics() {
-  if (!showSection('reports-analytics')) return;
+  resetAllSections();
+  document.getElementById('reports-analytics').style.display = 'block';
+  document.getElementById('report-content').style.display = 'none';
+}
 
-  const reportContent = document.getElementById('report-content');
-  if (!reportContent) {
-    showError('Report content not found', 'reports-analytics');
+// Show Create User Form
+function showCreateUserForm() {
+  resetAllSections();
+  document.getElementById('create-user-form').style.display = 'block';
+}
+
+// Show Project Overview
+function showProjectOverview() {
+  resetAllSections();
+  document.getElementById('project-task-content').style.display = 'block';
+  document.getElementById('project-overview-section').style.display = 'block';
+  renderProjectOverview();
+
+  // Add filter event listener
+  document.getElementById('project-status-filter').onchange = () =>
+    renderProjectOverview();
+}
+
+// Show Project Budget
+function showProjectBudget() {
+  resetAllSections();
+  document.getElementById('project-task-content').style.display = 'block';
+  document.getElementById('project-budget-section').style.display = 'block';
+  renderProjectBudget();
+
+  // Add filter event listener
+  document.getElementById('budget-status-filter').onchange = () =>
+    renderProjectBudget();
+}
+
+// Show Task Assignments
+function showTaskAssignments() {
+  resetAllSections();
+  document.getElementById('project-task-content').style.display = 'block';
+  document.getElementById('task-assignments-section').style.display = 'block';
+  renderTaskAssignments();
+  renderWorkloadSummary();
+}
+
+// Render Project Overview
+function renderProjectOverview() {
+  const projectTable = document.getElementById('project-overview-table');
+  const statusFilter = document.getElementById('project-status-filter').value;
+  const currentDate = new Date();
+
+  let overdueCount = 0;
+  const filteredProjects = projects.filter(
+    (project) => !statusFilter || project.project_status === statusFilter
+  );
+
+  projectTable.innerHTML = '';
+  filteredProjects.forEach((project) => {
+    const expectedEndDate = new Date(project.expected_end_date);
+    const isOverdue =
+      expectedEndDate < currentDate && project.project_status !== 'Completed';
+    if (isOverdue) overdueCount++;
+
+    const rowStyle = isOverdue ? 'style="background-color: #ffcccc;"' : '';
+    projectTable.innerHTML += `
+          <tr ${rowStyle}>
+              <td>${project.project_name}</td>
+              <td>${project.project_status}</td>
+              <td>${project.start_date}</td>
+              <td>${project.expected_end_date}</td>
+              <td>${project.department_name}</td>
+          </tr>
+      `;
+  });
+
+  // Update summary
+  document.getElementById('total-projects').textContent =
+    filteredProjects.length;
+  document.getElementById('overdue-projects').textContent = overdueCount;
+}
+
+// Render Project Budget
+function renderProjectBudget() {
+  const projectTable = document.getElementById('project-budget-table');
+  const statusFilter = document.getElementById('budget-status-filter').value;
+  const currentDate = new Date();
+
+  let overBudgetCount = 0;
+  let highRiskCount = 0;
+  const filteredProjects = projects.filter(
+    (project) => !statusFilter || project.project_status === statusFilter
+  );
+
+  projectTable.innerHTML = '';
+  filteredProjects.forEach((project) => {
+    const expectedEndDate = new Date(project.expected_end_date);
+    const actualCost = parseFloat(project.actual_cost || 0);
+    const budget = parseFloat(project.budget);
+    const costDifference = actualCost - budget;
+    const isOverBudget = actualCost > budget;
+    const isOverdue =
+      expectedEndDate < currentDate && project.project_status !== 'Completed';
+    const isHighRisk = isOverBudget && isOverdue;
+
+    if (isOverBudget) overBudgetCount++;
+    if (isHighRisk) highRiskCount++;
+
+    let rowStyle = '';
+    if (isHighRisk) rowStyle = 'style="background-color: #ff9999;"';
+    // High risk: overdue + over budget
+    else if (isOverBudget)
+      rowStyle = 'style="background-color: #ffcc99;"'; // Over budget
+    else if (isOverdue) rowStyle = 'style="background-color: #ffcccc;"'; // Overdue
+
+    projectTable.innerHTML += `
+          <tr ${rowStyle}>
+              <td>${project.project_name}</td>
+              <td>${project.project_status}</td>
+              <td>$${budget.toFixed(2)}</td>
+              <td>$${actualCost.toFixed(2)}</td>
+              <td>$${costDifference.toFixed(2)}</td>
+              <td>${project.expected_end_date}</td>
+          </tr>
+      `;
+  });
+
+  // Update summary
+  document.getElementById('total-budget-projects').textContent =
+    filteredProjects.length;
+  document.getElementById('over-budget-projects').textContent = overBudgetCount;
+  document.getElementById('high-risk-projects').textContent = highRiskCount;
+}
+
+// Render Task Assignments
+function renderTaskAssignments() {
+  const taskTable = document.getElementById('task-assignments-table');
+  taskTable.innerHTML = '';
+
+  const groupedTasks = groupTasksByEmployee();
+
+  Object.keys(groupedTasks).forEach((employee) => {
+    const employeeData = groupedTasks[employee];
+    const tasks = employeeData.tasks;
+    const subtaskCount = employeeData.subtaskCount;
+    const isHeavyWorkload = subtaskCount > 5;
+    const rowClass = isHeavyWorkload ? 'heavy-workload' : '';
+    const rowTitle = isHeavyWorkload
+      ? `title="Heavy Workload: ${subtaskCount} subtasks assigned"`
+      : '';
+
+    let taskList = '<table class="nested-table">';
+    taskList +=
+      '<thead><tr><th>Task Description</th><th>Project</th><th>Status</th><th>Due Date</th></tr></thead><tbody>';
+    tasks.forEach((task) => {
+      const taskClass = task.isOverdue
+        ? 'class="overdue" title="Overdue: Due date ' +
+          task.due_date +
+          ' passed and status is not Done"'
+        : '';
+      taskList += `
+              <tr ${taskClass}>
+                  <td>${task.task_description}</td>
+                  <td>${task.project_name}</td>
+                  <td>${task.status}</td>
+                  <td>${task.due_date || 'N/A'}</td>
+              </tr>
+          `;
+    });
+    taskList += '</tbody></table>';
+
+    taskTable.innerHTML += `
+          <tr class="${rowClass}" ${rowTitle}>
+              <td>${employee}</td>
+              <td>${taskList}</td>
+              <td>${subtaskCount}</td>
+          </tr>
+      `;
+  });
+}
+
+// Group tasks by employee
+function groupTasksByEmployee() {
+  const groupedTasks = {};
+  const currentDate = new Date();
+
+  taskAssignments.forEach((task) => {
+    const employeeKey = `${task.first_name} ${task.last_name}`;
+    if (!groupedTasks[employeeKey]) {
+      groupedTasks[employeeKey] = {
+        employee_id: task.employee_id,
+        tasks: [],
+        subtaskCount: 0,
+      };
+    }
+    const dueDate = task.due_date ? new Date(task.due_date) : null;
+    const isOverdue =
+      dueDate && dueDate < currentDate && task.status !== 'Done';
+    groupedTasks[employeeKey].tasks.push({ ...task, isOverdue });
+    groupedTasks[employeeKey].subtaskCount++;
+  });
+
+  return groupedTasks;
+}
+
+// Render Workload Summary
+function renderWorkloadSummary() {
+  const workloadTable = document.getElementById('workload-table');
+  workloadTable.innerHTML = '';
+
+  if (!Array.isArray(subtaskCounts) || subtaskCounts.length === 0) {
+    workloadTable.innerHTML = `
+          <tr>
+              <td colspan="2">No subtask data available.</td>
+          </tr>
+      `;
     return;
   }
 
@@ -266,7 +474,9 @@ function showReportsAnalytics() {
       // Remove any existing listeners to prevent duplicates
       const newButton = generateReportBtn.cloneNode(true);
       generateReportBtn.parentNode.replaceChild(newButton, generateReportBtn);
-      const updatedGenerateReportBtn = document.getElementById('generate-report-btn');
+      const updatedGenerateReportBtn = document.getElementById(
+        'generate-report-btn'
+      );
 
       updatedGenerateReportBtn.addEventListener('click', function () {
         const selectedEmployeeId = employeeSearch.value;
@@ -278,7 +488,8 @@ function showReportsAnalytics() {
         // Refresh data before generating the report
         refreshReportData(() => {
           // Repopulate the employee dropdown
-          employeeSearch.innerHTML = '<option value="">Select an employee</option>';
+          employeeSearch.innerHTML =
+            '<option value="">Select an employee</option>';
           window.employees.forEach((emp) => {
             employeeSearch.innerHTML += `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`;
           });
@@ -299,9 +510,10 @@ function showReportsAnalytics() {
         // Remove any existing click event listeners to prevent duplicates
         const newButton = downloadPdfBtn.cloneNode(true);
         downloadPdfBtn.parentNode.replaceChild(newButton, downloadPdfBtn);
-        
+
         // Reassign the button reference
-        const updatedDownloadPdfBtn = document.getElementById('download-pdf-btn');
+        const updatedDownloadPdfBtn =
+          document.getElementById('download-pdf-btn');
 
         updatedDownloadPdfBtn.addEventListener('click', function () {
           const reportContent = document.getElementById('report-content');
@@ -353,9 +565,9 @@ function showReportsAnalytics() {
               const selectedEmployee =
                 employeeSearch.options[employeeSearch.selectedIndex].text;
               pdf.save(
-                `Employee_Report_${selectedEmployee}_${new Date()
-                  .toISOString()
-                  .split('T')[0]}.pdf`
+                `Employee_Report_${selectedEmployee}_${
+                  new Date().toISOString().split('T')[0]
+                }.pdf`
               );
               updatedDownloadPdfBtn.style.display = 'block';
             })
@@ -412,7 +624,13 @@ function showAttendanceRecords() {
   const startDateInput = document.getElementById('start-date');
   const endDateInput = document.getElementById('end-date');
 
-  if (!fetchAttendanceBtn || !attendanceTableBody || !employeeSearch || !startDateInput || !endDateInput) {
+  if (
+    !fetchAttendanceBtn ||
+    !attendanceTableBody ||
+    !employeeSearch ||
+    !startDateInput ||
+    !endDateInput
+  ) {
     showError('Required elements not found', 'attendance-records');
     return;
   }
@@ -423,9 +641,11 @@ function showAttendanceRecords() {
   // Remove existing listeners to prevent duplicates
   const newButton = fetchAttendanceBtn.cloneNode(true);
   fetchAttendanceBtn.parentNode.replaceChild(newButton, fetchAttendanceBtn);
-  const updatedFetchAttendanceBtn = document.getElementById('fetch-attendance-btn');
+  const updatedFetchAttendanceBtn = document.getElementById(
+    'fetch-attendance-btn'
+  );
 
-  updatedFetchAttendanceBtn.addEventListener('click', function() {
+  updatedFetchAttendanceBtn.addEventListener('click', function () {
     const employeeId = employeeSearch.value;
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
@@ -433,16 +653,20 @@ function showAttendanceRecords() {
     fetch('superadmin_dashboard.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `action=fetch_attendance&employee_id=${encodeURIComponent(employeeId)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`
+      body: `action=fetch_attendance&employee_id=${encodeURIComponent(
+        employeeId
+      )}&start_date=${encodeURIComponent(
+        startDate
+      )}&end_date=${encodeURIComponent(endDate)}`,
     })
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         if (data.success) {
           attendanceTableBody.innerHTML = '';
           if (data.attendance_records.length === 0) {
             attendanceTableBody.innerHTML = `<tr><td colspan="5">No attendance records found.</td></tr>`;
           } else {
-            data.attendance_records.forEach(record => {
+            data.attendance_records.forEach((record) => {
               const row = document.createElement('tr');
               row.innerHTML = `
                 <td>${record.employee_name}</td>
@@ -455,10 +679,15 @@ function showAttendanceRecords() {
             });
           }
         } else {
-          showError(data.error || 'Failed to fetch attendance records', 'attendance-records');
+          showError(
+            data.error || 'Failed to fetch attendance records',
+            'attendance-records'
+          );
         }
       })
-      .catch(error => showError('Network error: ' + error.message, 'attendance-records'));
+      .catch((error) =>
+        showError('Network error: ' + error.message, 'attendance-records')
+      );
   });
 
   // Add sorting functionality
@@ -467,7 +696,7 @@ function showAttendanceRecords() {
     header.addEventListener('click', () => {
       const rows = Array.from(attendanceTableBody.querySelectorAll('tr'));
       const isAscending = header.classList.contains('sort-asc');
-      headers.forEach(h => {
+      headers.forEach((h) => {
         h.classList.remove('sort-asc', 'sort-desc');
         const icon = h.querySelector('i.fas');
         if (icon) icon.className = 'fas fa-sort';
@@ -475,12 +704,14 @@ function showAttendanceRecords() {
 
       header.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
       const icon = header.querySelector('i.fas');
-      if (icon) icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
+      if (icon)
+        icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
 
       rows.sort((a, b) => {
         const aText = a.cells[index].textContent.trim();
         const bText = b.cells[index].textContent.trim();
-        if (index === 2 || index === 3) { // Check In, Check Out (dates)
+        if (index === 2 || index === 3) {
+          // Check In, Check Out (dates)
           const aDate = aText === 'N/A' ? 0 : new Date(aText).getTime();
           const bDate = bText === 'N/A' ? 0 : new Date(bText).getTime();
           return isAscending ? bDate - aDate : aDate - bDate;
@@ -491,7 +722,7 @@ function showAttendanceRecords() {
       });
 
       attendanceTableBody.innerHTML = '';
-      rows.forEach(row => attendanceTableBody.appendChild(row));
+      rows.forEach((row) => attendanceTableBody.appendChild(row));
     });
   });
 }
@@ -522,27 +753,37 @@ function showLeaveRequests() {
     fetch('superadmin_dashboard.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `action=fetch_leave_applications&leave_filter=${encodeURIComponent(status)}`
+      body: `action=fetch_leave_applications&leave_filter=${encodeURIComponent(
+        status
+      )}`,
     })
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         if (data.success) {
           leaveTableBody.innerHTML = '';
           if (data.leave_applications.length === 0) {
             leaveTableBody.innerHTML = `<tr><td colspan="6">No leave requests found.</td></tr>`;
           } else {
-            data.leave_applications.forEach(request => {
+            data.leave_applications.forEach((request) => {
               const row = document.createElement('tr');
-              const statusClass = request.status === 'ispending' ? 'status-pending' :
-                                request.status === 'approved' ? 'status-approved' : 'status-rejected';
+              const statusClass =
+                request.status === 'ispending'
+                  ? 'status-pending'
+                  : request.status === 'approved'
+                  ? 'status-approved'
+                  : 'status-rejected';
               row.innerHTML = `
                 <td>${request.employee_name}</td>
                 <td>${request.leave_start_date}</td>
                 <td>${request.leave_end_date}</td>
                 <td>${request.leave_reason}</td>
-                <td><span class="status-badge ${statusClass}">${request.status.charAt(0).toUpperCase() + request.status.slice(1)}</span></td>
+                <td><span class="status-badge ${statusClass}">${
+                request.status.charAt(0).toUpperCase() + request.status.slice(1)
+              }</span></td>
                 <td>
-                  ${request.status === 'ispending' ? `
+                  ${
+                    request.status === 'ispending'
+                      ? `
                     <form class="action-form approve-form" style="display:inline;">
                       <input type="hidden" name="request_id" value="${request.request_id}">
                       <button type="button" class="approve-btn" style="background-color:#4caf50;color:white;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;margin-right:5px;">Approve</button>
@@ -551,28 +792,61 @@ function showLeaveRequests() {
                       <input type="hidden" name="request_id" value="${request.request_id}">
                       <button type="button" class="reject-btn" style="background-color:#f44336;color:white;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;">Reject</button>
                     </form>
-                  ` : request.status === 'approved' || request.status === 'rejected' ? `
+                  `
+                      : request.status === 'approved' ||
+                        request.status === 'rejected'
+                      ? `
                     <button type="button" class="reconsider-btn" data-request-id="${request.request_id}">Reconsider</button>
-                  ` : ''}
+                  `
+                      : ''
+                  }
                 </td>
               `;
               leaveTableBody.appendChild(row);
 
               // Add event listeners for approve/reject buttons
               if (request.status === 'ispending') {
-                row.querySelector('.approve-btn').addEventListener('click', () => updateLeaveStatus(request.request_id, 'approved', fetchLeaves));
-                row.querySelector('.reject-btn').addEventListener('click', () => updateLeaveStatus(request.request_id, 'rejected', fetchLeaves));
+                row
+                  .querySelector('.approve-btn')
+                  .addEventListener('click', () =>
+                    updateLeaveStatus(
+                      request.request_id,
+                      'approved',
+                      fetchLeaves
+                    )
+                  );
+                row
+                  .querySelector('.reject-btn')
+                  .addEventListener('click', () =>
+                    updateLeaveStatus(
+                      request.request_id,
+                      'rejected',
+                      fetchLeaves
+                    )
+                  );
               }
-              if (request.status === 'approved' || request.status === 'rejected') {
-                row.querySelector('.reconsider-btn').addEventListener('click', () => reconsiderLeave(request.request_id, fetchLeaves));
+              if (
+                request.status === 'approved' ||
+                request.status === 'rejected'
+              ) {
+                row
+                  .querySelector('.reconsider-btn')
+                  .addEventListener('click', () =>
+                    reconsiderLeave(request.request_id, fetchLeaves)
+                  );
               }
             });
           }
         } else {
-          showError(data.error || 'Failed to fetch leave requests', 'leave-requests');
+          showError(
+            data.error || 'Failed to fetch leave requests',
+            'leave-requests'
+          );
         }
       })
-      .catch(error => showError('Network error: ' + error.message, 'leave-requests'));
+      .catch((error) =>
+        showError('Network error: ' + error.message, 'leave-requests')
+      );
   }
 
   // Initial fetch
@@ -590,18 +864,25 @@ function updateLeaveStatus(requestId, status, callback) {
   fetch('superadmin_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `action=update_leave_status&request_id=${encodeURIComponent(requestId)}&status=${encodeURIComponent(status)}`
+    body: `action=update_leave_status&request_id=${encodeURIComponent(
+      requestId
+    )}&status=${encodeURIComponent(status)}`,
   })
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
       if (data.success) {
         showSuccess(data.message, 'leave-requests');
         if (callback) callback();
       } else {
-        showError(data.error || 'Failed to update leave status', 'leave-requests');
+        showError(
+          data.error || 'Failed to update leave status',
+          'leave-requests'
+        );
       }
     })
-    .catch(error => showError('Network error: ' + error.message, 'leave-requests'));
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'leave-requests')
+    );
 }
 
 // Function to reconsider leave
@@ -609,10 +890,10 @@ function reconsiderLeave(requestId, callback) {
   fetch('superadmin_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `action=reconsider_leave&request_id=${encodeURIComponent(requestId)}`
+    body: `action=reconsider_leave&request_id=${encodeURIComponent(requestId)}`,
   })
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
       if (data.success) {
         showSuccess(data.message, 'leave-requests');
         if (callback) callback();
@@ -620,14 +901,18 @@ function reconsiderLeave(requestId, callback) {
         showError(data.error || 'Failed to reconsider leave', 'leave-requests');
       }
     })
-    .catch(error => showError('Network error: ' + error.message, 'leave-requests'));
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'leave-requests')
+    );
 }
 
 // Show Department-wise Performance Metrics Section
 function showDepartmentMetrics() {
   if (!showSection('department-metrics')) return;
 
-  const metricsTableBody = document.getElementById('department-metrics-table-body');
+  const metricsTableBody = document.getElementById(
+    'department-metrics-table-body'
+  );
 
   if (!metricsTableBody) {
     showError('Required elements not found', 'department-metrics');
@@ -641,16 +926,16 @@ function showDepartmentMetrics() {
   fetch('superadmin_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=fetch_department_metrics'
+    body: 'action=fetch_department_metrics',
   })
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
       if (data.success) {
         metricsTableBody.innerHTML = '';
         if (data.department_metrics.length === 0) {
           metricsTableBody.innerHTML = `<tr><td colspan="9">No department metrics found.</td></tr>`;
         } else {
-          data.department_metrics.forEach(metric => {
+          data.department_metrics.forEach((metric) => {
             const row = document.createElement('tr');
             row.innerHTML = `
               <td>${metric.department_name}</td>
@@ -667,10 +952,15 @@ function showDepartmentMetrics() {
           });
         }
       } else {
-        showError(data.error || 'Failed to fetch department metrics', 'department-metrics');
+        showError(
+          data.error || 'Failed to fetch department metrics',
+          'department-metrics'
+        );
       }
     })
-    .catch(error => showError('Network error: ' + error.message, 'department-metrics'));
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'department-metrics')
+    );
 
   // Add sorting functionality
   const headers = document.querySelectorAll('#department-metrics-table th');
@@ -678,7 +968,7 @@ function showDepartmentMetrics() {
     header.addEventListener('click', () => {
       const rows = Array.from(metricsTableBody.querySelectorAll('tr'));
       const isAscending = header.classList.contains('sort-asc');
-      headers.forEach(h => {
+      headers.forEach((h) => {
         h.classList.remove('sort-asc', 'sort-desc');
         const icon = h.querySelector('i.fas');
         if (icon) icon.className = 'fas fa-sort';
@@ -686,22 +976,26 @@ function showDepartmentMetrics() {
 
       header.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
       const icon = header.querySelector('i.fas');
-      if (icon) icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
+      if (icon)
+        icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
 
       rows.sort((a, b) => {
         let aText = a.cells[index].textContent.trim();
         let bText = b.cells[index].textContent.trim();
         // Convert to numbers for numeric columns
-        if (index !== 0) { // All columns except Department Name are numeric
+        if (index !== 0) {
+          // All columns except Department Name are numeric
           aText = parseFloat(aText) || 0;
           bText = parseFloat(bText) || 0;
           return isAscending ? bText - aText : aText - bText;
         }
-        return isAscending ? bText.localeCompare(aText) : aText.localeCompare(bText);
+        return isAscending
+          ? bText.localeCompare(aText)
+          : aText.localeCompare(bText);
       });
 
       metricsTableBody.innerHTML = '';
-      rows.forEach(row => metricsTableBody.appendChild(row));
+      rows.forEach((row) => metricsTableBody.appendChild(row));
     });
   });
 }
@@ -718,25 +1012,154 @@ function loadScript(url, callback) {
 // Placeholder for Create User Form
 function showCreateUserForm() {
   if (!showSection('create-user-form')) return;
-
-  const contentArea = document.getElementById('create-user-form');
-  contentArea.innerHTML = `
-    <div class="card">
-      <h2>Create New User</h2>
-      <p>Functionality to create a new user profile will be implemented here.</p>
-      <div class="form-group button-group">
-        <button type="button" onclick="showWelcomeMessage()">Back</button>
-      </div>
-    </div>
-  `;
+  subtaskCounts.forEach((employee) => {
+    const subtaskCount = parseInt(employee.subtask_count) || 0;
+    const isHeavyWorkload = subtaskCount > 5;
+    const rowStyle = isHeavyWorkload
+      ? 'class="heavy-workload" title="Heavy Workload: ' +
+        subtaskCount +
+        ' subtasks assigned"'
+      : '';
+    workloadTable.innerHTML += `
+          <tr ${rowStyle}>
+              <td>${employee.first_name} ${employee.last_name}</td>
+              <td>${subtaskCount}</td>
+          </tr>
+      `;
+  });
 }
 
-// Toggle dropdown menu without hiding sidebar text
+// Render Training Overview
+function renderTrainingOverview() {
+  const trainingTable = document.getElementById('training-overview-table');
+  trainingTable.innerHTML = '';
+  trainingOverview.forEach((training) => {
+    trainingTable.innerHTML += `
+          <tr>
+              <td>${training.training_name}</td>
+              <td>${training.training_date}</td>
+              <td>${training.end_date || 'N/A'}</td>
+              <td>${training.certificate || 'None'}</td>
+              <td>${training.enrolled_count}</td>
+              <td>${
+                training.avg_score
+                  ? parseFloat(training.avg_score).toFixed(2)
+                  : 'N/A'
+              }</td>
+          </tr>
+      `;
+  });
+}
+
+// Generate Report Button (Show All Reports Sections)
+document.getElementById('generate-report-btn').addEventListener('click', () => {
+  const employeeId = document.getElementById('employee-search').value;
+  showReportsAnalytics();
+  document.getElementById('report-content').style.display = 'block';
+
+  document.getElementById('avg-ratings-section').style.display = 'block';
+  const avgRatingsTable = document.getElementById('avg-ratings-table');
+  avgRatingsTable.innerHTML = '';
+  reportAvgRatings
+    .filter((r) => !employeeId || r.employee_id == employeeId)
+    .forEach((rating) => {
+      avgRatingsTable.innerHTML += `
+              <tr>
+                  <td>${rating.first_name} ${rating.last_name}</td>
+                  <td>${parseFloat(rating.avg_rating).toFixed(2)}</td>
+                  <td>${rating.feedback_count}</td>
+              </tr>
+          `;
+    });
+
+  document.getElementById('feedback-types-section').style.display = 'block';
+  const feedbackTypesTable = document.getElementById('feedback-types-table');
+  feedbackTypesTable.innerHTML = '';
+  reportFeedbackTypes.forEach((type) => {
+    feedbackTypesTable.innerHTML += `
+          <tr>
+              <td>${type.feedback_type}</td>
+              <td>${type.type_count}</td>
+          </tr>
+      `;
+  });
+
+  document.getElementById('work-summary-section').style.display = 'block';
+  const workSummaryTable = document.getElementById('work-summary-table');
+  workSummaryTable.innerHTML = '';
+  projectAssignments
+    .filter((a) => !employeeId || a.employee_id == employeeId)
+    .forEach((assignment) => {
+      workSummaryTable.innerHTML += `
+              <tr>
+                  <td>Project Assignment</td>
+                  <td>${assignment.project_name} (${assignment.role_in_project})</td>
+              </tr>
+          `;
+    });
+
+  document.getElementById('training-certificates-section').style.display =
+    'block';
+  const trainingTable = document.getElementById('training-certificates-table');
+  trainingTable.innerHTML = '';
+  employeeTrainings
+    .filter((t) => !employeeId || t.employee_id == employeeId)
+    .forEach((training) => {
+      trainingTable.innerHTML += `
+              <tr>
+                  <td>${training.training_name}</td>
+                  <td>${training.training_date}</td>
+                  <td>${training.certificate || 'None'}</td>
+                  <td>${training.score || 'N/A'}</td>
+              </tr>
+          `;
+    });
+
+  document.getElementById('feedback-summary-section').style.display = 'block';
+  const feedbackTable = document.getElementById('feedback-summary-table');
+  feedbackTable.innerHTML = '';
+  feedback
+    .filter((f) => !employeeId || f.employee_id == employeeId)
+    .forEach((f) => {
+      feedbackTable.innerHTML += `
+              <tr>
+                  <td>${f.first_name} ${f.last_name}</td>
+                  <td>${f.rating}</td>
+                  <td>${f.feedback_type}</td>
+                  <td>${f.feedback_text}</td>
+                  <td>${f.date_submitted}</td>
+              </tr>
+          `;
+    });
+});
+
+// Download PDF Button
+document.getElementById('download-pdf-btn').addEventListener('click', () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const reportContent = document.getElementById('report-content');
+
+  html2canvas(reportContent).then((canvas) => {
+    const imgData = canvas.toDataURL('image/png');
+    const imgProps = doc.getImageProperties(imgData);
+    const pdfWidth = doc.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    doc.save('report.pdf');
+  });
+});
+
+// Toggle Dropdown for Sidebar
 function toggleDropdown(event, dropdownId) {
   event.preventDefault();
   const dropdown = document.getElementById(dropdownId);
   if (dropdown) {
     const isDisplayed = dropdown.style.display === 'block';
+    // Hide all other dropdowns
+    document
+      .querySelectorAll('.dropdown')
+      .forEach((d) => (d.style.display = 'none'));
+    // Toggle the current dropdown
     dropdown.style.display = isDisplayed ? 'none' : 'block';
     dropdown.classList.toggle('show', !isDisplayed);
   }
@@ -759,8 +1182,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
-
-
 
 function validateForm(event, form) {
   console.log('validateForm called');
@@ -850,7 +1271,10 @@ function validateForm(event, form) {
   const jobTitlePattern = /^[A-Za-z ]+$/;
   if (!jobTitlePattern.test(jobTitleInput.value)) {
     console.log('Job title validation failed: Invalid characters');
-    showError('Job title must contain only letters and spaces.', 'profile-update-form');
+    showError(
+      'Job title must contain only letters and spaces.',
+      'profile-update-form'
+    );
     event.preventDefault();
     return false;
   }
@@ -873,16 +1297,21 @@ function showCreateUserForm() {
   if (!showSection('create-user-form')) return;
 
   const profileUpdateForm = document.getElementById('create-user-form');
-  if (!profileUpdateForm ) {
+  if (!profileUpdateForm) {
     showError('create-user-form not found.', 'create-user-form');
     return;
   }
 
   // Use superAdminEmployees if available (Super Admin dashboard), otherwise fall back to employees (HR dashboard)
-  const employeeList = typeof superAdminEmployees !== 'undefined' ? superAdminEmployees : employees;
+  const employeeList =
+    typeof superAdminEmployees !== 'undefined'
+      ? superAdminEmployees
+      : employees;
 
   // Get valid department IDs (convert to strings for comparison)
-  const validDepartmentIds = departments.map(dept => String(dept.department_id));
+  const validDepartmentIds = departments.map((dept) =>
+    String(dept.department_id)
+  );
 
   // Filter employees to get only managers with valid department_id
   const managers = employeeList.filter(
@@ -995,7 +1424,9 @@ function showCreateUserForm() {
   const roleSelect = document.getElementById('role');
   const assignManagerGroup = document.getElementById('assign-manager-group');
   const departmentGroup = document.getElementById('department-group');
-  const departmentDisplaySelect = document.getElementById('department_id_display');
+  const departmentDisplaySelect = document.getElementById(
+    'department_id_display'
+  );
   const departmentHiddenInput = document.getElementById('department_id');
   const managerSelect = document.getElementById('manager_id');
 
@@ -1028,13 +1459,18 @@ function showCreateUserForm() {
       } else if (this.value === 'HR') {
         assignManagerGroup.style.display = 'none';
         // Automatically set department to HR Department (D02)
-        const hrDepartment = departments.find(dept => dept.department_id === 'D02');
+        const hrDepartment = departments.find(
+          (dept) => dept.department_id === 'D02'
+        );
         if (hrDepartment) {
           departmentDisplaySelect.value = 'D02';
           departmentHiddenInput.value = 'D02';
           departmentDisplaySelect.disabled = true;
         } else {
-          showError('HR Department (D02) not found in departments list.', 'profile-update-form');
+          showError(
+            'HR Department (D02) not found in departments list.',
+            'profile-update-form'
+          );
           departmentDisplaySelect.disabled = false;
           departmentDisplaySelect.value = '';
           departmentHiddenInput.value = '';
@@ -1049,10 +1485,14 @@ function showCreateUserForm() {
 
     managerSelect.addEventListener('change', function () {
       const selectedOption = this.options[this.selectedIndex];
-      const managerDepartmentId = selectedOption.getAttribute('data-department-id');
+      const managerDepartmentId =
+        selectedOption.getAttribute('data-department-id');
       console.log('Selected manager ID:', this.value);
       console.log('Manager department ID:', managerDepartmentId);
-      if (managerDepartmentId && validDepartmentIds.includes(String(managerDepartmentId))) {
+      if (
+        managerDepartmentId &&
+        validDepartmentIds.includes(String(managerDepartmentId))
+      ) {
         departmentDisplaySelect.value = managerDepartmentId;
         departmentHiddenInput.value = managerDepartmentId;
         departmentDisplaySelect.disabled = true;
@@ -1060,7 +1500,10 @@ function showCreateUserForm() {
         departmentDisplaySelect.value = '';
         departmentHiddenInput.value = '';
         departmentDisplaySelect.disabled = true;
-        showError('Selected manager does not have a valid department assigned. Please assign a department to the manager first.', 'profile-update-form');
+        showError(
+          'Selected manager does not have a valid department assigned. Please assign a department to the manager first.',
+          'profile-update-form'
+        );
       }
     });
 
@@ -1085,28 +1528,44 @@ function showCreateUserForm() {
 
       // Additional validations specific to showCreateUserForm
       if (roleSelect.value === 'User' && !managerSelect.value) {
-        showError('Please select a manager for the user.', 'profile-update-form');
+        showError(
+          'Please select a manager for the user.',
+          'profile-update-form'
+        );
         return;
       }
 
       if (roleSelect.value === 'User') {
-        const selectedOption = managerSelect.options[managerSelect.selectedIndex];
-        const managerDepartmentId = selectedOption.getAttribute('data-department-id');
-        if (managerDepartmentId && validDepartmentIds.includes(String(managerDepartmentId))) {
+        const selectedOption =
+          managerSelect.options[managerSelect.selectedIndex];
+        const managerDepartmentId =
+          selectedOption.getAttribute('data-department-id');
+        if (
+          managerDepartmentId &&
+          validDepartmentIds.includes(String(managerDepartmentId))
+        ) {
           departmentHiddenInput.value = managerDepartmentId;
         } else {
-          showError('Manager does not have a valid department assigned.', 'profile-update-form');
+          showError(
+            'Manager does not have a valid department assigned.',
+            'profile-update-form'
+          );
           return;
         }
       }
 
       if (roleSelect.value === 'HR') {
         // Ensure department is set to D02 for HR role
-        const hrDepartment = departments.find(dept => dept.department_id === 'D02');
+        const hrDepartment = departments.find(
+          (dept) => dept.department_id === 'D02'
+        );
         if (hrDepartment) {
           departmentHiddenInput.value = 'D02';
         } else {
-          showError('HR Department (D02) not found. Cannot create HR user.', 'profile-update-form');
+          showError(
+            'HR Department (D02) not found. Cannot create HR user.',
+            'profile-update-form'
+          );
           return;
         }
       }
@@ -1124,10 +1583,10 @@ function showCreateUserForm() {
       // Submit the form via AJAX
       fetch('../pages/features/create_user_admin.php', {
         method: 'POST',
-        body: formData
+        body: formData,
       })
-        .then(response => response.json())
-        .then(data => {
+        .then((response) => response.json())
+        .then((data) => {
           submitButton.disabled = false;
           submitButton.innerHTML = 'Create User';
           if (data.success) {
@@ -1145,11 +1604,14 @@ function showCreateUserForm() {
             showError(data.error || 'Unknown error', 'profile-update-form');
           }
         })
-        .catch(error => {
+        .catch((error) => {
           submitButton.disabled = false;
           submitButton.innerHTML = 'Create User';
           console.error('Error submitting form:', error);
-          showError('An error occurred while creating the user. Please try again.', 'profile-update-form');
+          showError(
+            'An error occurred while creating the user. Please try again.',
+            'profile-update-form'
+          );
         });
     });
   } else {
@@ -1159,4 +1621,3 @@ function showCreateUserForm() {
     showError('Form setup error.', 'profile-update-form');
   }
 }
-

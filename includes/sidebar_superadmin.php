@@ -19,11 +19,11 @@
                 <li><a href="#">Track department information</a></li>
             </ul>
         </li>
-        <li><a href="#" onclick="toggleDropdown(event, 'project-dropdown')"><i class="fas fa-tasks"></i> Projects and Tasks</a>
+        <li><a href="#" onclick="toggleDropdown(event, 'project-dropdown')"><i class="fas fa-tasks"></i> Project & Task Management</a>
             <ul id="project-dropdown" class="dropdown" style="display: none;">
-                <li><a href="#">Add new project to department</a></li>
-                <li><a href="#">Add new tasks to project</a></li>
-                <li><a href="#">Track project status</a></li>
+                <li><a href="#" onclick="showProjectOverview()">View project overview</a></li>
+                <li><a href="#" onclick="showTaskAssignments()">Track task assignments</a></li>
+                <li><a href="#" onclick="showProjectBudget()">Monitor project budgets</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'training-dropdown')"><i class="fas fa-graduation-cap"></i> Training Management</a>

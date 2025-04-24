@@ -112,6 +112,60 @@ function fetchData($con, $sections = ['all']) {
         $data['employee_trainings'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+    // Fetch project overview
+    if ($shouldFetch('projects')) {
+        $stmt = $con->prepare("
+            SELECT p.project_id, p.project_name, p.project_status, p.budget, p.actual_cost, 
+                   p.start_date, p.expected_end_date, d.department_name
+            FROM Projects p
+            JOIN Department d ON p.department_id = d.department_id
+        ");
+        $stmt->execute();
+        $data['projects'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Fetch task assignments
+    if ($shouldFetch('task_assignments')) {
+        $stmt = $con->prepare("
+            SELECT at.assignment_task_id, at.task_id, at.employee_id, at.due_date, 
+                   t.task_description, t.status, p.project_name, u.first_name, u.last_name
+            FROM Assignment_Task at
+            JOIN Task t ON at.task_id = t.task_id
+            JOIN Projects p ON t.project_id = p.project_id
+            JOIN Employees e ON at.employee_id = e.employee_id
+            JOIN Users u ON e.user_id = u.user_id
+        ");
+        $stmt->execute();
+        $data['task_assignments'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    // Fetch training overview
+    if ($shouldFetch('training_overview')) {
+        $stmt = $con->prepare("
+            SELECT t.training_id, t.training_name, t.training_date, t.end_date, t.certificate,
+                   COUNT(et.employee_id) as enrolled_count, 
+                   AVG(et.score) as avg_score
+            FROM Training t
+            LEFT JOIN Employee_Training et ON t.training_id = et.training_id
+            GROUP BY t.training_id, t.training_name, t.training_date, t.end_date, t.certificate
+        ");
+        $stmt->execute();
+        $data['training_overview'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+// Fetch subtask counts per employee
+    if ($shouldFetch('subtask_counts')) {
+        $stmt = $con->prepare("
+            SELECT at.employee_id, u.first_name, u.last_name, COUNT(at.task_id) as subtask_count
+            FROM Assignment_Task at
+            JOIN Employees e ON at.employee_id = e.employee_id
+            JOIN Users u ON e.user_id = u.user_id
+            GROUP BY at.employee_id, u.first_name, u.last_name
+        ");
+        $stmt->execute();
+        $data['subtask_counts'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
     return $data;
 }
 
@@ -123,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     try {
         if ($_POST['action'] === 'refresh_data') {
             $sections = isset($_POST['section']) && $_POST['section'] === 'reports'
-                ? ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'employee_trainings']
+                ? ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'employee_trainings', 'projects', 'task_assignments', 'training_overview', 'subtask_counts']
                 : ['all'];
             $data = fetchData($con, $sections);
             $response['success'] = true;
@@ -133,7 +187,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         } elseif ($_POST['action'] === 'fetch_leave_applications') {
             $leave_filter = $_POST['leave_filter'] ?? 'ispending';
             $logged_in_employee_id = $_SESSION['employee_id'] ?? null;
-
+    
             $query = "
                 SELECT 
                     l.leave_id AS request_id, 
@@ -148,12 +202,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 WHERE l.status = ?
             ";
             $params = [$leave_filter];
-
+    
             if ($logged_in_employee_id) {
                 $query .= " AND e.employee_id != ?";
                 $params[] = $logged_in_employee_id;
             }
-
+    
             $stmt = $con->prepare($query);
             $stmt->execute($params);
             $response['leave_applications'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -163,7 +217,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $start_date = $_POST['start_date'] ?? '';
             $end_date = $_POST['end_date'] ?? '';
             $logged_in_employee_id = $_SESSION['employee_id'] ?? null;
-
+    
             $query = "
                 SELECT 
                     a.employee_id, 
@@ -183,13 +237,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 WHERE 1=1
             ";
             $params = [];
-
-            // Exclude the logged-in Super Admin's own attendance records
+    
             if ($logged_in_employee_id) {
                 $query .= " AND a.employee_id != ?";
                 $params[] = $logged_in_employee_id;
             }
-
+    
             if ($employee_id) {
                 $query .= " AND a.employee_id = ?";
                 $params[] = $employee_id;
@@ -202,7 +255,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $query .= " AND DATE(a.check_out) <= ?";
                 $params[] = $end_date;
             }
-
+    
             $stmt = $con->prepare($query);
             $stmt->execute($params);
             $response['attendance_records'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -221,11 +274,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $response['success'] = true;
             $response['message'] = "Leave application status updated to " . $new_status . ".";
         } elseif ($_POST['action'] === 'fetch_department_metrics') {
-            // Fetch all departments
             $stmt = $con->prepare("SELECT department_id, department_name FROM Department");
             $stmt->execute();
             $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
+    
             $metrics = [];
             foreach ($departments as $dept) {
                 $dept_id = $dept['department_id'];
@@ -240,8 +292,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                     'avg_feedback_rating' => 0,
                     'total_leaves_taken' => 0
                 ];
-
-                // Number of employees in the department
+    
                 $stmt = $con->prepare("
                     SELECT COUNT(*) as count 
                     FROM Employees e
@@ -250,8 +301,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 ");
                 $stmt->execute([$dept_id]);
                 $metric['employee_count'] = (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'];
-
-                // Projects completed
+    
                 $stmt = $con->prepare("
                     SELECT COUNT(*) as count 
                     FROM Projects 
@@ -259,8 +309,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 ");
                 $stmt->execute([$dept_id]);
                 $metric['projects_completed'] = (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'];
-
-                // Projects in progress
+    
                 $stmt = $con->prepare("
                     SELECT COUNT(*) as count 
                     FROM Projects 
@@ -268,8 +317,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 ");
                 $stmt->execute([$dept_id]);
                 $metric['projects_in_progress'] = (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'];
-
-                // Projects assigned (not started)
+    
                 $stmt = $con->prepare("
                     SELECT COUNT(*) as count 
                     FROM Projects 
@@ -277,8 +325,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 ");
                 $stmt->execute([$dept_id]);
                 $metric['projects_assigned'] = (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'];
-
-                // Total tasks completed successfully
+    
                 $stmt = $con->prepare("
                     SELECT COUNT(*) as count 
                     FROM Task t
@@ -287,8 +334,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 ");
                 $stmt->execute([$dept_id]);
                 $metric['tasks_completed'] = (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'];
-
-                // Trainings conducted
+    
                 $stmt = $con->prepare("
                     SELECT COUNT(*) as count 
                     FROM Training 
@@ -296,8 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 ");
                 $stmt->execute([$dept_id]);
                 $metric['trainings_conducted'] = (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'];
-
-                // Average feedback rating
+    
                 $stmt = $con->prepare("
                     SELECT AVG(f.rating) as avg_rating 
                     FROM Feedback f
@@ -307,8 +352,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 $stmt->execute([$dept_id]);
                 $result = $stmt->fetch(PDO::FETCH_ASSOC);
                 $metric['avg_feedback_rating'] = $result['avg_rating'] ? round($result['avg_rating'], 2) : 0;
-
-                // Total leaves taken (approved)
+    
                 $stmt = $con->prepare("
                     SELECT COUNT(*) as count 
                     FROM Leaves l
@@ -317,13 +361,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 ");
                 $stmt->execute([$dept_id]);
                 $metric['total_leaves_taken'] = (int)$stmt->fetch(PDO::FETCH_ASSOC)['count'];
-
+    
                 $metrics[] = $metric;
             }
-
+    
             $response['department_metrics'] = $metrics;
             $response['success'] = true;
         }
+    } catch (PDOException $e) {
+        $response['error'] = "Database error: " . $e->getMessage();
     } catch (PDOException $e) {
         $response['error'] = "Database error: " . $e->getMessage();
     }
@@ -333,13 +379,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 // Initial data fetch for reports
-$data = fetchData($con, ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'employee_trainings']);
+$data = fetchData($con, ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'employee_trainings', 'projects', 'task_assignments', 'training_overview', 'subtask_counts']);
 $employees = $data['employees'] ?? [];
 $feedback = $data['feedback'] ?? [];
 $report_avg_ratings = $data['report_avg_ratings'] ?? [];
 $report_feedback_types = $data['report_feedback_types'] ?? [];
 $project_assignments = $data['project_assignments'] ?? [];
 $employee_trainings = $data['employee_trainings'] ?? [];
+$projects = $data['projects'] ?? [];
+$task_assignments = $data['task_assignments'] ?? [];
+$training_overview = $data['training_overview'] ?? [];
+$subtask_counts = $data['subtask_counts'] ?? [];
 ?>
 
 <!DOCTYPE html>
@@ -437,7 +487,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
                 </div>
             </div>
             <div class="report-section" id="report-content" style="display: none;">
-                <div class="report-section">
+                <div id="avg-ratings-section" class="report-section" style="display: none;">
                     <h3>Average Ratings per Employee</h3>
                     <table class="report-table">
                         <thead>
@@ -450,7 +500,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
                         <tbody id="avg-ratings-table"></tbody>
                     </table>
                 </div>
-                <div class="report-section">
+                <div id="feedback-types-section" class="report-section" style="display: none;">
                     <h3>Feedback Type Distribution</h3>
                     <table class="report-table">
                         <thead>
@@ -462,7 +512,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
                         <tbody id="feedback-types-table"></tbody>
                     </table>
                 </div>
-                <div class="report-section">
+                <div id="work-summary-section" class="report-section" style="display: none;">
                     <h3>Work Summary</h3>
                     <table class="report-table">
                         <thead>
@@ -474,7 +524,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
                         <tbody id="work-summary-table"></tbody>
                     </table>
                 </div>
-                <div class="report-section">
+                <div id="training-certificates-section" class="report-section" style="display: none;">
                     <h3>Training Certificates</h3>
                     <table class="report-table">
                         <thead>
@@ -488,7 +538,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
                         <tbody id="training-certificates-table"></tbody>
                     </table>
                 </div>
-                <div class="report-section">
+                <div id="feedback-summary-section" class="report-section" style="display: none;">
                     <h3>Feedback Summary</h3>
                     <table class="report-table">
                         <thead>
@@ -604,6 +654,116 @@ $employee_trainings = $data['employee_trainings'] ?? [];
             unset($_SESSION['error']);
         }
         ?>
+        <!-- New container for tab-specific content -->
+        <div id="project-task-content" style="display: none;" class="card">
+            <div id="project-overview-section" class="report-section" style="display: none;">
+                <h3>Project Overview</h3>
+                <div class="report-filter">
+                    <div class="form-group">
+                        <label for="project-status-filter">Filter by Status:</label>
+                        <select id="project-status-filter">
+                            <option value="">All</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="project-overview-summary" class="report-summary">
+                    <p>Total Projects: <span id="total-projects">0</span></p>
+                    <p>Overdue Projects: <span id="overdue-projects">0</span></p>
+                </div>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Project Name</th>
+                            <th>Status</th>
+                            <th>Start Date</th>
+                            <th>Expected End Date</th>
+                            <th>Department</th>
+                        </tr>
+                    </thead>
+                    <tbody id="project-overview-table"></tbody>
+                </table>
+            </div>
+            <div id="project-budget-section" class="report-section" style="display: none;">
+                <h3>Project Budget Monitor</h3>
+                <div class="report-filter">
+                    <div class="form-group">
+                        <label for="budget-status-filter">Filter by Status:</label>
+                        <select id="budget-status-filter">
+                            <option value="">All</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="project-budget-summary" class="report-summary">
+                    <p>Total Projects: <span id="total-budget-projects">0</span></p>
+                    <p>Over Budget Projects: <span id="over-budget-projects">0</span></p>
+                    <p>High Risk Projects: <span id="high-risk-projects">0</span></p>
+                </div>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Project Name</th>
+                            <th>Status</th>
+                            <th>Budget</th>
+                            <th>Actual Cost</th>
+                            <th>Cost Difference</th>
+                            <th>Expected End Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="project-budget-table"></tbody>
+                </table>
+            </div>
+            <div id="task-assignments-section" class="report-section" style="display: none;">
+                <h3>Task Assignments</h3>
+                <div class="highlight-legend">
+                    <p><span class="highlight overdue"></span> Overdue Task (Due Date Passed, Not Done)</p>
+                    <p><span class="highlight heavy-workload"></span> Heavy Workload (>5 Subtasks)</p>
+                </div>
+                <div id="workload-summary" class="report-summary">
+                    <h4>Workload Distribution</h4>
+                    <table class="report-table">
+                        <thead>
+                            <tr>
+                                <th>Employee Name</th>
+                                <th>Subtask Count</th>
+                            </tr>
+                        </thead>
+                        <tbody id="workload-table"></tbody>
+                    </table>
+                </div>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Assigned To</th>
+                            <th>Tasks</th>
+                            <th>Subtask Count</th>
+                        </tr>
+                    </thead>
+                    <tbody id="task-assignments-table"></tbody>
+                </table>
+            </div>
+            <div id="training-overview-section" class="report-section" style="display: none;">
+                <h3>Training Overview</h3>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Training Name</th>
+                            <th>Training Date</th>
+                            <th>End Date</th>
+                            <th>Certificate</th>
+                            <th>Enrolled Count</th>
+                            <th>Average Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="training-overview-table"></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 </div>
 <script>
@@ -614,7 +774,9 @@ $employee_trainings = $data['employee_trainings'] ?? [];
     const projectAssignments = <?php echo json_encode($project_assignments); ?>;
     const employeeTrainings = <?php echo json_encode($employee_trainings); ?>;
     const departments = <?php echo json_encode($departments ?: []); ?>;
-
+    const projects = <?php echo json_encode($projects); ?>;
+    const taskAssignments = <?php echo json_encode($task_assignments); ?>;
+    const trainingOverview = <?php echo json_encode($training_overview); ?>;
 </script>
 <script src="../assets/js/superadmin_dashboard.js"></script>
 </body>
