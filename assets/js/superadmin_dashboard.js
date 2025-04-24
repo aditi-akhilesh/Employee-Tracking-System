@@ -1,422 +1,410 @@
 // superadmin_dashboard.js
 
-// Centralized function to manage section visibility
-function showSection(sectionToShowId) {
+// Reset all sections
+function resetAllSections() {
   const sections = [
     'main-content',
-    'reports-analytics',
     'create-user-form',
-    // Add other sections as needed for future functionalities
+    'reports-analytics',
+    'project-task-content',
   ];
-
-  const mainContent = document.getElementById('content-area');
-  if (!mainContent) {
-    console.error('content-area not found');
-    return false;
-  }
-
-  // Hide all sections
   sections.forEach((sectionId) => {
-    const section = document.getElementById(sectionId);
-    if (section) {
-      section.style.display = 'none';
-    }
+    document.getElementById(sectionId).style.display = 'none';
   });
 
-  // Show the content-area and the specified section
-  mainContent.style.display = 'block';
-  const sectionToShow = document.getElementById(sectionToShowId);
-  if (sectionToShow) {
-    sectionToShow.style.display = 'block';
-  } else {
-    console.error(`${sectionToShowId} not found`);
-    return false;
-  }
+  // Reset report sections
+  const reportSections = [
+    'avg-ratings-section',
+    'feedback-types-section',
+    'work-summary-section',
+    'training-certificates-section',
+    'feedback-summary-section',
+  ];
+  reportSections.forEach((sectionId) => {
+    document.getElementById(sectionId).style.display = 'none';
+  });
 
-  return true;
+  // Reset project/task sections
+  const projectTaskSections = [
+    'project-overview-section',
+    'project-budget-section',
+    'task-assignments-section',
+    'training-overview-section',
+  ];
+  projectTaskSections.forEach((sectionId) => {
+    document.getElementById(sectionId).style.display = 'none';
+  });
 }
 
-// Function to show error messages
-function showError(message, containerId = 'content-area') {
-  const container = document.getElementById(containerId);
-  if (container) {
-    container.innerHTML =
-      `<div class="alert alert-error">${message}</div>` + container.innerHTML;
-  }
+// Show Welcome Message (Main Dashboard)
+function showWelcomeMessage() {
+  resetAllSections();
+  document.getElementById('main-content').style.display = 'block';
 }
 
-// Function to show success messages
-function showSuccess(message, containerId = 'content-area') {
-  const container = document.getElementById(containerId);
-  if (container) {
-    container.innerHTML =
-      `<div class="alert alert-success">${message}</div>` + container.innerHTML;
-    setTimeout(() => {
-      const successDiv = container.querySelector('.alert-success');
-      if (successDiv) successDiv.remove();
-    }, 3000);
-  }
-}
-
-// Function to refresh report data
-function refreshReportData(callback) {
-  fetch('superadmin_dashboard.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data&section=reports',
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        window.employees = data.employees || [];
-        window.feedback = data.feedback || [];
-        window.reportAvgRatings = data.report_avg_ratings || [];
-        window.reportFeedbackTypes = data.report_feedback_types || [];
-        window.projectAssignments = data.project_assignments || [];
-        window.employeeTrainings = data.employee_trainings || [];
-        if (callback) callback();
-      } else {
-        showError(data.error || 'Failed to refresh data', 'reports-analytics');
-      }
-    })
-    .catch((error) =>
-      showError('Network error: ' + error.message, 'reports-analytics')
-    );
-}
-
-// Show Reports and Analytics Section
+// Show Reports and Analytics section
 function showReportsAnalytics() {
-  if (!showSection('reports-analytics')) return;
+  resetAllSections();
+  document.getElementById('reports-analytics').style.display = 'block';
+  document.getElementById('report-content').style.display = 'none';
+}
 
-  const reportContent = document.getElementById('report-content');
-  if (!reportContent) {
-    showError('Report content not found', 'reports-analytics');
+// Show Create User Form
+function showCreateUserForm() {
+  resetAllSections();
+  document.getElementById('create-user-form').style.display = 'block';
+}
+
+// Show Project Overview
+function showProjectOverview() {
+  resetAllSections();
+  document.getElementById('project-task-content').style.display = 'block';
+  document.getElementById('project-overview-section').style.display = 'block';
+  renderProjectOverview();
+
+  // Add filter event listener
+  document.getElementById('project-status-filter').onchange = () =>
+    renderProjectOverview();
+}
+
+// Show Project Budget
+function showProjectBudget() {
+  resetAllSections();
+  document.getElementById('project-task-content').style.display = 'block';
+  document.getElementById('project-budget-section').style.display = 'block';
+  renderProjectBudget();
+
+  // Add filter event listener
+  document.getElementById('budget-status-filter').onchange = () =>
+    renderProjectBudget();
+}
+
+// Show Task Assignments
+function showTaskAssignments() {
+  resetAllSections();
+  document.getElementById('project-task-content').style.display = 'block';
+  document.getElementById('task-assignments-section').style.display = 'block';
+  renderTaskAssignments();
+  renderWorkloadSummary();
+}
+
+// Render Project Overview
+function renderProjectOverview() {
+  const projectTable = document.getElementById('project-overview-table');
+  const statusFilter = document.getElementById('project-status-filter').value;
+  const currentDate = new Date();
+
+  let overdueCount = 0;
+  const filteredProjects = projects.filter(
+    (project) => !statusFilter || project.project_status === statusFilter
+  );
+
+  projectTable.innerHTML = '';
+  filteredProjects.forEach((project) => {
+    const expectedEndDate = new Date(project.expected_end_date);
+    const isOverdue =
+      expectedEndDate < currentDate && project.project_status !== 'Completed';
+    if (isOverdue) overdueCount++;
+
+    const rowStyle = isOverdue ? 'style="background-color: #ffcccc;"' : '';
+    projectTable.innerHTML += `
+          <tr ${rowStyle}>
+              <td>${project.project_name}</td>
+              <td>${project.project_status}</td>
+              <td>${project.start_date}</td>
+              <td>${project.expected_end_date}</td>
+              <td>${project.department_name}</td>
+          </tr>
+      `;
+  });
+
+  // Update summary
+  document.getElementById('total-projects').textContent =
+    filteredProjects.length;
+  document.getElementById('overdue-projects').textContent = overdueCount;
+}
+
+// Render Project Budget
+function renderProjectBudget() {
+  const projectTable = document.getElementById('project-budget-table');
+  const statusFilter = document.getElementById('budget-status-filter').value;
+  const currentDate = new Date();
+
+  let overBudgetCount = 0;
+  let highRiskCount = 0;
+  const filteredProjects = projects.filter(
+    (project) => !statusFilter || project.project_status === statusFilter
+  );
+
+  projectTable.innerHTML = '';
+  filteredProjects.forEach((project) => {
+    const expectedEndDate = new Date(project.expected_end_date);
+    const actualCost = parseFloat(project.actual_cost || 0);
+    const budget = parseFloat(project.budget);
+    const costDifference = actualCost - budget;
+    const isOverBudget = actualCost > budget;
+    const isOverdue =
+      expectedEndDate < currentDate && project.project_status !== 'Completed';
+    const isHighRisk = isOverBudget && isOverdue;
+
+    if (isOverBudget) overBudgetCount++;
+    if (isHighRisk) highRiskCount++;
+
+    let rowStyle = '';
+    if (isHighRisk) rowStyle = 'style="background-color: #ff9999;"';
+    // High risk: overdue + over budget
+    else if (isOverBudget)
+      rowStyle = 'style="background-color: #ffcc99;"'; // Over budget
+    else if (isOverdue) rowStyle = 'style="background-color: #ffcccc;"'; // Overdue
+
+    projectTable.innerHTML += `
+          <tr ${rowStyle}>
+              <td>${project.project_name}</td>
+              <td>${project.project_status}</td>
+              <td>$${budget.toFixed(2)}</td>
+              <td>$${actualCost.toFixed(2)}</td>
+              <td>$${costDifference.toFixed(2)}</td>
+              <td>${project.expected_end_date}</td>
+          </tr>
+      `;
+  });
+
+  // Update summary
+  document.getElementById('total-budget-projects').textContent =
+    filteredProjects.length;
+  document.getElementById('over-budget-projects').textContent = overBudgetCount;
+  document.getElementById('high-risk-projects').textContent = highRiskCount;
+}
+
+// Render Task Assignments
+function renderTaskAssignments() {
+  const taskTable = document.getElementById('task-assignments-table');
+  taskTable.innerHTML = '';
+
+  const groupedTasks = groupTasksByEmployee();
+
+  Object.keys(groupedTasks).forEach((employee) => {
+    const employeeData = groupedTasks[employee];
+    const tasks = employeeData.tasks;
+    const subtaskCount = employeeData.subtaskCount;
+    const isHeavyWorkload = subtaskCount > 5;
+    const rowClass = isHeavyWorkload ? 'heavy-workload' : '';
+    const rowTitle = isHeavyWorkload
+      ? `title="Heavy Workload: ${subtaskCount} subtasks assigned"`
+      : '';
+
+    let taskList = '<table class="nested-table">';
+    taskList +=
+      '<thead><tr><th>Task Description</th><th>Project</th><th>Status</th><th>Due Date</th></tr></thead><tbody>';
+    tasks.forEach((task) => {
+      const taskClass = task.isOverdue
+        ? 'class="overdue" title="Overdue: Due date ' +
+          task.due_date +
+          ' passed and status is not Done"'
+        : '';
+      taskList += `
+              <tr ${taskClass}>
+                  <td>${task.task_description}</td>
+                  <td>${task.project_name}</td>
+                  <td>${task.status}</td>
+                  <td>${task.due_date || 'N/A'}</td>
+              </tr>
+          `;
+    });
+    taskList += '</tbody></table>';
+
+    taskTable.innerHTML += `
+          <tr class="${rowClass}" ${rowTitle}>
+              <td>${employee}</td>
+              <td>${taskList}</td>
+              <td>${subtaskCount}</td>
+          </tr>
+      `;
+  });
+}
+
+// Group tasks by employee
+function groupTasksByEmployee() {
+  const groupedTasks = {};
+  const currentDate = new Date();
+
+  taskAssignments.forEach((task) => {
+    const employeeKey = `${task.first_name} ${task.last_name}`;
+    if (!groupedTasks[employeeKey]) {
+      groupedTasks[employeeKey] = {
+        employee_id: task.employee_id,
+        tasks: [],
+        subtaskCount: 0,
+      };
+    }
+    const dueDate = task.due_date ? new Date(task.due_date) : null;
+    const isOverdue =
+      dueDate && dueDate < currentDate && task.status !== 'Done';
+    groupedTasks[employeeKey].tasks.push({ ...task, isOverdue });
+    groupedTasks[employeeKey].subtaskCount++;
+  });
+
+  return groupedTasks;
+}
+
+// Render Workload Summary
+function renderWorkloadSummary() {
+  const workloadTable = document.getElementById('workload-table');
+  workloadTable.innerHTML = '';
+
+  if (!Array.isArray(subtaskCounts) || subtaskCounts.length === 0) {
+    workloadTable.innerHTML = `
+          <tr>
+              <td colspan="2">No subtask data available.</td>
+          </tr>
+      `;
     return;
   }
 
-  reportContent.style.display = 'none';
-
-  // Refresh data to ensure we have the latest information
-  refreshReportData(() => {
-    const employeeSearch = document.getElementById('employee-search');
-    if (employeeSearch) {
-      // Populate employee dropdown with all employees
-      employeeSearch.innerHTML = '<option value="">Select an employee</option>';
-      window.employees.forEach((emp) => {
-        employeeSearch.innerHTML += `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`;
-      });
-    }
-
-    const generateReportBtn = document.getElementById('generate-report-btn');
-    if (generateReportBtn) {
-      generateReportBtn.addEventListener('click', function () {
-        const selectedEmployeeId = employeeSearch.value;
-        if (!selectedEmployeeId) {
-          alert('Please select an employee to generate the report.');
-          return;
-        }
-
-        const filteredAvgRatings = window.reportAvgRatings.filter(
-          (report) => String(report.employee_id) === selectedEmployeeId
-        );
-        const filteredFeedback = window.feedback.filter(
-          (fb) => String(fb.employee_id) === selectedEmployeeId
-        );
-        const filteredFeedbackTypes = window.reportFeedbackTypes
-          .filter((type) => {
-            const typeFeedback = filteredFeedback.filter(
-              (fb) => fb.feedback_type === type.feedback_type
-            );
-            return typeFeedback.length > 0;
-          })
-          .map((type) => ({
-            feedback_type: type.feedback_type,
-            type_count: filteredFeedback.filter(
-              (fb) => fb.feedback_type === type.feedback_type
-            ).length,
-          }));
-        const filteredAssignments = window.projectAssignments.filter(
-          (assignment) => String(assignment.employee_id) === selectedEmployeeId
-        );
-        const filteredTrainings = window.employeeTrainings.filter(
-          (training) => String(training.employee_id) === selectedEmployeeId
-        );
-
-        // Populate Average Ratings Table
-        const avgRatingsTable = document.getElementById('avg-ratings-table');
-        avgRatingsTable.innerHTML = '';
-        if (filteredAvgRatings.length === 0) {
-          avgRatingsTable.innerHTML = `<tr><td colspan="3">No feedback data available for this employee.</td></tr>`;
-        } else {
-          filteredAvgRatings.forEach((report) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${report.first_name} ${report.last_name}</td>
-              <td>${parseFloat(report.avg_rating).toFixed(2)}</td>
-              <td>${report.feedback_count}</td>
-            `;
-            avgRatingsTable.appendChild(row);
-          });
-        }
-
-        // Populate Feedback Types Table
-        const feedbackTypesTable = document.getElementById(
-          'feedback-types-table'
-        );
-        feedbackTypesTable.innerHTML = '';
-        if (filteredFeedbackTypes.length === 0) {
-          feedbackTypesTable.innerHTML = `<tr><td colspan="2">No feedback data available for this employee.</td></tr>`;
-        } else {
-          filteredFeedbackTypes.forEach((report) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${report.feedback_type}</td>
-              <td>${report.type_count}</td>
-            `;
-            feedbackTypesTable.appendChild(row);
-          });
-        }
-
-        // Populate Work Summary Table
-        const workSummaryTable = document.getElementById('work-summary-table');
-        workSummaryTable.innerHTML = '';
-        if (filteredFeedback.length === 0 && filteredAssignments.length === 0) {
-          workSummaryTable.innerHTML = `<tr><td colspan="2">No work summary available for this employee.</td></tr>`;
-        } else {
-          if (filteredFeedback.length > 0) {
-            const feedbackSummary = filteredFeedback
-              .map(
-                (fb) =>
-                  `${fb.feedback_type}: ${fb.feedback_text} (Rating: ${fb.rating}, Date: ${fb.date_submitted})`
-              )
-              .join('; ');
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>Feedback</td>
-              <td>${feedbackSummary}</td>
-            `;
-            workSummaryTable.appendChild(row);
-          }
-          if (filteredAssignments.length > 0) {
-            const projectSummary = filteredAssignments
-              .map(
-                (assignment) =>
-                  `${assignment.project_name} (Role: ${assignment.role_in_project})`
-              )
-              .join('; ');
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>Projects</td>
-              <td>${projectSummary}</td>
-            `;
-            workSummaryTable.appendChild(row);
-          }
-        }
-
-        // Populate Training Certificates Table
-        const trainingTable = document.getElementById(
-          'training-certificates-table'
-        );
-        trainingTable.innerHTML = '';
-        if (filteredTrainings.length === 0) {
-          trainingTable.innerHTML = `<tr><td colspan="4">No training certificates available for this employee.</td></tr>`;
-        } else {
-          filteredTrainings.forEach((training) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${training.training_name}</td>
-              <td>${training.training_date || 'N/A'}</td>
-              <td>${training.certificate || 'N/A'}</td>
-              <td>${training.score || 'N/A'}</td>
-            `;
-            trainingTable.appendChild(row);
-          });
-        }
-
-        // Populate Feedback Summary Table
-        const feedbackSummaryTable = document.getElementById(
-          'feedback-summary-table'
-        );
-        feedbackSummaryTable.innerHTML = '';
-        if (filteredFeedback.length === 0) {
-          feedbackSummaryTable.innerHTML = `<tr><td colspan="5">No feedback data available for this employee.</td></tr>`;
-        } else {
-          filteredFeedback.forEach((fb) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${fb.first_name} ${fb.last_name}</td>
-              <td>${fb.rating}</td>
-              <td>${fb.feedback_type}</td>
-              <td>${fb.feedback_text}</td>
-              <td>${fb.date_submitted}</td>
-            `;
-            feedbackSummaryTable.appendChild(row);
-          });
-        }
-
-        reportContent.style.display = 'block';
-      });
-    }
-
-    // Initialize PDF download functionality
-    const initializeDownloadPdf = () => {
-      const downloadPdfBtn = document.getElementById('download-pdf-btn');
-      if (downloadPdfBtn) {
-        // Remove any existing click event listeners to prevent duplicates
-        const newButton = downloadPdfBtn.cloneNode(true);
-        downloadPdfBtn.parentNode.replaceChild(newButton, downloadPdfBtn);
-        
-        // Reassign the button reference
-        const updatedDownloadPdfBtn = document.getElementById('download-pdf-btn');
-
-        updatedDownloadPdfBtn.addEventListener('click', function () {
-          const reportContent = document.getElementById('report-content');
-          if (!reportContent) {
-            showError(
-              'Report content not found. Please generate the report first.',
-              'reports-analytics'
-            );
-            return;
-          }
-
-          if (
-            typeof html2canvas === 'undefined' ||
-            typeof window.jspdf === 'undefined'
-          ) {
-            showError('PDF libraries not loaded.', 'reports-analytics');
-            return;
-          }
-
-          updatedDownloadPdfBtn.style.display = 'none';
-          html2canvas(reportContent, { scale: 2 })
-            .then((canvas) => {
-              const imgData = canvas.toDataURL('image/png');
-              const { jsPDF } = window.jspdf;
-              const pdf = new jsPDF('p', 'mm', 'a4');
-              const pageWidth = pdf.internal.pageSize.getWidth();
-              const pageHeight = pdf.internal.pageSize.getHeight();
-              const imgWidth = pageWidth - 20;
-              const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-              let position = 10;
-              pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-              let remainingHeight = imgHeight;
-              while (remainingHeight > pageHeight - 20) {
-                pdf.addPage();
-                position = 10;
-                remainingHeight -= pageHeight - 20;
-                pdf.addImage(
-                  imgData,
-                  'PNG',
-                  10,
-                  position - remainingHeight,
-                  imgWidth,
-                  imgHeight
-                );
-              }
-
-              const employeeSearch = document.getElementById('employee-search');
-              const selectedEmployee =
-                employeeSearch.options[employeeSearch.selectedIndex].text;
-              pdf.save(
-                `Employee_Report_${selectedEmployee}_${new Date()
-                  .toISOString()
-                  .split('T')[0]}.pdf`
-              );
-              updatedDownloadPdfBtn.style.display = 'block';
-            })
-            .catch((error) => {
-              showError(
-                'Failed to generate PDF: ' + error.message,
-                'reports-analytics'
-              );
-              updatedDownloadPdfBtn.style.display = 'block';
-            });
-        });
-      }
-    };
-
-    if (
-      typeof html2canvas !== 'undefined' &&
-      typeof window.jspdf !== 'undefined'
-    ) {
-      initializeDownloadPdf();
-    } else {
-      const loadHtml2Canvas = new Promise((resolve, reject) => {
-        if (typeof html2canvas !== 'undefined') return resolve();
-        loadScript(
-          'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',
-          (error) => (error ? reject(error) : resolve())
-        );
-      });
-      const loadJsPDF = new Promise((resolve, reject) => {
-        if (typeof window.jspdf !== 'undefined') return resolve();
-        loadScript(
-          'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
-          (error) => (error ? reject(error) : resolve())
-        );
-      });
-      Promise.all([loadHtml2Canvas, loadJsPDF])
-        .then(initializeDownloadPdf)
-        .catch((error) =>
-          showError(
-            'Failed to load PDF libraries: ' + error.message,
-            'reports-analytics'
-          )
-        );
-    }
+  subtaskCounts.forEach((employee) => {
+    const subtaskCount = parseInt(employee.subtask_count) || 0;
+    const isHeavyWorkload = subtaskCount > 5;
+    const rowStyle = isHeavyWorkload
+      ? 'class="heavy-workload" title="Heavy Workload: ' +
+        subtaskCount +
+        ' subtasks assigned"'
+      : '';
+    workloadTable.innerHTML += `
+          <tr ${rowStyle}>
+              <td>${employee.first_name} ${employee.last_name}</td>
+              <td>${subtaskCount}</td>
+          </tr>
+      `;
   });
 }
 
-// Function to load external scripts
-function loadScript(url, callback) {
-  const script = document.createElement('script');
-  script.src = url;
-  script.onload = () => callback();
-  script.onerror = () => callback(new Error(`Failed to load script: ${url}`));
-  document.head.appendChild(script);
+// Render Training Overview
+function renderTrainingOverview() {
+  const trainingTable = document.getElementById('training-overview-table');
+  trainingTable.innerHTML = '';
+  trainingOverview.forEach((training) => {
+    trainingTable.innerHTML += `
+          <tr>
+              <td>${training.training_name}</td>
+              <td>${training.training_date}</td>
+              <td>${training.end_date || 'N/A'}</td>
+              <td>${training.certificate || 'None'}</td>
+              <td>${training.enrolled_count}</td>
+              <td>${
+                training.avg_score
+                  ? parseFloat(training.avg_score).toFixed(2)
+                  : 'N/A'
+              }</td>
+          </tr>
+      `;
+  });
 }
 
-// Placeholder for Create User Form (stub for other functionalities)
-function showCreateUserForm() {
-  if (!showSection('create-user-form')) return;
+// Generate Report Button (Show All Reports Sections)
+document.getElementById('generate-report-btn').addEventListener('click', () => {
+  const employeeId = document.getElementById('employee-search').value;
+  showReportsAnalytics();
+  document.getElementById('report-content').style.display = 'block';
 
-  const contentArea = document.getElementById('create-user-form');
-  contentArea.innerHTML = `
-    <div class="card">
-      <h2>Create New User</h2>
-      <p>Functionality to create a new user profile will be implemented here.</p>
-      <div class="form-group button-group">
-        <button type="button" onclick="showWelcomeMessage()">Back</button>
-      </div>
-    </div>
-  `;
-}
+  document.getElementById('avg-ratings-section').style.display = 'block';
+  const avgRatingsTable = document.getElementById('avg-ratings-table');
+  avgRatingsTable.innerHTML = '';
+  reportAvgRatings
+    .filter((r) => !employeeId || r.employee_id == employeeId)
+    .forEach((rating) => {
+      avgRatingsTable.innerHTML += `
+              <tr>
+                  <td>${rating.first_name} ${rating.last_name}</td>
+                  <td>${parseFloat(rating.avg_rating).toFixed(2)}</td>
+                  <td>${rating.feedback_count}</td>
+              </tr>
+          `;
+    });
 
-// Toggle dropdown menu without hiding sidebar text
+  document.getElementById('feedback-types-section').style.display = 'block';
+  const feedbackTypesTable = document.getElementById('feedback-types-table');
+  feedbackTypesTable.innerHTML = '';
+  reportFeedbackTypes.forEach((type) => {
+    feedbackTypesTable.innerHTML += `
+          <tr>
+              <td>${type.feedback_type}</td>
+              <td>${type.type_count}</td>
+          </tr>
+      `;
+  });
+
+  document.getElementById('work-summary-section').style.display = 'block';
+  const workSummaryTable = document.getElementById('work-summary-table');
+  workSummaryTable.innerHTML = '';
+  projectAssignments
+    .filter((a) => !employeeId || a.employee_id == employeeId)
+    .forEach((assignment) => {
+      workSummaryTable.innerHTML += `
+              <tr>
+                  <td>Project Assignment</td>
+                  <td>${assignment.project_name} (${assignment.role_in_project})</td>
+              </tr>
+          `;
+    });
+
+  document.getElementById('training-certificates-section').style.display =
+    'block';
+  const trainingTable = document.getElementById('training-certificates-table');
+  trainingTable.innerHTML = '';
+  employeeTrainings
+    .filter((t) => !employeeId || t.employee_id == employeeId)
+    .forEach((training) => {
+      trainingTable.innerHTML += `
+              <tr>
+                  <td>${training.training_name}</td>
+                  <td>${training.training_date}</td>
+                  <td>${training.certificate || 'None'}</td>
+                  <td>${training.score || 'N/A'}</td>
+              </tr>
+          `;
+    });
+
+  document.getElementById('feedback-summary-section').style.display = 'block';
+  const feedbackTable = document.getElementById('feedback-summary-table');
+  feedbackTable.innerHTML = '';
+  feedback
+    .filter((f) => !employeeId || f.employee_id == employeeId)
+    .forEach((f) => {
+      feedbackTable.innerHTML += `
+              <tr>
+                  <td>${f.first_name} ${f.last_name}</td>
+                  <td>${f.rating}</td>
+                  <td>${f.feedback_type}</td>
+                  <td>${f.feedback_text}</td>
+                  <td>${f.date_submitted}</td>
+              </tr>
+          `;
+    });
+});
+
+// Download PDF Button
+document.getElementById('download-pdf-btn').addEventListener('click', () => {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const reportContent = document.getElementById('report-content');
+
+  html2canvas(reportContent).then((canvas) => {
+    const imgData = canvas.toDataURL('image/png');
+    const imgProps = doc.getImageProperties(imgData);
+    const pdfWidth = doc.internal.pageSize.getWidth();
+    const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+    doc.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+    doc.save('report.pdf');
+  });
+});
+
+// Toggle Dropdown for Sidebar
 function toggleDropdown(event, dropdownId) {
   event.preventDefault();
   const dropdown = document.getElementById(dropdownId);
-  if (dropdown) {
-    const isDisplayed = dropdown.style.display === 'block';
-    dropdown.style.display = isDisplayed ? 'none' : 'block';
-  }
+  const isVisible = dropdown.style.display === 'block';
+  document
+    .querySelectorAll('.dropdown')
+    .forEach((d) => (d.style.display = 'none'));
+  dropdown.style.display = isVisible ? 'none' : 'block';
 }
-
-// Show welcome message (default view)
-function showWelcomeMessage() {
-  showSection('main-content');
-}
-
-// Initialize sidebar event listeners
-document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('.sidebar-menu a').forEach((link) => {
-    link.addEventListener('click', function (event) {
-      const action = this.getAttribute('onclick');
-      if (action && typeof window[action] === 'function') {
-        event.preventDefault();
-        window[action]();
-      }
-    });
-  });
-});
