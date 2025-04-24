@@ -4,7 +4,7 @@
             <ul id="manage-dropdown" class="dropdown" style="display: none;">
                 <li><a href="#" onclick="showCreateUserForm()">Create new profile</a></li>
                 <li><a href="#">Update or remove employee or manager</a></li>
-                <li><a href="#">View all employees or managers</a></li>
+                <li><a href="#" onclick="showAllEmployees()">View all employees or managers</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'attendance-dropdown')"><i class="fas fa-clock"></i> Attendance and Leave</a>
@@ -16,7 +16,7 @@
         <li><a href="#" onclick="toggleDropdown(event, 'department-dropdown')"><i class="fas fa-building"></i> Department Management</a>
             <ul id="department-dropdown" class="dropdown" style="display: none;">
                 <li><a href="#">Update department assignment</a></li>
-                <li><a href="#">Track department information</a></li>
+                <li><a href="#" onclick="showDepartment()">Track department information</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'project-dropdown')"><i class="fas fa-tasks"></i> Projects and Tasks</a>

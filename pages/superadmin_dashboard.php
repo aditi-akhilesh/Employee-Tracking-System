@@ -4,6 +4,22 @@ require_once '../auth/dbconnect.php';
 
 $page_title = "Super Admin Dashboard";
 
+
+try {
+    $stmt = $con->query("
+        SELECT 
+            e.employee_id, e.user_id, u.first_name, u.last_name, u.email, u.role, 
+            e.department_id, e.emp_hire_date, e.salary, e.emp_status,e.manager_id,e.is_manager
+        FROM Employees e
+        JOIN Users u ON e.user_id = u.user_id where u.role!='Super Admin'
+    ");
+    $employeesadmin = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $employeesadmin = [];
+    $_SESSION['error'] = "Failed to fetch employees: " . $e->getMessage();
+}
+
+
 // Fetch departments with description and employee count
 try {
     $stmt = $con->query("
@@ -418,6 +434,9 @@ $employee_trainings = $data['employee_trainings'] ?? [];
             <p>You are in the Super Admin dashboard. Select an option from the menu on the left to get started.</p>
         </div>
         <div id="create-user-form" style="display: none;"></div>
+        <div id="profile-update-form" style="display: none;" ></div>
+        <div id="Department_content" style="display: none;" ></div>
+
         <div id="reports-analytics" style="display: none;" class="card">
             <h2>Reports and Analytics</h2>
             <div class="report-filter">
@@ -614,6 +633,8 @@ $employee_trainings = $data['employee_trainings'] ?? [];
     const projectAssignments = <?php echo json_encode($project_assignments); ?>;
     const employeeTrainings = <?php echo json_encode($employee_trainings); ?>;
     const departments = <?php echo json_encode($departments ?: []); ?>;
+    const employeesadmin = <?php echo json_encode($employeesadmin ?: []); ?>;
+console.log(employeesadmin)
 
 </script>
 <script src="../assets/js/superadmin_dashboard.js"></script>
