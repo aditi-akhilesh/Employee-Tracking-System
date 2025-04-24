@@ -67,7 +67,7 @@ function refreshReportData(callback) {
   fetch('superadmin_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data�ion=reports',
+    body: 'action=refresh_data&section=reports',
   })
     .then((response) => response.json())
     .then((data) => {
