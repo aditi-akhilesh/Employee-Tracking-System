@@ -113,7 +113,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             exit();
         } elseif ($_POST['action'] === 'fetch_leave_applications') {
             $leave_filter = $_POST['leave_filter'] ?? 'ispending';
-            $stmt = $con->prepare("
+            $logged_in_employee_id = $_SESSION['employee_id'] ?? null;
+
+            $query = "
                 SELECT 
                     l.leave_id AS request_id, 
                     CONCAT(u.first_name, ' ', u.last_name) AS employee_name, 
@@ -125,14 +127,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 JOIN Employees e ON l.employee_id = e.employee_id
                 JOIN Users u ON e.user_id = u.user_id
                 WHERE l.status = ?
-            ");
-            $stmt->execute([$leave_filter]);
+            ";
+            $params = [$leave_filter];
+
+            if ($logged_in_employee_id) {
+                $query .= " AND e.employee_id != ?";
+                $params[] = $logged_in_employee_id;
+            }
+
+            $stmt = $con->prepare($query);
+            $stmt->execute($params);
             $response['leave_applications'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $response['success'] = true;
         } elseif ($_POST['action'] === 'fetch_attendance') {
             $employee_id = $_POST['employee_id'] ?? '';
             $start_date = $_POST['start_date'] ?? '';
             $end_date = $_POST['end_date'] ?? '';
+            $logged_in_employee_id = $_SESSION['employee_id'] ?? null;
 
             $query = "
                 SELECT 
@@ -150,8 +161,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
                 JOIN Employees e ON a.employee_id = e.employee_id
                 JOIN Users u ON e.user_id = u.user_id
                 JOIN Department d ON e.department_id = d.department_id
+                WHERE 1=1
             ";
             $params = [];
+
+            // Exclude the logged-in Super Admin's own attendance records
+            if ($logged_in_employee_id) {
+                $query .= " AND a.employee_id != ?";
+                $params[] = $logged_in_employee_id;
+            }
+
             if ($employee_id) {
                 $query .= " AND a.employee_id = ?";
                 $params[] = $employee_id;
@@ -219,7 +238,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
         .alert-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-        th { background-color: #003087; color: #fff; }
+        th  th { background-color: #003087; color: #fff; }
         .content { padding: 20px; }
         .dropdown { display: none; opacity: 0; transition: opacity 0.2s; }
         .dropdown.show { display: block; opacity: 1; }
