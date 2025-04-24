@@ -4,25 +4,6 @@ require_once '../auth/dbconnect.php';
 
 $page_title = "Super Admin Dashboard";
 
-// Fetch departments with description and employee count
-try {
-    $stmt = $con->query("
-        SELECT distinct
-            d.department_id, 
-            d.department_name, 
-            d.department_description, 
-            COUNT(e.employee_id) AS employee_count
-        FROM Department d
-        LEFT JOIN Employees e ON d.department_id = e.department_id 
-        GROUP BY d.department_id, d.department_name, d.department_description
-    ");
-    $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (PDOException $e) {
-    $departments = [];
-    $_SESSION['error'] = "Failed to fetch department information: " . $e->getMessage();
-}
-
-
 // Function to fetch data for reports
 function fetchData($con, $sections = ['all']) {
     $data = [];
@@ -184,7 +165,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             ";
             $params = [];
 
-            // Exclude the logged-in Super Admin's own attendance records
             if ($logged_in_employee_id) {
                 $query .= " AND a.employee_id != ?";
                 $params[] = $logged_in_employee_id;
@@ -360,7 +340,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
         .alert-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-        th  th { background-color: #003087; color: #fff; }
+        th { background-color: #003087; color: #fff; }
         .content { padding: 20px; }
         .dropdown { display: none; opacity: 0; transition: opacity 0.2s; }
         .dropdown.show { display: block; opacity: 1; }
@@ -613,8 +593,6 @@ $employee_trainings = $data['employee_trainings'] ?? [];
     const reportFeedbackTypes = <?php echo json_encode($report_feedback_types); ?>;
     const projectAssignments = <?php echo json_encode($project_assignments); ?>;
     const employeeTrainings = <?php echo json_encode($employee_trainings); ?>;
-    const departments = <?php echo json_encode($departments ?: []); ?>;
-
 </script>
 <script src="../assets/js/superadmin_dashboard.js"></script>
 </body>
