@@ -101,15 +101,90 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
     $response = ['success' => false];
 
-    if ($_POST['action'] === 'refresh_data') {
-        $sections = isset($_POST['section']) && $_POST['section'] === 'reports'
-            ? ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'employee_trainings']
-            : ['all'];
-        $data = fetchData($con, $sections);
-        $response['success'] = true;
-        $response = array_merge($response, $data);
-        echo json_encode($response);
-        exit();
+    try {
+        if ($_POST['action'] === 'refresh_data') {
+            $sections = isset($_POST['section']) && $_POST['section'] === 'reports'
+                ? ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'employee_trainings']
+                : ['all'];
+            $data = fetchData($con, $sections);
+            $response['success'] = true;
+            $response = array_merge($response, $data);
+            echo json_encode($response);
+            exit();
+        } elseif ($_POST['action'] === 'fetch_leave_applications') {
+            $leave_filter = $_POST['leave_filter'] ?? 'ispending';
+            $stmt = $con->prepare("
+                SELECT 
+                    l.leave_id AS request_id, 
+                    CONCAT(u.first_name, ' ', u.last_name) AS employee_name, 
+                    l.leave_start_date, 
+                    l.leave_end_date, 
+                    l.status,
+                    l.leave_reason
+                FROM Leaves l
+                JOIN Employees e ON l.employee_id = e.employee_id
+                JOIN Users u ON e.user_id = u.user_id
+                WHERE l.status = ?
+            ");
+            $stmt->execute([$leave_filter]);
+            $response['leave_applications'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $response['success'] = true;
+        } elseif ($_POST['action'] === 'fetch_attendance') {
+            $employee_id = $_POST['employee_id'] ?? '';
+            $start_date = $_POST['start_date'] ?? '';
+            $end_date = $_POST['end_date'] ?? '';
+
+            $query = "
+                SELECT 
+                    a.employee_id, 
+                    CONCAT(u.first_name, ' ', u.last_name) AS employee_name, 
+                    d.department_name, 
+                    a.check_in, 
+                    a.check_out,
+                    CASE 
+                        WHEN a.status = 'present' THEN 'Present'
+                        WHEN a.status = 'absent' THEN 'Absent'
+                        ELSE a.status
+                    END AS status
+                FROM Attendance a
+                JOIN Employees e ON a.employee_id = e.employee_id
+                JOIN Users u ON e.user_id = u.user_id
+                JOIN Department d ON e.department_id = d.department_id
+            ";
+            $params = [];
+            if ($employee_id) {
+                $query .= " AND a.employee_id = ?";
+                $params[] = $employee_id;
+            }
+            if ($start_date) {
+                $query .= " AND DATE(a.check_in) >= ?";
+                $params[] = $start_date;
+            }
+            if ($end_date) {
+                $query .= " AND DATE(a.check_out) <= ?";
+                $params[] = $end_date;
+            }
+
+            $stmt = $con->prepare($query);
+            $stmt->execute($params);
+            $response['attendance_records'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $response['success'] = true;
+        } elseif ($_POST['action'] === 'reconsider_leave') {
+            $request_id = $_POST['request_id'];
+            $stmt = $con->prepare("UPDATE Leaves SET status = 'ispending' WHERE leave_id = ?");
+            $stmt->execute([$request_id]);
+            $response['success'] = true;
+            $response['message'] = "Leave application moved back to pending.";
+        } elseif ($_POST['action'] === 'update_leave_status') {
+            $request_id = $_POST['request_id'];
+            $new_status = $_POST['status'];
+            $stmt = $con->prepare("UPDATE Leaves SET status = ?, approved_by = ? WHERE leave_id = ?");
+            $stmt->execute([$new_status, $_SESSION['user_id'], $request_id]);
+            $response['success'] = true;
+            $response['message'] = "Leave application status updated to " . $new_status . ".";
+        }
+    } catch (PDOException $e) {
+        $response['error'] = "Database error: " . $e->getMessage();
     }
 
     echo json_encode($response);
@@ -138,6 +213,59 @@ $employee_trainings = $data['employee_trainings'] ?? [];
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <style>
+        .alert { padding: 10px; margin: 10px 0; border-radius: 5px; cursor: pointer; }
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #003087; color: #fff; }
+        .content { padding: 20px; }
+        .dropdown { display: none; opacity: 0; transition: opacity 0.2s; }
+        .dropdown.show { display: block; opacity: 1; }
+        .reconsider-btn {
+            padding: 5px 10px;
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .reconsider-btn:hover { background-color: #e68900; }
+        .action-form { display: inline; }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            color: white;
+            font-size: 12px;
+        }
+        .status-pending { background-color: #ff9800; }
+        .status-approved { background-color: #4caf50; }
+        .status-rejected { background-color: #f44336; }
+        .back-btn {
+            padding: 8px 15px;
+            background-color: #003087;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .back-btn:hover { background-color: #002766; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; box-sizing: border-box; }
+        .button-group { text-align: right; }
+        .button-group button { padding: 10px 20px; margin-left: 10px; }
+        th i.fas {
+            margin-left: 5px;
+            vertical-align: middle;
+            font-size: 0.9em;
+            color: #999999;
+        }
+    </style>
 </head>
 <body>
 <?php include '../includes/header.php'; ?>
@@ -239,6 +367,82 @@ $employee_trainings = $data['employee_trainings'] ?? [];
                 </div>
             </div>
         </div>
+        <div id="attendance-records" style="display: none;" class="card">
+            <h2>Attendance Records</h2>
+            <div class="form-group">
+                <label for="attendance-employee-search">Search Employee:</label>
+                <select id="attendance-employee-search">
+                    <option value="">All Employees</option>
+                    <?php foreach ($employees as $emp): ?>
+                        <option value="<?php echo htmlspecialchars($emp['employee_id']); ?>">
+                            <?php echo htmlspecialchars($emp['first_name'] . ' ' . $emp['last_name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="start-date">Start Date:</label>
+                <input type="date" id="start-date">
+            </div>
+            <div class="form-group">
+                <label for="end-date">End Date:</label>
+                <input type="date" id="end-date">
+            </div>
+            <div class="form-group button-group">
+                <button type="button" id="fetch-attendance-btn">Fetch Attendance</button>
+            </div>
+            <table id="attendance-table">
+                <thead>
+                    <tr>
+                        <th>Employee Name <i class="fas fa-sort"></i></th>
+                        <th>Department <i class="fas fa-sort"></i></th>
+                        <th>Check In <i class="fas fa-sort"></i></th>
+                        <th>Check Out <i class="fas fa-sort"></i></th>
+                        <th>Status <i class="fas fa-sort"></i></th>
+                    </tr>
+                </thead>
+                <tbody id="attendance-table-body"></tbody>
+            </table>
+            <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
+        </div>
+        <div id="leave-requests" style="display: none;" class="card">
+            <h2>Leave Requests</h2>
+            <div class="form-group">
+                <label for="leave-filter">Filter by Status:</label>
+                <select id="leave-filter">
+                    <option value="ispending">Pending</option>
+                    <option value="approved">Approved</option>
+                    <option value="rejected">Rejected</option>
+                </select>
+            </div>
+            <div class="form-group button-group">
+                <button type="button" id="fetch-leave-btn">Fetch Leave Requests</button>
+            </div>
+            <table id="leave-table">
+                <thead>
+                    <tr>
+                        <th>Employee Name</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Reason</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="leave-table-body"></tbody>
+            </table>
+            <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
+        </div>
+        <?php
+        if (isset($_SESSION['success'])) {
+            echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';
+            unset($_SESSION['success']);
+        }
+        if (isset($_SESSION['error'])) {
+            echo '<div class="alert alert-error" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['error']) . '</div>';
+            unset($_SESSION['error']);
+        }
+        ?>
     </div>
 </div>
 <script>
@@ -250,6 +454,5 @@ $employee_trainings = $data['employee_trainings'] ?? [];
     const employeeTrainings = <?php echo json_encode($employee_trainings); ?>;
 </script>
 <script src="../assets/js/superadmin_dashboard.js"></script>
-<script src="../assets/js/dashboard.js"></script>
 </body>
 </html>
