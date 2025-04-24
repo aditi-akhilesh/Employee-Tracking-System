@@ -7,7 +7,9 @@ function showSection(sectionToShowId) {
     'reports-analytics',
     'create-user-form',
     'attendance-records',
-    'leave-requests'
+    'leave-requests',
+'profile-update-form'
+
   ];
 
   const mainContent = document.getElementById('content-area');
@@ -630,20 +632,6 @@ function loadScript(url, callback) {
 }
 
 // Placeholder for Create User Form
-function showCreateUserForm() {
-  if (!showSection('create-user-form')) return;
-
-  const contentArea = document.getElementById('create-user-form');
-  contentArea.innerHTML = `
-    <div class="card">
-      <h2>Create New User</h2>
-      <p>Functionality to create a new user profile will be implemented here.</p>
-      <div class="form-group button-group">
-        <button type="button" onclick="showWelcomeMessage()">Back</button>
-      </div>
-    </div>
-  `;
-}
 
 // Toggle dropdown menu without hiding sidebar text
 function toggleDropdown(event, dropdownId) {
@@ -673,3 +661,404 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
+
+
+
+function validateForm(event, form) {
+  console.log('validateForm called');
+
+  // Validate Date of Birth (DOB)
+  const dobInput = form.querySelector('#dob');
+  if (!dobInput || !dobInput.value) {
+    console.error('DOB input not found or empty');
+    showError('Please enter a valid date of birth.', 'profile-update-form');
+    event.preventDefault();
+    return false;
+  }
+
+  const dobValue = new Date(dobInput.value);
+  const currentDate = new Date();
+  if (isNaN(dobValue.getTime())) {
+    console.error('Invalid DOB value:', dobInput.value);
+    showError('Please enter a valid date of birth.', 'profile-update-form');
+    event.preventDefault();
+    return false;
+  }
+
+  let age = currentDate.getFullYear() - dobValue.getFullYear();
+  const monthDiff = currentDate.getMonth() - dobValue.getMonth();
+  const dayDiff = currentDate.getDate() - dobValue.getDate();
+  if (monthDiff < 0 || (monthDiff === 0 && dayDiff < 0)) {
+    age--;
+  }
+
+  if (age < 18) {
+    console.log('Age validation failed: User is under 18');
+    showError('You must be at least 18 years old.', 'profile-update-form');
+    event.preventDefault();
+    return false;
+  }
+
+  // Validate Hire Date
+  const hireDateInput = form.querySelector('#emp_hire_date');
+  if (!hireDateInput || !hireDateInput.value) {
+    console.error('Hire date input not found or empty');
+    showError('Please enter a valid hire date.', 'profile-update-form');
+    event.preventDefault();
+    return false;
+  }
+
+  const hireDateValue = new Date(hireDateInput.value);
+  if (isNaN(hireDateValue.getTime())) {
+    console.error('Invalid hire date value:', hireDateInput.value);
+    showError('Please enter a valid hire date.', 'profile-update-form');
+    event.preventDefault();
+    return false;
+  }
+
+  if (hireDateValue > currentDate) {
+    console.log('Hire date validation failed: Hire date is in the future');
+    showError('Hire date cannot be in the future.', 'profile-update-form');
+    event.preventDefault();
+    return false;
+  }
+
+  // Validate Salary
+  const salaryInput = form.querySelector('#salary');
+  if (!salaryInput || !salaryInput.value) {
+    console.error('Salary input not found or empty');
+    showError('Please enter a valid salary.', 'profile-update-form');
+    event.preventDefault();
+    return false;
+  }
+
+  const salaryValue = parseFloat(salaryInput.value);
+  if (isNaN(salaryValue) || salaryValue <= 0) {
+    console.log('Salary validation failed: Invalid salary');
+    showError('Salary must be a positive number.', 'profile-update-form');
+    event.preventDefault();
+    return false;
+  }
+
+  // Validate Job Title
+  const jobTitleInput = form.querySelector('#emp_job_title');
+  if (!jobTitleInput || !jobTitleInput.value) {
+    console.error('Job title input not found or empty');
+    showError('Please enter a valid job title.', 'profile-update-form');
+    event.preventDefault();
+    return false;
+  }
+
+  const jobTitlePattern = /^[A-Za-z ]+$/;
+  if (!jobTitlePattern.test(jobTitleInput.value)) {
+    console.log('Job title validation failed: Invalid characters');
+    showError('Job title must contain only letters and spaces.', 'profile-update-form');
+    event.preventDefault();
+    return false;
+  }
+
+  // Validate Department
+  const departmentInput = form.querySelector('#department_id');
+  if (!departmentInput || departmentInput.value === '') {
+    console.log('Department validation failed: No department selected');
+    showError('Please select a department.', 'profile-update-form');
+    event.preventDefault();
+    return false;
+  }
+
+  console.log('All validations passed');
+  return true;
+}
+
+function showCreateUserForm() {
+  console.log('showCreateUserForm called');
+  if (!showSection('create-user-form')) return;
+
+  const profileUpdateForm = document.getElementById('create-user-form');
+  if (!profileUpdateForm ) {
+    showError('create-user-form not found.', 'create-user-form');
+    return;
+  }
+
+  // Use superAdminEmployees if available (Super Admin dashboard), otherwise fall back to employees (HR dashboard)
+  const employeeList = typeof superAdminEmployees !== 'undefined' ? superAdminEmployees : employees;
+
+  // Get valid department IDs (convert to strings for comparison)
+  const validDepartmentIds = departments.map(dept => String(dept.department_id));
+
+  // Filter employees to get only managers with valid department_id
+  const managers = employeeList.filter(
+    (emp) =>
+      emp.role === 'Manager' &&
+      emp.emp_status !== 'Inactive' &&
+      emp.department_id !== null &&
+      emp.department_id !== undefined &&
+      validDepartmentIds.includes(String(emp.department_id))
+  );
+
+  // Log managers for debugging
+  console.log('Filtered managers:', managers);
+
+  profileUpdateForm.innerHTML = `
+    <div class="card">
+      <h2>Create New User</h2>
+      <form id="createUserForm">
+        <div class="form-group">
+          <label for="first_name">First Name:</label>
+          <input type="text" id="first_name" name="first_name" required 
+                 pattern="[A-Za-z ]+" 
+                 title="First name must contain only letters and spaces" 
+                 onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122) || event.charCode === 32">
+        </div>
+        <div class="form-group">
+          <label for="middle_name">Middle Name (Optional):</label>
+          <input type="text" id="middle_name" name="middle_name"
+                 pattern="[A-Za-z]+"
+                 title="Middle name must contain only letters"
+                 onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122)">
+        </div>
+        <div class="form-group">
+          <label for="last_name">Last Name:</label>
+          <input type="text" id="last_name" name="last_name" required 
+                 pattern="[A-Za-z ]+" 
+                 title="Last name must contain only letters and spaces" 
+                 onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122) || event.charCode === 32">
+        </div>
+        <div class="form-group">
+          <label for="email">Email:</label>
+          <input type="email" id="email" name="email" required>
+        </div>
+        <div class="form-group">
+          <label for="phone_number">Phone Number:</label>
+          <input type="tel" id="phone_number" name="phone_number" pattern="[0-9]{10}" placeholder="1234567890" required>
+        </div>
+        <div class="form-group">
+          <label for="dob">Date of Birth:</label>
+          <input type="date" id="dob" name="dob" required>
+        </div>
+        <div class="form-group">
+          <label for="emp_hire_date">Hire Date:</label>
+          <input type="date" id="emp_hire_date" name="emp_hire_date" required>
+        </div>
+        <div class="form-group">
+          <label for="salary">Salary (Annual, in USD):</label>
+          <input type="number" id="salary" name="salary" required min="0.01" step="0.01" placeholder="50000.00">
+        </div>
+        <div class="form-group">
+          <label for="emp_job_title">Job Title:</label>
+          <input type="text" id="emp_job_title" name="emp_job_title" required 
+                 pattern="[A-Za-z ]+" 
+                 title="Job title must contain only letters and spaces" 
+                 onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122) || event.charCode === 32">
+        </div>
+        <div class="form-group">
+          <label for="role">Role:</label>
+          <select id="role" name="role" required>
+            <option value="">Select Role</option>
+            <option value="User">User</option>
+            <option value="Manager">Manager</option>
+            <option value="HR">HR</option>
+          </select>
+        </div>
+        <div class="form-group" id="assign-manager-group" style="display: none;">
+          <label for="manager_id">Assign to Manager:</label>
+          <select id="manager_id" name="manager_id">
+            <option value="">Select a Manager</option>
+            ${managers
+              .map(
+                (manager) =>
+                  `<option value="${manager.employee_id}" data-department-id="${manager.department_id}">${manager.first_name} ${manager.last_name} (ID: ${manager.employee_id})</option>`
+              )
+              .join('')}
+          </select>
+        </div>
+        <div class="form-group" id="department-group">
+          <label for="department_id_display">Department:</label>
+          <select id="department_id_display" disabled>
+            <option value="">Select a department</option>
+            ${departments
+              .map(
+                (dept) =>
+                  `<option value="${dept.department_id}">${dept.department_name}</option>`
+              )
+              .join('')}
+          </select>
+          <input type="hidden" id="department_id" name="department_id" value="">
+        </div>
+        <div class="form-group button-group">
+          <button type="submit">Create User</button>
+          <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  const form = document.getElementById('createUserForm');
+  const roleSelect = document.getElementById('role');
+  const assignManagerGroup = document.getElementById('assign-manager-group');
+  const departmentGroup = document.getElementById('department-group');
+  const departmentDisplaySelect = document.getElementById('department_id_display');
+  const departmentHiddenInput = document.getElementById('department_id');
+  const managerSelect = document.getElementById('manager_id');
+
+  if (
+    form &&
+    roleSelect &&
+    assignManagerGroup &&
+    departmentGroup &&
+    departmentDisplaySelect &&
+    departmentHiddenInput &&
+    managerSelect
+  ) {
+    roleSelect.addEventListener('change', function () {
+      assignManagerGroup.style.display = 'none';
+      managerSelect.value = '';
+      departmentDisplaySelect.disabled = false;
+      departmentDisplaySelect.value = '';
+      departmentHiddenInput.value = '';
+
+      if (this.value === 'User') {
+        assignManagerGroup.style.display = 'block';
+        departmentDisplaySelect.disabled = true;
+        departmentDisplaySelect.value = '';
+        departmentHiddenInput.value = '';
+      } else if (this.value === 'Manager') {
+        assignManagerGroup.style.display = 'none';
+        departmentDisplaySelect.disabled = false;
+        departmentDisplaySelect.value = '';
+        departmentHiddenInput.value = '';
+      } else if (this.value === 'HR') {
+        assignManagerGroup.style.display = 'none';
+        // Automatically set department to HR Department (D02)
+        const hrDepartment = departments.find(dept => dept.department_id === 'D02');
+        if (hrDepartment) {
+          departmentDisplaySelect.value = 'D02';
+          departmentHiddenInput.value = 'D02';
+          departmentDisplaySelect.disabled = true;
+        } else {
+          showError('HR Department (D02) not found in departments list.', 'profile-update-form');
+          departmentDisplaySelect.disabled = false;
+          departmentDisplaySelect.value = '';
+          departmentHiddenInput.value = '';
+        }
+      } else {
+        assignManagerGroup.style.display = 'none';
+        departmentDisplaySelect.disabled = true;
+        departmentDisplaySelect.value = '';
+        departmentHiddenInput.value = '';
+      }
+    });
+
+    managerSelect.addEventListener('change', function () {
+      const selectedOption = this.options[this.selectedIndex];
+      const managerDepartmentId = selectedOption.getAttribute('data-department-id');
+      console.log('Selected manager ID:', this.value);
+      console.log('Manager department ID:', managerDepartmentId);
+      if (managerDepartmentId && validDepartmentIds.includes(String(managerDepartmentId))) {
+        departmentDisplaySelect.value = managerDepartmentId;
+        departmentHiddenInput.value = managerDepartmentId;
+        departmentDisplaySelect.disabled = true;
+      } else {
+        departmentDisplaySelect.value = '';
+        departmentHiddenInput.value = '';
+        departmentDisplaySelect.disabled = true;
+        showError('Selected manager does not have a valid department assigned. Please assign a department to the manager first.', 'profile-update-form');
+      }
+    });
+
+    departmentDisplaySelect.addEventListener('change', function () {
+      departmentHiddenInput.value = this.value;
+    });
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault(); // Prevent default form submission
+
+      // Log form data for debugging
+      const formData = new FormData(this);
+      console.log('Form data on submit:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
+
+      // Run the validateForm function first
+      if (!validateForm(event, this)) {
+        return;
+      }
+
+      // Additional validations specific to showCreateUserForm
+      if (roleSelect.value === 'User' && !managerSelect.value) {
+        showError('Please select a manager for the user.', 'profile-update-form');
+        return;
+      }
+
+      if (roleSelect.value === 'User') {
+        const selectedOption = managerSelect.options[managerSelect.selectedIndex];
+        const managerDepartmentId = selectedOption.getAttribute('data-department-id');
+        if (managerDepartmentId && validDepartmentIds.includes(String(managerDepartmentId))) {
+          departmentHiddenInput.value = managerDepartmentId;
+        } else {
+          showError('Manager does not have a valid department assigned.', 'profile-update-form');
+          return;
+        }
+      }
+
+      if (roleSelect.value === 'HR') {
+        // Ensure department is set to D02 for HR role
+        const hrDepartment = departments.find(dept => dept.department_id === 'D02');
+        if (hrDepartment) {
+          departmentHiddenInput.value = 'D02';
+        } else {
+          showError('HR Department (D02) not found. Cannot create HR user.', 'profile-update-form');
+          return;
+        }
+      }
+
+      if (!departmentHiddenInput.value) {
+        showError('Please select a department.', 'profile-update-form');
+        return;
+      }
+
+      // Add loading state
+      const submitButton = form.querySelector('button[type="submit"]');
+      submitButton.disabled = true;
+      submitButton.innerHTML = 'Creating...';
+
+      // Submit the form via AJAX
+      fetch('../pages/features/create_user_admin.php', {
+        method: 'POST',
+        body: formData
+      })
+        .then(response => response.json())
+        .then(data => {
+          submitButton.disabled = false;
+          submitButton.innerHTML = 'Create User';
+          if (data.success) {
+            showSuccess('User created successfully!', 'profile-update-form');
+            // Reset the form to allow creating another user
+            form.reset();
+            // Reset role-specific UI elements
+            assignManagerGroup.style.display = 'none';
+            managerSelect.value = '';
+            departmentDisplaySelect.disabled = false;
+            departmentDisplaySelect.value = '';
+            departmentHiddenInput.value = '';
+            roleSelect.value = '';
+          } else {
+            showError(data.error || 'Unknown error', 'profile-update-form');
+          }
+        })
+        .catch(error => {
+          submitButton.disabled = false;
+          submitButton.innerHTML = 'Create User';
+          console.error('Error submitting form:', error);
+          showError('An error occurred while creating the user. Please try again.', 'profile-update-form');
+        });
+    });
+  } else {
+    console.error(
+      'createUserForm, role select, assign-manager-group, department-group, department select, or manager select not found after rendering'
+    );
+    showError('Form setup error.', 'profile-update-form');
+  }
+}
+

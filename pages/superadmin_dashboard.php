@@ -4,6 +4,25 @@ require_once '../auth/dbconnect.php';
 
 $page_title = "Super Admin Dashboard";
 
+// Fetch departments with description and employee count
+try {
+    $stmt = $con->query("
+        SELECT distinct
+            d.department_id, 
+            d.department_name, 
+            d.department_description, 
+            COUNT(e.employee_id) AS employee_count
+        FROM Department d
+        LEFT JOIN Employees e ON d.department_id = e.department_id 
+        GROUP BY d.department_id, d.department_name, d.department_description
+    ");
+    $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $departments = [];
+    $_SESSION['error'] = "Failed to fetch department information: " . $e->getMessage();
+}
+
+
 // Function to fetch data for reports
 function fetchData($con, $sections = ['all']) {
     $data = [];
@@ -471,6 +490,8 @@ $employee_trainings = $data['employee_trainings'] ?? [];
     const reportFeedbackTypes = <?php echo json_encode($report_feedback_types); ?>;
     const projectAssignments = <?php echo json_encode($project_assignments); ?>;
     const employeeTrainings = <?php echo json_encode($employee_trainings); ?>;
+    const departments = <?php echo json_encode($departments ?: []); ?>;
+
 </script>
 <script src="../assets/js/superadmin_dashboard.js"></script>
 </body>
