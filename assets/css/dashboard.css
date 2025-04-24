@@ -48,420 +48,361 @@
 }
 
 .sidebar ul li a i {
-  margin-right: 0.75rem;
+    margin-right: 0.75rem;
 }
 
 .dropdown {
-  display: none;
-  margin-left: 1.5rem;
-  background-color: #0041c2;
-  padding: 0.5rem 0;
-  border-radius: 5px;
-  transition: opacity 0.2s ease;
-  opacity: 0;
+    display: none;
+    margin-left: 1.5rem;
+    background-color: #0041C2;
+    padding: 0.5rem 0;
+    border-radius: 5px;
+    transition: opacity 0.2s ease;
+    opacity: 0;
 }
 
 .dropdown a {
-  font-size: 0.9rem;
-  padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    padding: 0.5rem 1rem;
 }
 
 .dropdown a:hover {
-  background-color: #007bff;
+    background-color: #007BFF;
 }
 
 .content {
-  flex-grow: 1;
-  background-color: #ffffff;
-  padding: 2rem;
-  border-radius: 10px;
-  margin: 1rem;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-  overflow-y: auto;
-  position: relative; /* Ensure proper positioning context for children */
+    flex-grow: 1;
+    background-color: #FFFFFF;
+    padding: 2rem;
+    border-radius: 10px;
+    margin: 1rem;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    overflow-y: auto;
+    position: relative; /* Ensure proper positioning context for children */
 }
 
 .content h2 {
-  color: #003087;
-  margin-bottom: 1rem;
+    color: #003087;
+    margin-bottom: 1rem;
 }
 
 .content p {
-  color: #6c757d;
+    color: #6C757D;
 }
 
 .update-form {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
 }
 
 .form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #003087;
-  font-weight: 600;
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #003087;
+    font-weight: 600;
 }
 
 .form-group input,
 .form-group select,
 .form-group textarea {
-  width: 100%;
-  padding: 0.75rem; /* Match HR Dashboard */
-  border: 1px solid #ddd;
-  border-radius: 5px; /* Match HR Dashboard */
-  transition: border-color 0.3s ease;
-  box-sizing: border-box;
+    width: 100%;
+    padding: 0.75rem; /* Match HR Dashboard */
+    border: 1px solid #ddd;
+    border-radius: 5px; /* Match HR Dashboard */
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
 }
 
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
-  border-color: #007bff;
-  outline: none;
-  box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
+    border-color: #007BFF;
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.3);
 }
 
 .form-group input[readonly] {
-  background-color: #f0f0f0;
-  color: #6c757d;
-  cursor: not-allowed;
+    background-color: #f0f0f0;
+    color: #6C757D;
+    cursor: not-allowed;
 }
 
 .form-group textarea {
-  resize: vertical;
+    resize: vertical;
 }
 
 .form-group p {
-  margin: 0;
-  padding: 0.75rem; /* Match input padding */
-  border: 1px solid #ddd;
-  border-radius: 5px; /* Match HR Dashboard */
-  background-color: #f0f0f0; /* Read-only background */
-  color: #6c757d; /* Read-only text color */
+    margin: 0;
+    padding: 0.75rem; /* Match input padding */
+    border: 1px solid #ddd;
+    border-radius: 5px; /* Match HR Dashboard */
+    background-color: #f0f0f0; /* Read-only background */
+    color: #6C757D; /* Read-only text color */
 }
 
 .button-group {
-  display: flex;
-  gap: 10px;
-  justify-content: center; /* Center buttons */
+    display: flex;
+    gap: 10px;
+    justify-content: center; /* Center buttons */
 }
 
 button {
-  background-color: #007bff;
-  color: #ffffff;
-  padding: 0.75rem 1.5rem; /* Match HR Dashboard */
-  border: none;
-  border-radius: 5px; /* Match HR Dashboard */
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  font-size: 1rem;
+    background-color: #007BFF;
+    color: #FFFFFF;
+    padding: 0.75rem 1.5rem; /* Match HR Dashboard */
+    border: none;
+    border-radius: 5px; /* Match HR Dashboard */
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    font-size: 1rem;
 }
 
 button:hover {
-  background-color: #0056b3;
-  transform: translateY(-2px);
+    background-color: #0056b3;
+    transform: translateY(-2px);
 }
 
 table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-  background-color: #fff;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  border-radius: 5px; /* Add rounded corners to the table */
-  overflow: hidden; /* Ensure rounded corners are applied */
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 5px; /* Add rounded corners to the table */
+    overflow: hidden; /* Ensure rounded corners are applied */
 }
 
 table th,
 table td {
-  padding: 12px 15px; /* Slightly more horizontal padding for better spacing */
-  border: 1px solid #e0e0e0; /* Softer border color */
-  text-align: left;
+    padding: 12px 15px; /* Slightly more horizontal padding for better spacing */
+    border: 1px solid #e0e0e0; /* Softer border color */
+    text-align: left;
 }
 
 table th {
-  background-color: #e9ecef; /* Slightly darker gray for headers, matching HR Dashboard */
-  color: #333;
-  font-weight: 700;
-  font-size: 1rem; /* Slightly larger font for headers */
-  border-bottom: 2px solid #d0d0d0; /* Thicker bottom border for headers */
-  text-transform: uppercase; /* Match HR Dashboard's header style */
-  letter-spacing: 0.5px; /* Add slight letter spacing for readability */
+    background-color: #e9ecef; /* Slightly darker gray for headers, matching HR Dashboard */
+    color: #333;
+    font-weight: 700;
+    font-size: 1rem; /* Slightly larger font for headers */
+    border-bottom: 2px solid #d0d0d0; /* Thicker bottom border for headers */
+    text-transform: uppercase; /* Match HR Dashboard's header style */
+    letter-spacing: 0.5px; /* Add slight letter spacing for readability */
 }
 
 table td {
-  border-bottom: 1px solid #e0e0e0;
-  color: #6c757d; /* Muted text color for cells, matching HR Dashboard */
-  font-size: 0.9rem; /* Slightly smaller font for cell content */
+    border-bottom: 1px solid #e0e0e0;
+    color: #6C757D; /* Muted text color for cells, matching HR Dashboard */
+    font-size: 0.9rem; /* Slightly smaller font for cell content */
 }
 
 table tr:nth-child(even) {
-  background-color: #f9f9f9; /* Alternating row color */
+    background-color: #f9f9f9; /* Alternating row color */
 }
 
 table tr:hover {
-  background-color: #f1f1f1; /* Hover effect */
+    background-color: #f1f1f1; /* Hover effect */
 }
 
 #profile-update-form {
-  display: none; /* Initially hidden */
-  background: #ffffff;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-  width: 80%;
-  margin: 20px auto; /* Center within the content area */
+    display: none; /* Initially hidden */
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 80%;
+    margin: 20px auto; /* Center within the content area */
 }
 
 #profile-update-form h2 {
-  color: #003087; /* Match HR Dashboard */
-  margin-bottom: 1rem;
+    color: #003087; /* Match HR Dashboard */
+    margin-bottom: 1rem;
 }
 
 #profile-update-form form {
-  display: grid;
-  gap: 10px;
+    display: grid;
+    gap: 10px;
 }
 
 #profile-update-form label {
-  font-weight: bold;
-  color: #003087; /* Match HR Dashboard */
+    font-weight: bold;
+    color: #003087; /* Match HR Dashboard */
 }
 
 #profile-update-form input,
 #profile-update-form select {
-  width: 100%;
-  padding: 0.75rem; /* Match HR Dashboard */
-  border: 1px solid #ddd;
-  border-radius: 5px; /* Match HR Dashboard */
+    width: 100%;
+    padding: 0.75rem; /* Match HR Dashboard */
+    border: 1px solid #ddd;
+    border-radius: 5px; /* Match HR Dashboard */
 }
 
 #profile-update-form button {
-  background-color: #007bff;
-  color: white;
-  padding: 0.75rem 1.5rem; /* Match HR Dashboard */
-  border: none;
-  border-radius: 5px; /* Match HR Dashboard */
-  cursor: pointer;
+    background-color: #007BFF;
+    color: white;
+    padding: 0.75rem 1.5rem; /* Match HR Dashboard */
+    border: none;
+    border-radius: 5px; /* Match HR Dashboard */
+    cursor: pointer;
 }
 
 #profile-update-form button:hover {
-  background-color: #0056b3;
+    background-color: #0056b3;
 }
 
 #profile-update-form .form-group.button-group {
-  display: flex;
-  justify-content: center;
-  gap: 10px; /* Space between buttons */
+    display: flex;
+    justify-content: center;
+    gap: 10px; /* Space between buttons */
 }
 
-#profile-update-form .form-group.button-group button[type='submit'] {
-  background-color: #6c757d; /* Grey color matching your website */
-  color: #ffffff; /* White text */
-  font-size: 1rem; /* Match HR Dashboard */
-  padding: 0.75rem 1.5rem; /* Match HR Dashboard */
-  border: none;
-  border-radius: 5px; /* Match HR Dashboard */
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+#profile-update-form .form-group.button-group button[type="submit"] {
+    background-color: #6C757D; /* Grey color matching your website */
+    color: #FFFFFF; /* White text */
+    font-size: 1rem; /* Match HR Dashboard */
+    padding: 0.75rem 1.5rem; /* Match HR Dashboard */
+    border: none;
+    border-radius: 5px; /* Match HR Dashboard */
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-#profile-update-form .form-group.button-group button[type='submit']:hover {
-  background-color: #5a6268; /* Slightly darker grey on hover */
-  transform: translateY(-2px); /* Slight lift effect */
+#profile-update-form .form-group.button-group button[type="submit"]:hover {
+    background-color: #5a6268; /* Slightly darker grey on hover */
+    transform: translateY(-2px); /* Slight lift effect */
 }
 
-#profile-update-form .form-group.button-group button[type='button'] {
-  background-color: #d3d3d3; /* Lighter grey for Back button */
-  color: #000000;
-  font-size: 1rem; /* Match HR Dashboard */
-  padding: 0.75rem 1.5rem; /* Match HR Dashboard */
-  border: none;
-  border-radius: 5px; /* Match HR Dashboard */
-  cursor: pointer;
-  transition: background-color 0.3s ease, transform 0.2s ease;
+#profile-update-form .form-group.button-group button[type="button"] {
+    background-color: #D3D3D3; /* Lighter grey for Back button */
+    color: #000000;
+    font-size: 1rem; /* Match HR Dashboard */
+    padding: 0.75rem 1.5rem; /* Match HR Dashboard */
+    border: none;
+    border-radius: 5px; /* Match HR Dashboard */
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-#profile-update-form .form-group.button-group button[type='button']:hover {
-  background-color: #b0b0b0; /* Slightly darker light grey on hover */
-  transform: translateY(-2px);
+#profile-update-form .form-group.button-group button[type="button"]:hover {
+    background-color: #B0B0B0; /* Slightly darker light grey on hover */
+    transform: translateY(-2px);
 }
 
 .alert {
-  padding: 15px;
-  border-radius: 5px;
-  margin-bottom: 20px;
-  font-weight: 500;
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    font-weight: 500;
 }
 
 .alert-success {
-  background-color: #d4edda;
-  color: #155724;
-  border: 1px solid #c3e6cb;
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
 }
 
 .alert-error {
-  background-color: #f8d7da;
-  color: #721c24;
-  border: 1px solid #f5c6cb;
-}
-
-/* Highlight Styles */
-.overdue {
-  background-color: #ffcccc !important;
-}
-
-.heavy-workload {
-  background-color: #ffcc99 !important;
-}
-
-/* Legend Styles */
-.highlight-legend {
-  margin-bottom: 15px;
-  font-size: 0.9em;
-  color: #555;
-}
-
-.highlight-legend p {
-  margin: 5px 0;
-  display: flex;
-  align-items: center;
-}
-
-.highlight-legend .highlight {
-  display: inline-block;
-  width: 15px;
-  height: 15px;
-  margin-right: 5px;
-  border: 1px solid #ccc;
-}
-
-.highlight-legend .overdue {
-  background-color: #ffcccc;
-}
-
-/* Nested Table Styles */
-.nested-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 5px 0;
-}
-
-.nested-table th,
-.nested-table td {
-  padding: 5px;
-  border: 1px solid #ddd;
-  font-size: 0.9em;
-}
-
-.nested-table th {
-  background-color: #f0f0f0;
-  font-weight: bold;
-}
-
-.nested-table tbody tr:hover {
-  background-color: #f9f9f9;
-}
-
-.highlight-legend .heavy-workload {
-  background-color: #ffcc99;
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
 }
 
 @media (max-width: 768px) {
-  .dashboard-container {
-    flex-direction: column;
-  }
-  .sidebar {
-    width: 100%;
-  }
-  .content {
-    margin: 0;
-    border-radius: 0;
-  }
-  #profile-update-form {
-    width: 90%; /* Adjust for smaller screens */
-  }
+    .dashboard-container {
+        flex-direction: column;
+    }
+    .sidebar {
+        width: 100%;
+    }
+    .content {
+        margin: 0;
+        border-radius: 0;
+    }
+    #profile-update-form {
+        width: 90%; /* Adjust for smaller screens */
+    }
 }
 
+
 .table-controls {
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 .pagination {
-  margin-top: 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 .pagination button {
-  padding: 5px 10px;
-  margin: 0 5px;
+    padding: 5px 10px;
+    margin: 0 5px;
 }
 .pagination button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
+    background-color: #ccc;
+    cursor: not-allowed;
 }
 .pagination button.active {
-  background-color: #003087;
-  color: white;
+    background-color: #003087;
+    color: white;
 }
 
 /* Shared styling for exit interview forms */
 .exit-interview-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 20px 0;
-  font-size: 16px;
-  font-family: Arial, sans-serif;
-  background-color: transparent;
-  box-shadow: none;
-  border-radius: 0;
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    font-size: 16px;
+    font-family: Arial, sans-serif;
+    background-color: transparent;
+    box-shadow: none;
+    border-radius: 0;
 }
 .exit-interview-table thead {
-  background-color: #f4f4f4;
-  color: #333;
+    background-color: #f4f4f4;
+    color: #333;
 }
 .exit-interview-table th,
 .exit-interview-table td {
-  padding: 12px 15px;
-  text-align: left;
-  border-bottom: 1px solid #ddd;
-  border: none;
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    border: none;
 }
 .exit-interview-table th {
-  font-weight: bold;
-  text-transform: uppercase;
-  border-bottom: 2px solid #ddd;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-bottom: 2px solid #ddd;
 }
 .exit-interview-table tbody tr:hover {
-  background-color: #f9f9f9;
+    background-color: #f9f9f9;
 }
 .exit-interview-table td {
-  color: #555;
+    color: #555;
 }
 .exit-interview-table .update-exit-interview-btn {
-  padding: 8px 15px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
+    padding: 8px 15px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 .exit-interview-table .update-exit-interview-btn:hover {
-  background-color: #0056b3;
+    background-color: #0056b3;
 }
 @media (max-width: 768px) {
-  .update-form {
-    grid-template-columns: 1fr !important; /* Stack fields vertically */
-  }
-  form#updateExitInterviewForm {
-    grid-template-columns: 1fr !important; /* Stack fields vertically */
-  }
+    .update-form {
+        grid-template-columns: 1fr !important; /* Stack fields vertically */
+    }
+    form#updateExitInterviewForm {
+        grid-template-columns: 1fr !important; /* Stack fields vertically */
+    }
 }
+
 
 /* styles.css or dashboard.css */
 
@@ -543,11 +484,11 @@ table tr:hover {
   background-color: #0056b3;
 }
 
-.button-group button[type='button']:last-child {
+.button-group button[type="button"]:last-child {
   background-color: #6c757d;
 }
 
-.button-group button[type='button']:last-child:hover {
+.button-group button[type="button"]:last-child:hover {
   background-color: #5a6268;
 }
 
@@ -560,210 +501,172 @@ table tr:hover {
   margin-bottom: 0;
 }
 
-.form-group label.checkbox-label input[type='checkbox'] {
+.form-group label.checkbox-label input[type="checkbox"] {
   margin-right: 8px;
 }
 
 .salary-details-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  margin-top: 20px;
-}
-.salary-details-box {
-  flex: 1;
-  min-width: 250px;
-  padding: 15px;
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-.salary-details-box h3 {
-  font-size: 18px;
-  color: #333;
-  margin-bottom: 10px;
-}
-.salary-details-box p {
-  margin: 5px 0;
-  color: #6c757d;
-}
-.salary-details-box p strong {
-  color: #003087;
-}
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    margin-top: 20px;
+  }
+  .salary-details-box {
+    flex: 1;
+    min-width: 250px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  .salary-details-box h3 {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 10px;
+  }
+  .salary-details-box p {
+    margin: 5px 0;
+    color: #6C757D;
+  }
+  .salary-details-box p strong {
+    color: #003087;
+  }
 
-/* Alert styling to match manager dashboard */
-.alert-success {
-  padding: 15px;
-  color: #4caf50;
-  border-radius: 6px;
-  transition: color 0.3s;
-}
-.alert-error {
-  padding: 15px;
-  color: #721c24;
-  border-radius: 6px;
-  transition: color 0.3s;
-}
-/* Projects and Tasks Section */
-#projects-table,
-#tasks-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-#projects-table th,
-#projects-table td,
-#tasks-table th,
-#tasks-table td {
-  padding: 12px;
-  border: 1px solid #ddd;
-  text-align: left;
-}
-#projects-table th,
-#tasks-table th {
-  background-color: #003087;
-  color: #fff;
-}
-#projects-table tr:nth-child(even),
-#tasks-table tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-#projects-table tr:hover,
-#tasks-table tr:hover {
-  background-color: #f1f1f1;
-}
-#tasks-table select {
-  padding: 5px;
-  border-radius: 3px;
-  border: 1px solid #ddd;
-  cursor: pointer;
-}
-#performance-metrics p {
-  margin: 10px 0;
-  font-size: 16px;
-}
-#performance-metrics span {
-  font-weight: bold;
-  color: #003087;
-}
-/* Styles for Attendance & Leaves features */
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 20px;
-}
-th,
-td {
-  padding: 10px;
-  border: 1px solid #ddd;
-  text-align: left;
-}
-th {
-  background-color: #003087;
-  color: #fff;
-}
-.form-group {
-  margin-bottom: 15px;
-}
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-}
-.form-group input,
-.form-group select {
-  width: 100%;
-  padding: 8px;
-  box-sizing: border-box;
-}
-.button-group {
-  text-align: right;
-}
-.button-group button {
-  padding: 8px 15px;
-  background-color: #007bff;
-  color: white;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  margin-left: 10px;
-  font-size: 14px;
-  transition: background-color 0.3s ease;
-}
-.button-group button:hover {
-  background-color: #0056b3;
-}
-.status-badge {
-  display: inline-block;
-  padding: 5px 10px;
-  border-radius: 12px;
-  font-weight: bold;
-  color: black;
-  font-size: 12px;
-}
-.status-pending {
-  background-color: #ff9800;
-}
-.status-approved {
-  background-color: #4caf50;
-}
-.status-rejected {
-  background-color: #f44336;
-}
-.status-ispending {
-  background-color: #ff9800;
-}
-.back-btn {
-  padding: 8px 15px;
-  background-color: #003087;
-  color: white;
-  border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  margin-top: 10px;
-  font-size: 14px;
-}
-.back-btn:hover {
-  background-color: #002766;
-}
-/* Leave balance table styling */
-#leave-balance-table th {
-  background-color: #e9ecef;
-  color: #333;
-}
-#leave-balance-table td {
-  color: #6c757d;
-}
-#leave-balance-table tr:nth-child(even) {
-  background-color: #f9f9f9;
-}
-#leave-balance-table tr:hover {
-  background-color: #f1f1f1;
-}
-/* FAQ Section Styling */
-.faq-item {
-  margin-bottom: 15px;
-  border-bottom: 1px solid #ddd;
-  padding-bottom: 10px;
-}
-.faq-item h4 {
-  margin: 0 0 5px 0;
-  color: #003087;
-}
-.faq-item p {
-  margin: 0;
-  color: #6c757d;
-}
-/* HR Contact Section Styling */
-.hr-contact-info {
-  background-color: #f9f9f9;
-  padding: 15px;
-  border-radius: 5px;
-  border: 1px solid #ddd;
-}
-.hr-contact-info p {
-  margin: 5px 0;
-  color: #6c757d;
-}
-.hr-contact-info p strong {
-  color: #003087;
-}
+   /* Alert styling to match manager dashboard */
+        .alert-success {
+            padding: 15px;
+            color: #4CAF50;
+            border-radius: 6px;
+            transition: color 0.3s;
+        }
+        .alert-error {
+            padding: 15px;
+            color: #721c24;
+            border-radius: 6px;
+            transition: color 0.3s;
+        }
+        /* Projects and Tasks Section */
+        #projects-table, #tasks-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+        }
+        #projects-table th, #projects-table td,
+        #tasks-table th, #tasks-table td {
+        padding: 12px;
+        border: 1px solid #ddd;
+        text-align: left;
+        }
+        #projects-table th, #tasks-table th {
+        background-color: #003087;
+        color: #fff;
+        }
+        #projects-table tr:nth-child(even),
+        #tasks-table tr:nth-child(even) {
+        background-color: #f9f9f9;
+        }
+        #projects-table tr:hover,
+        #tasks-table tr:hover {
+        background-color: #f1f1f1;
+        }
+        #tasks-table select {
+        padding: 5px;
+        border-radius: 3px;
+        border: 1px solid #ddd;
+        cursor: pointer;
+        }
+        #performance-metrics p {
+        margin: 10px 0;
+        font-size: 16px;
+        }
+        #performance-metrics span {
+        font-weight: bold;
+        color: #003087;
+        }
+        /* Styles for Attendance & Leaves features */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #003087; color: #fff; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; box-sizing: border-box; }
+        .button-group { text-align: right; }
+        .button-group button {
+            padding: 8px 15px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+        .button-group button:hover {
+            background-color: #0056b3;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            color: black;
+            font-size: 12px;
+        }
+        .status-pending { background-color: #ff9800; }
+        .status-approved { background-color: #4caf50; }
+        .status-rejected { background-color: #f44336; }
+        .status-ispending { background-color: #ff9800; }
+        .back-btn {
+            padding: 8px 15px;
+            background-color: #003087;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .back-btn:hover { background-color: #002766; }
+        /* Leave balance table styling */
+        #leave-balance-table th {
+            background-color: #e9ecef;
+            color: #333;
+        }
+        #leave-balance-table td {
+            color: #6C757D;
+        }
+        #leave-balance-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        #leave-balance-table tr:hover {
+            background-color: #f1f1f1;
+        }
+        /* FAQ Section Styling */
+        .faq-item {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        .faq-item h4 {
+            margin: 0 0 5px 0;
+            color: #003087;
+        }
+        .faq-item p {
+            margin: 0;
+            color: #6C757D;
+        }
+        /* HR Contact Section Styling */
+        .hr-contact-info {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .hr-contact-info p {
+            margin: 5px 0;
+            color: #6C757D;
+        }
+        .hr-contact-info p strong {
+            color: #003087;
+        }
