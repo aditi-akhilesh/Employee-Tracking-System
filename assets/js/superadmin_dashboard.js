@@ -8,7 +8,7 @@ function showSection(sectionToShowId) {
     'create-user-form',
     'attendance-records',
     'leave-requests',
-    'department-metrics'
+    'department-metrics',
 'profile-update-form'
 
   ];
