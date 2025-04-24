@@ -9,8 +9,7 @@ function showSection(sectionToShowId) {
     'attendance-records',
     'leave-requests',
     'department-metrics',
-'profile-update-form'
-
+    'profile-update-form'
   ];
 
   const mainContent = document.getElementById('content-area');
