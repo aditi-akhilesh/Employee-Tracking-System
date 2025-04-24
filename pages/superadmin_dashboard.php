@@ -165,7 +165,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             ";
             $params = [];
 
-            // Exclude the logged-in Super Admin's own attendance records
             if ($logged_in_employee_id) {
                 $query .= " AND a.employee_id != ?";
                 $params[] = $logged_in_employee_id;
@@ -594,8 +593,6 @@ $employee_trainings = $data['employee_trainings'] ?? [];
     const reportFeedbackTypes = <?php echo json_encode($report_feedback_types); ?>;
     const projectAssignments = <?php echo json_encode($project_assignments); ?>;
     const employeeTrainings = <?php echo json_encode($employee_trainings); ?>;
-    const departments = <?php echo json_encode($departments ?: []); ?>;
-
 </script>
 <script src="../assets/js/superadmin_dashboard.js"></script>
 </body>
