@@ -6,7 +6,9 @@ function showSection(sectionToShowId) {
     'main-content',
     'reports-analytics',
     'create-user-form',
-    // Add other sections as needed for future functionalities
+    'attendance-records',
+    'leave-requests',
+    'department-metrics'
   ];
 
   const mainContent = document.getElementById('content-area');
@@ -84,6 +86,156 @@ function refreshReportData(callback) {
     );
 }
 
+// Function to generate report for a given employee ID
+function generateReport(selectedEmployeeId) {
+  const employeeSearch = document.getElementById('employee-search');
+  const reportContent = document.getElementById('report-content');
+  if (!employeeSearch || !reportContent) {
+    showError('Required elements not found', 'reports-analytics');
+    return;
+  }
+
+  if (!selectedEmployeeId) {
+    alert('Please select an employee to generate the report.');
+    reportContent.style.display = 'none';
+    return;
+  }
+
+  const filteredAvgRatings = window.reportAvgRatings.filter(
+    (report) => String(report.employee_id) === selectedEmployeeId
+  );
+  const filteredFeedback = window.feedback.filter(
+    (fb) => String(fb.employee_id) === selectedEmployeeId
+  );
+  const filteredFeedbackTypes = window.reportFeedbackTypes
+    .filter((type) => {
+      const typeFeedback = filteredFeedback.filter(
+        (fb) => fb.feedback_type === type.feedback_type
+      );
+      return typeFeedback.length > 0;
+    })
+    .map((type) => ({
+      feedback_type: type.feedback_type,
+      type_count: filteredFeedback.filter(
+        (fb) => fb.feedback_type === type.feedback_type
+      ).length,
+    }));
+  const filteredAssignments = window.projectAssignments.filter(
+    (assignment) => String(assignment.employee_id) === selectedEmployeeId
+  );
+  const filteredTrainings = window.employeeTrainings.filter(
+    (training) => String(training.employee_id) === selectedEmployeeId
+  );
+
+  // Populate Average Ratings Table
+  const avgRatingsTable = document.getElementById('avg-ratings-table');
+  avgRatingsTable.innerHTML = '';
+  if (filteredAvgRatings.length === 0) {
+    avgRatingsTable.innerHTML = `<tr><td colspan="3">No feedback data available for this employee.</td></tr>`;
+  } else {
+    filteredAvgRatings.forEach((report) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${report.first_name} ${report.last_name}</td>
+        <td>${parseFloat(report.avg_rating).toFixed(2)}</td>
+        <td>${report.feedback_count}</td>
+      `;
+      avgRatingsTable.appendChild(row);
+    });
+  }
+
+  // Populate Feedback Types Table
+  const feedbackTypesTable = document.getElementById('feedback-types-table');
+  feedbackTypesTable.innerHTML = '';
+  if (filteredFeedbackTypes.length === 0) {
+    feedbackTypesTable.innerHTML = `<tr><td colspan="2">No feedback data available for this employee.</td></tr>`;
+  } else {
+    filteredFeedbackTypes.forEach((report) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${report.feedback_type}</td>
+        <td>${report.type_count}</td>
+      `;
+      feedbackTypesTable.appendChild(row);
+    });
+  }
+
+  // Populate Work Summary Table
+  const workSummaryTable = document.getElementById('work-summary-table');
+  workSummaryTable.innerHTML = '';
+  if (filteredFeedback.length === 0 && filteredAssignments.length === 0) {
+    workSummaryTable.innerHTML = `<tr><td colspan="2">No work summary available for this employee.</td></tr>`;
+  } else {
+    if (filteredFeedback.length > 0) {
+      const feedbackSummary = filteredFeedback
+        .map(
+          (fb) =>
+            `${fb.feedback_type}: ${fb.feedback_text} (Rating: ${fb.rating}, Date: ${fb.date_submitted})`
+        )
+        .join('; ');
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>Feedback</td>
+        <td>${feedbackSummary}</td>
+      `;
+      workSummaryTable.appendChild(row);
+    }
+    if (filteredAssignments.length > 0) {
+      const projectSummary = filteredAssignments
+        .map(
+          (assignment) =>
+            `${assignment.project_name} (Role: ${assignment.role_in_project})`
+        )
+        .join('; ');
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>Projects</td>
+        <td>${projectSummary}</td>
+      `;
+      workSummaryTable.appendChild(row);
+    }
+  }
+
+  // Populate Training Certificates Table
+  const trainingTable = document.getElementById('training-certificates-table');
+  trainingTable.innerHTML = '';
+  if (filteredTrainings.length === 0) {
+    trainingTable.innerHTML = `<tr><td colspan="4">No training certificates available for this employee.</td></tr>`;
+  } else {
+    filteredTrainings.forEach((training) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${training.training_name}</td>
+        <td>${training.training_date || 'N/A'}</td>
+        <td>${training.certificate || 'N/A'}</td>
+        <td>${training.score || 'N/A'}</td>
+      `;
+      trainingTable.appendChild(row);
+    });
+  }
+
+  // Populate Feedback Summary Table
+  const feedbackSummaryTable = document.getElementById('feedback-summary-table');
+  feedbackSummaryTable.innerHTML = '';
+  if (filteredFeedback.length === 0) {
+    feedbackSummaryTable.innerHTML = `<tr><td colspan="5">No feedback data available for this employee.</td></tr>`;
+  } else {
+    filteredFeedback.forEach((fb) => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${fb.first_name} ${fb.last_name}</td>
+        <td>${fb.rating}</td>
+        <td>${fb.feedback_type}</td>
+        <td>${fb.feedback_text}</td>
+        <td>${fb.date_submitted}</td>
+      `;
+      feedbackSummaryTable.appendChild(row);
+    });
+  }
+
+  reportContent.style.display = 'block';
+}
+
 // Show Reports and Analytics Section
 function showReportsAnalytics() {
   if (!showSection('reports-analytics')) return;
@@ -109,152 +261,32 @@ function showReportsAnalytics() {
 
     const generateReportBtn = document.getElementById('generate-report-btn');
     if (generateReportBtn) {
-      generateReportBtn.addEventListener('click', function () {
+      // Remove any existing listeners to prevent duplicates
+      const newButton = generateReportBtn.cloneNode(true);
+      generateReportBtn.parentNode.replaceChild(newButton, generateReportBtn);
+      const updatedGenerateReportBtn = document.getElementById('generate-report-btn');
+
+      updatedGenerateReportBtn.addEventListener('click', function () {
         const selectedEmployeeId = employeeSearch.value;
         if (!selectedEmployeeId) {
           alert('Please select an employee to generate the report.');
           return;
         }
 
-        const filteredAvgRatings = window.reportAvgRatings.filter(
-          (report) => String(report.employee_id) === selectedEmployeeId
-        );
-        const filteredFeedback = window.feedback.filter(
-          (fb) => String(fb.employee_id) === selectedEmployeeId
-        );
-        const filteredFeedbackTypes = window.reportFeedbackTypes
-          .filter((type) => {
-            const typeFeedback = filteredFeedback.filter(
-              (fb) => fb.feedback_type === type.feedback_type
-            );
-            return typeFeedback.length > 0;
-          })
-          .map((type) => ({
-            feedback_type: type.feedback_type,
-            type_count: filteredFeedback.filter(
-              (fb) => fb.feedback_type === type.feedback_type
-            ).length,
-          }));
-        const filteredAssignments = window.projectAssignments.filter(
-          (assignment) => String(assignment.employee_id) === selectedEmployeeId
-        );
-        const filteredTrainings = window.employeeTrainings.filter(
-          (training) => String(training.employee_id) === selectedEmployeeId
-        );
-
-        // Populate Average Ratings Table
-        const avgRatingsTable = document.getElementById('avg-ratings-table');
-        avgRatingsTable.innerHTML = '';
-        if (filteredAvgRatings.length === 0) {
-          avgRatingsTable.innerHTML = `<tr><td colspan="3">No feedback data available for this employee.</td></tr>`;
-        } else {
-          filteredAvgRatings.forEach((report) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${report.first_name} ${report.last_name}</td>
-              <td>${parseFloat(report.avg_rating).toFixed(2)}</td>
-              <td>${report.feedback_count}</td>
-            `;
-            avgRatingsTable.appendChild(row);
+        // Refresh data before generating the report
+        refreshReportData(() => {
+          // Repopulate the employee dropdown
+          employeeSearch.innerHTML = '<option value="">Select an employee</option>';
+          window.employees.forEach((emp) => {
+            employeeSearch.innerHTML += `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`;
           });
-        }
 
-        // Populate Feedback Types Table
-        const feedbackTypesTable = document.getElementById(
-          'feedback-types-table'
-        );
-        feedbackTypesTable.innerHTML = '';
-        if (filteredFeedbackTypes.length === 0) {
-          feedbackTypesTable.innerHTML = `<tr><td colspan="2">No feedback data available for this employee.</td></tr>`;
-        } else {
-          filteredFeedbackTypes.forEach((report) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${report.feedback_type}</td>
-              <td>${report.type_count}</td>
-            `;
-            feedbackTypesTable.appendChild(row);
-          });
-        }
+          // Reselect the previously selected employee
+          employeeSearch.value = selectedEmployeeId;
 
-        // Populate Work Summary Table
-        const workSummaryTable = document.getElementById('work-summary-table');
-        workSummaryTable.innerHTML = '';
-        if (filteredFeedback.length === 0 && filteredAssignments.length === 0) {
-          workSummaryTable.innerHTML = `<tr><td colspan="2">No work summary available for this employee.</td></tr>`;
-        } else {
-          if (filteredFeedback.length > 0) {
-            const feedbackSummary = filteredFeedback
-              .map(
-                (fb) =>
-                  `${fb.feedback_type}: ${fb.feedback_text} (Rating: ${fb.rating}, Date: ${fb.date_submitted})`
-              )
-              .join('; ');
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>Feedback</td>
-              <td>${feedbackSummary}</td>
-            `;
-            workSummaryTable.appendChild(row);
-          }
-          if (filteredAssignments.length > 0) {
-            const projectSummary = filteredAssignments
-              .map(
-                (assignment) =>
-                  `${assignment.project_name} (Role: ${assignment.role_in_project})`
-              )
-              .join('; ');
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>Projects</td>
-              <td>${projectSummary}</td>
-            `;
-            workSummaryTable.appendChild(row);
-          }
-        }
-
-        // Populate Training Certificates Table
-        const trainingTable = document.getElementById(
-          'training-certificates-table'
-        );
-        trainingTable.innerHTML = '';
-        if (filteredTrainings.length === 0) {
-          trainingTable.innerHTML = `<tr><td colspan="4">No training certificates available for this employee.</td></tr>`;
-        } else {
-          filteredTrainings.forEach((training) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${training.training_name}</td>
-              <td>${training.training_date || 'N/A'}</td>
-              <td>${training.certificate || 'N/A'}</td>
-              <td>${training.score || 'N/A'}</td>
-            `;
-            trainingTable.appendChild(row);
-          });
-        }
-
-        // Populate Feedback Summary Table
-        const feedbackSummaryTable = document.getElementById(
-          'feedback-summary-table'
-        );
-        feedbackSummaryTable.innerHTML = '';
-        if (filteredFeedback.length === 0) {
-          feedbackSummaryTable.innerHTML = `<tr><td colspan="5">No feedback data available for this employee.</td></tr>`;
-        } else {
-          filteredFeedback.forEach((fb) => {
-            const row = document.createElement('tr');
-            row.innerHTML = `
-              <td>${fb.first_name} ${fb.last_name}</td>
-              <td>${fb.rating}</td>
-              <td>${fb.feedback_type}</td>
-              <td>${fb.feedback_text}</td>
-              <td>${fb.date_submitted}</td>
-            `;
-            feedbackSummaryTable.appendChild(row);
-          });
-        }
-
-        reportContent.style.display = 'block';
+          // Generate the report for the selected employee
+          generateReport(selectedEmployeeId);
+        });
       });
     }
 
@@ -368,6 +400,310 @@ function showReportsAnalytics() {
   });
 }
 
+// Show Attendance Records Section
+function showAttendanceRecords() {
+  if (!showSection('attendance-records')) return;
+
+  const fetchAttendanceBtn = document.getElementById('fetch-attendance-btn');
+  const attendanceTableBody = document.getElementById('attendance-table-body');
+  const employeeSearch = document.getElementById('attendance-employee-search');
+  const startDateInput = document.getElementById('start-date');
+  const endDateInput = document.getElementById('end-date');
+
+  if (!fetchAttendanceBtn || !attendanceTableBody || !employeeSearch || !startDateInput || !endDateInput) {
+    showError('Required elements not found', 'attendance-records');
+    return;
+  }
+
+  // Clear table
+  attendanceTableBody.innerHTML = '';
+
+  // Remove existing listeners to prevent duplicates
+  const newButton = fetchAttendanceBtn.cloneNode(true);
+  fetchAttendanceBtn.parentNode.replaceChild(newButton, fetchAttendanceBtn);
+  const updatedFetchAttendanceBtn = document.getElementById('fetch-attendance-btn');
+
+  updatedFetchAttendanceBtn.addEventListener('click', function() {
+    const employeeId = employeeSearch.value;
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
+
+    fetch('superadmin_dashboard.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `action=fetch_attendance&employee_id=${encodeURIComponent(employeeId)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          attendanceTableBody.innerHTML = '';
+          if (data.attendance_records.length === 0) {
+            attendanceTableBody.innerHTML = `<tr><td colspan="5">No attendance records found.</td></tr>`;
+          } else {
+            data.attendance_records.forEach(record => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                <td>${record.employee_name}</td>
+                <td>${record.department_name}</td>
+                <td>${record.check_in || 'N/A'}</td>
+                <td>${record.check_out || 'N/A'}</td>
+                <td>${record.status}</td>
+              `;
+              attendanceTableBody.appendChild(row);
+            });
+          }
+        } else {
+          showError(data.error || 'Failed to fetch attendance records', 'attendance-records');
+        }
+      })
+      .catch(error => showError('Network error: ' + error.message, 'attendance-records'));
+  });
+
+  // Add sorting functionality
+  const headers = document.querySelectorAll('#attendance-table th');
+  headers.forEach((header, index) => {
+    header.addEventListener('click', () => {
+      const rows = Array.from(attendanceTableBody.querySelectorAll('tr'));
+      const isAscending = header.classList.contains('sort-asc');
+      headers.forEach(h => {
+        h.classList.remove('sort-asc', 'sort-desc');
+        const icon = h.querySelector('i.fas');
+        if (icon) icon.className = 'fas fa-sort';
+      });
+
+      header.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
+      const icon = header.querySelector('i.fas');
+      if (icon) icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
+
+      rows.sort((a, b) => {
+        const aText = a.cells[index].textContent.trim();
+        const bText = b.cells[index].textContent.trim();
+        if (index === 2 || index === 3) { // Check In, Check Out (dates)
+          const aDate = aText === 'N/A' ? 0 : new Date(aText).getTime();
+          const bDate = bText === 'N/A' ? 0 : new Date(bText).getTime();
+          return isAscending ? bDate - aDate : aDate - bDate;
+        }
+        return isAscending
+          ? bText.localeCompare(aText)
+          : aText.localeCompare(bText);
+      });
+
+      attendanceTableBody.innerHTML = '';
+      rows.forEach(row => attendanceTableBody.appendChild(row));
+    });
+  });
+}
+
+// Show Leave Requests Section
+function showLeaveRequests() {
+  if (!showSection('leave-requests')) return;
+
+  const fetchLeaveBtn = document.getElementById('fetch-leave-btn');
+  const leaveTableBody = document.getElementById('leave-table-body');
+  const leaveFilter = document.getElementById('leave-filter');
+
+  if (!fetchLeaveBtn || !leaveTableBody || !leaveFilter) {
+    showError('Required elements not found', 'leave-requests');
+    return;
+  }
+
+  // Clear table
+  leaveTableBody.innerHTML = '';
+
+  // Remove existing listeners to prevent duplicates
+  const newButton = fetchLeaveBtn.cloneNode(true);
+  fetchLeaveBtn.parentNode.replaceChild(newButton, fetchLeaveBtn);
+  const updatedFetchLeaveBtn = document.getElementById('fetch-leave-btn');
+
+  function fetchLeaves() {
+    const status = leaveFilter.value;
+    fetch('superadmin_dashboard.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `action=fetch_leave_applications&leave_filter=${encodeURIComponent(status)}`
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success) {
+          leaveTableBody.innerHTML = '';
+          if (data.leave_applications.length === 0) {
+            leaveTableBody.innerHTML = `<tr><td colspan="6">No leave requests found.</td></tr>`;
+          } else {
+            data.leave_applications.forEach(request => {
+              const row = document.createElement('tr');
+              const statusClass = request.status === 'ispending' ? 'status-pending' :
+                                request.status === 'approved' ? 'status-approved' : 'status-rejected';
+              row.innerHTML = `
+                <td>${request.employee_name}</td>
+                <td>${request.leave_start_date}</td>
+                <td>${request.leave_end_date}</td>
+                <td>${request.leave_reason}</td>
+                <td><span class="status-badge ${statusClass}">${request.status.charAt(0).toUpperCase() + request.status.slice(1)}</span></td>
+                <td>
+                  ${request.status === 'ispending' ? `
+                    <form class="action-form approve-form" style="display:inline;">
+                      <input type="hidden" name="request_id" value="${request.request_id}">
+                      <button type="button" class="approve-btn" style="background-color:#4caf50;color:white;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;margin-right:5px;">Approve</button>
+                    </form>
+                    <form class="action-form reject-form" style="display:inline;">
+                      <input type="hidden" name="request_id" value="${request.request_id}">
+                      <button type="button" class="reject-btn" style="background-color:#f44336;color:white;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;">Reject</button>
+                    </form>
+                  ` : request.status === 'approved' || request.status === 'rejected' ? `
+                    <button type="button" class="reconsider-btn" data-request-id="${request.request_id}">Reconsider</button>
+                  ` : ''}
+                </td>
+              `;
+              leaveTableBody.appendChild(row);
+
+              // Add event listeners for approve/reject buttons
+              if (request.status === 'ispending') {
+                row.querySelector('.approve-btn').addEventListener('click', () => updateLeaveStatus(request.request_id, 'approved', fetchLeaves));
+                row.querySelector('.reject-btn').addEventListener('click', () => updateLeaveStatus(request.request_id, 'rejected', fetchLeaves));
+              }
+              if (request.status === 'approved' || request.status === 'rejected') {
+                row.querySelector('.reconsider-btn').addEventListener('click', () => reconsiderLeave(request.request_id, fetchLeaves));
+              }
+            });
+          }
+        } else {
+          showError(data.error || 'Failed to fetch leave requests', 'leave-requests');
+        }
+      })
+      .catch(error => showError('Network error: ' + error.message, 'leave-requests'));
+  }
+
+  // Initial fetch
+  fetchLeaves();
+
+  // Fetch on button click
+  updatedFetchLeaveBtn.addEventListener('click', fetchLeaves);
+
+  // Fetch on filter change
+  leaveFilter.addEventListener('change', fetchLeaves);
+}
+
+// Function to update leave status
+function updateLeaveStatus(requestId, status, callback) {
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `action=update_leave_status&request_id=${encodeURIComponent(requestId)}&status=${encodeURIComponent(status)}`
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccess(data.message, 'leave-requests');
+        if (callback) callback();
+      } else {
+        showError(data.error || 'Failed to update leave status', 'leave-requests');
+      }
+    })
+    .catch(error => showError('Network error: ' + error.message, 'leave-requests'));
+}
+
+// Function to reconsider leave
+function reconsiderLeave(requestId, callback) {
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `action=reconsider_leave&request_id=${encodeURIComponent(requestId)}`
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        showSuccess(data.message, 'leave-requests');
+        if (callback) callback();
+      } else {
+        showError(data.error || 'Failed to reconsider leave', 'leave-requests');
+      }
+    })
+    .catch(error => showError('Network error: ' + error.message, 'leave-requests'));
+}
+
+// Show Department-wise Performance Metrics Section
+function showDepartmentMetrics() {
+  if (!showSection('department-metrics')) return;
+
+  const metricsTableBody = document.getElementById('department-metrics-table-body');
+
+  if (!metricsTableBody) {
+    showError('Required elements not found', 'department-metrics');
+    return;
+  }
+
+  // Clear table
+  metricsTableBody.innerHTML = '';
+
+  // Fetch department metrics
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=fetch_department_metrics'
+  })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        metricsTableBody.innerHTML = '';
+        if (data.department_metrics.length === 0) {
+          metricsTableBody.innerHTML = `<tr><td colspan="9">No department metrics found.</td></tr>`;
+        } else {
+          data.department_metrics.forEach(metric => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+              <td>${metric.department_name}</td>
+              <td>${metric.employee_count}</td>
+              <td>${metric.projects_completed}</td>
+              <td>${metric.projects_in_progress}</td>
+              <td>${metric.projects_assigned}</td>
+              <td>${metric.tasks_completed}</td>
+              <td>${metric.trainings_conducted}</td>
+              <td>${metric.avg_feedback_rating}</td>
+              <td>${metric.total_leaves_taken}</td>
+            `;
+            metricsTableBody.appendChild(row);
+          });
+        }
+      } else {
+        showError(data.error || 'Failed to fetch department metrics', 'department-metrics');
+      }
+    })
+    .catch(error => showError('Network error: ' + error.message, 'department-metrics'));
+
+  // Add sorting functionality
+  const headers = document.querySelectorAll('#department-metrics-table th');
+  headers.forEach((header, index) => {
+    header.addEventListener('click', () => {
+      const rows = Array.from(metricsTableBody.querySelectorAll('tr'));
+      const isAscending = header.classList.contains('sort-asc');
+      headers.forEach(h => {
+        h.classList.remove('sort-asc', 'sort-desc');
+        const icon = h.querySelector('i.fas');
+        if (icon) icon.className = 'fas fa-sort';
+      });
+
+      header.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
+      const icon = header.querySelector('i.fas');
+      if (icon) icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
+
+      rows.sort((a, b) => {
+        let aText = a.cells[index].textContent.trim();
+        let bText = b.cells[index].textContent.trim();
+        // Convert to numbers for numeric columns
+        if (index !== 0) { // All columns except Department Name are numeric
+          aText = parseFloat(aText) || 0;
+          bText = parseFloat(bText) || 0;
+          return isAscending ? bText - aText : aText - bText;
+        }
+        return isAscending ? bText.localeCompare(aText) : aText.localeCompare(bText);
+      });
+
+      metricsTableBody.innerHTML = '';
+      rows.forEach(row => metricsTableBody.appendChild(row));
+    });
+  });
+}
+
 // Function to load external scripts
 function loadScript(url, callback) {
   const script = document.createElement('script');
@@ -377,7 +713,7 @@ function loadScript(url, callback) {
   document.head.appendChild(script);
 }
 
-// Placeholder for Create User Form (stub for other functionalities)
+// Placeholder for Create User Form
 function showCreateUserForm() {
   if (!showSection('create-user-form')) return;
 
@@ -400,6 +736,7 @@ function toggleDropdown(event, dropdownId) {
   if (dropdown) {
     const isDisplayed = dropdown.style.display === 'block';
     dropdown.style.display = isDisplayed ? 'none' : 'block';
+    dropdown.classList.toggle('show', !isDisplayed);
   }
 }
 
