@@ -659,6 +659,7 @@ console.log(employeesadmin)
 
 </script>
 <script src="../assets/js/superadmin_dashboard.js"></script>
+<script src="../assets/js/dashboard.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </body>
 </html>
