@@ -3,7 +3,7 @@
         <li><a href="#" onclick="toggleDropdown(event, 'manage-dropdown')"><i class="fas fa-users"></i> Manage Users</a>
             <ul id="manage-dropdown" class="dropdown" style="display: none;">
                 <li><a href="#" onclick="showCreateUserForm()">Create new profile</a></li>
-                <li><a href="#">Update or remove employee or manager</a></li>
+                <li><a href="#"  onclick="showUpdateRemoveUserForm()">Update or remove employee or manager</a></li>
                 <li><a href="#" onclick="showAllEmployees()">View all employees or managers</a></li>
             </ul>
         </li>

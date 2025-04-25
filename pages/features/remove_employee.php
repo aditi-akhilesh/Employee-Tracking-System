@@ -28,9 +28,6 @@ try {
         throw new Exception("Unauthorized: User is not authenticated");
     }
 
-    if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'HR') {
-        throw new Exception("Unauthorized: Only HR can deactivate employees");
-    }
 
     $current_user_id = $_SESSION['user_id'];
 
@@ -74,7 +71,7 @@ try {
     $stmt->execute([':user_id' => $user_id]);
 
     // Step 4: Update emp_status to 'inactive' in Employees table
-    $stmt = $con->prepare("UPDATE Employees SET emp_status = 'inactive' WHERE employee_id = :employee_id");
+    $stmt = $con->prepare("UPDATE Employees SET emp_status = 'Inactive' WHERE employee_id = :employee_id");
     $stmt->execute([':employee_id' => $employee_id]);
 
     // Commit the transaction
