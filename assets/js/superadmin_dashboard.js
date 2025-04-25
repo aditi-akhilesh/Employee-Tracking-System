@@ -13,6 +13,7 @@ function showSection(sectionToShowId) {
     'Department_content',
     'update-remove-user-section',
     'department-management-section',
+'audit-logs-section'
   ];
 
   const mainContent = document.getElementById('content-area');
@@ -3357,4 +3358,223 @@ function showDepartmentManagement(event) {
         alert('Error deleting department: ' + error.message);
       });
   }
+}
+
+
+function showAuditLogs() {
+  if (!showSection('audit-logs-section')) return;
+
+  const auditLogsSection = document.getElementById('audit-logs-section');
+  if (!auditLogsSection) {
+    console.error('audit-logs-section not found');
+    showError('Audit logs section not found.', 'content-area');
+    return;
+  }
+
+  // State for pagination and filters
+  let currentPage = 1;
+  let recordsPerPage = 5;
+  let userIdFilter = ''; // Will store the selected employee_id or empty for "All"
+  let actionKeyword = '';
+
+  // Predefined action keywords
+  const actionKeywords = ['update', 'remove', 'login', 'request'];
+
+  function renderTable() {
+    // Fetch audit logs with filters
+    fetch(`../pages/features/fetch_audit_logs.php?user_id=${encodeURIComponent(userIdFilter)}&action_keyword=${encodeURIComponent(actionKeyword)}&ts=${new Date().getTime()}`, {
+      method: 'GET',
+      headers: { 'Cache-Control': 'no-cache' },
+    })
+      .then(response => response.json())
+      .then(data => {
+        if (!data.success) {
+          auditLogsSection.innerHTML = `
+            <div class="card">
+              <h2>Audit Logs</h2>
+              <p class="error-message">${data.message || 'Error fetching audit logs.'}</p>
+              <div class="form-group button-group">
+                <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        const auditLogs = data.data;
+
+        // If no audit logs
+        if (auditLogs.length === 0) {
+          auditLogsSection.innerHTML = `
+            <div class="card">
+              <h2>Audit Logs</h2>
+              <p>No audit logs match the selected filters.</p>
+              <div class="form-group button-group">
+                <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
+              </div>
+            </div>
+          `;
+          return;
+        }
+
+        // Pagination
+        const totalRecords = auditLogs.length;
+        const totalPages = Math.ceil(totalRecords / recordsPerPage);
+        currentPage = Math.min(currentPage, totalPages);
+        currentPage = Math.max(currentPage, 1);
+        const startIndex = (currentPage - 1) * recordsPerPage;
+        const endIndex = Math.min(startIndex + recordsPerPage, totalRecords);
+        const paginatedLogs = auditLogs.slice(startIndex, endIndex);
+
+        let auditLogsHTML = `
+          <div class="card">
+            <h2>Audit Logs</h2>
+            <div class="table-controls">
+              <div class="filter-controls">
+                <label>User:</label>
+                <select id="user-id-filter" class="filter-select">
+                  <option value="">All</option>
+                  ${employeesadmin
+                    .map(emp => 
+                      `<option value="${emp.employee_id}" ${userIdFilter === emp.employee_id ? 'selected' : ''}>
+                        ${emp.employee_id} - ${emp.first_name || ''} ${emp.last_name || ''}
+                      </option>`
+                    )
+                    .join('')}
+                </select>
+                <label>Action Keyword:</label>
+                <select id="action-keyword-filter" class="filter-select">
+                  <option value="">All</option>
+                  ${actionKeywords
+                    .map(keyword => `<option value="${keyword}" ${actionKeyword === keyword ? 'selected' : ''}>${keyword}</option>`)
+                    .join('')}
+                </select>
+                <label>Show:</label>
+                <select id="records-per-page" class="filter-select">
+                  <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
+                  <option value="10" ${recordsPerPage === 10 ? 'selected' : ''}>10</option>
+                  <option value="15" ${recordsPerPage === 15 ? 'selected' : ''}>15</option>
+                  <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
+                </select>
+              </div>
+            </div>
+            <table class="audit-table">
+              <thead>
+                <tr>
+                  <th>User ID</th>
+                  <th>Action</th>
+                  <th>Action Date</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+
+        paginatedLogs.forEach((log, index) => {
+          auditLogsHTML += `
+            <tr class="${index % 2 === 0 ? 'row-even' : 'row-odd'}">
+              <td>${log.user_id || 'N/A'}</td>
+              <td>${log.action || 'N/A'}</td>
+              <td>${log.action_date || 'N/A'}</td>
+            </tr>
+          `;
+        });
+
+        auditLogsHTML += `
+              </tbody>
+            </table>
+            <div class="pagination-container">
+              <div>
+                Showing ${startIndex + 1} to ${Math.min(endIndex, totalRecords)} of ${totalRecords} logs
+              </div>
+              <div>
+                <button class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}" onclick="changePage(${currentPage - 1})">Previous</button>
+        `;
+
+        const maxPagesToShow = 5;
+        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+        if (endPage - startPage + 1 < maxPagesToShow) {
+          startPage = Math.max(1, endPage - maxPagesToShow + 1);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+          auditLogsHTML += `
+            <button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
+          `;
+        }
+
+        auditLogsHTML += `
+                <button class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}" onclick="changePage(${currentPage + 1})">Next</button>
+              </div>
+            </div>
+            <div class="form-group button-group">
+              <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
+            </div>
+          </div>
+        `;
+
+        auditLogsSection.innerHTML = auditLogsHTML;
+
+        // Add event listeners for filters and pagination
+        const userIdSelect = document.getElementById('user-id-filter');
+        const actionKeywordSelect = document.getElementById('action-keyword-filter');
+        const recordsPerPageSelect = document.getElementById('records-per-page');
+
+        if (userIdSelect) {
+          userIdSelect.addEventListener('change', e => {
+            userIdFilter = e.target.value;
+            currentPage = 1;
+            renderTable();
+          });
+        }
+
+        if (actionKeywordSelect) {
+          actionKeywordSelect.addEventListener('change', e => {
+            actionKeyword = e.target.value;
+            currentPage = 1;
+            renderTable();
+          });
+        }
+
+        if (recordsPerPageSelect) {
+          recordsPerPageSelect.addEventListener('change', e => {
+            recordsPerPage = parseInt(e.target.value, 10);
+            currentPage = 1;
+            renderTable();
+          });
+        }
+
+        // Add hover effects for the back button
+        const backButton = document.querySelector('.back-btn');
+        if (backButton) {
+          backButton.addEventListener('mouseover', () => {
+            backButton.style.backgroundColor = '#5a6268';
+          });
+          backButton.addEventListener('mouseout', () => {
+            backButton.style.backgroundColor = '#6c757d';
+          });
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching audit logs:', error);
+        auditLogsSection.innerHTML = `
+          <div class="card">
+            <h2>Audit Logs</h2>
+            <p class="error-message">Error fetching audit logs: ${error.message}</p>
+            <div class="form-group button-group">
+              <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
+            </div>
+          </div>
+        `;
+      });
+  }
+
+  // Define global function for pagination
+  window.changePage = function(page) {
+    currentPage = page;
+    renderTable();
+  };
+
+  // Initial render
+  renderTable();
 }
