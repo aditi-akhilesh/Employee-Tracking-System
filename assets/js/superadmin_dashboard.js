@@ -1357,7 +1357,7 @@ function showAllEmployees() {
   if (employeesadmin.length === 0) {
     profileUpdateForm.innerHTML = `
             <div class="card">
-                <h2>Employees Assigned to Me</h2>
+                <h2>All Employees in the company</h2>
                 <p>No employees are currently assigned to you.</p>
                 <div class="form-group button-group">
                     <button type="button" onclick="showWelcomeMessage()">Back</button>
@@ -1483,8 +1483,8 @@ function showAllEmployees() {
 
     let employeesTableHTML = `
             <div class="card">
-                <h2>Employees Assigned to Me</h2>
-                <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                <h2>All Employees in the company</h2>
+                <div id="form-group">
                     <div >
                             <label>Show:</label>
                             <select id="records-per-page" style="padding: 5px; margin-right: 10px;">
@@ -1532,7 +1532,7 @@ function showAllEmployees() {
                                 }>HR</option>
                             </select>
                     </div>
-                        <input type="text" id="search-input" placeholder="Search by name or email..." value="${searchQuery}">
+                        </br><input type="text" id="search-input" placeholder="Search by name or email..." value="${searchQuery}">
                 </div>
                 <div class="button-group download-controls">
                     <button class="download-btn" onclick="exportToExcel()">Download as Excel</button>
