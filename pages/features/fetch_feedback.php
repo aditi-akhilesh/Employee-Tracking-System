@@ -3,6 +3,8 @@ session_start();
 require_once '../../auth/dbconnect.php';
 
 header('Content-Type: application/json');
+$currentUser = intval($_SESSION['user_id']);
+$con->exec("SET @current_user_id := {$currentUser}");
 
 if ($_SESSION['role'] !== 'Manager') {
     echo json_encode(['success' => false, 'error' => 'Unauthorized']);

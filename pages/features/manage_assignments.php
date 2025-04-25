@@ -2,6 +2,12 @@
 session_start();
 require_once '../../auth/dbconnect.php';
 
+
+// after session_start() and PDO connect:
+$currentUser = intval($_SESSION['user_id']);
+$con->exec("SET @current_user_id := {$currentUser}");
+
+
 header('Content-Type: application/json');
 $response = ['success' => false, 'error' => ''];
 

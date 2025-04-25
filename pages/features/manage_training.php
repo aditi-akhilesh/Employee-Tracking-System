@@ -6,6 +6,10 @@ error_reporting(E_ALL);
 
 require_once '../../auth/dbconnect.php';
 
+// after session_start() and PDO connect:
+$currentUser = intval($_SESSION['user_id']);
+$con->exec("SET @current_user_id := {$currentUser}");
+
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Content-Type: application/json');
     echo json_encode(['success' => false, 'error' => 'Invalid request method.']);

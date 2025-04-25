@@ -2,6 +2,10 @@
 session_start();
 include '../../auth/dbconnect.php';
 
+// currentUser for audit log table
+$currentUser = intval($_SESSION['user_id']);
+$con->exec("SET @current_user_id := {$currentUser}");
+
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] !== 'HR') {
     header("Location: ../login.php");
     exit();

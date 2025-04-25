@@ -4,6 +4,9 @@ require_once '../../auth/dbconnect.php'; // Uses $con
 
 header('Content-Type: application/json');
 $response = ['success' => false];
+// tell MySQL who the current user is
+$currentUser = intval($_SESSION['user_id']);
+$con->exec("SET @current_user_id := {$currentUser}");
 
 // Check if the user is authenticated
 if (!isset($_SESSION['user_id'])) {
@@ -59,17 +62,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ]);
 
     // Insert into Audit_Log table for feedback submission
-    $action = "Submit Feedback";
-    $action_date = date('Y-m-d H:i:s');
-    $stmt_audit = $con->prepare("INSERT INTO Audit_Log (user_id, action, action_date) VALUES (:user_id, :action, :action_date)");
-    $stmt_audit->bindParam(':user_id', $current_user_id);
-    $stmt_audit->bindParam(':action', $action);
-    $stmt_audit->bindParam(':action_date', $action_date);
-    try {
-        $stmt_audit->execute();
-    } catch (PDOException $e) {
-        error_log("Audit log insertion failed in " . __FILE__ . " on line " . __LINE__ . ": " . $e->getMessage());
-    }
+    //$action = "Submit Feedback";
+    //$action_date = date('Y-m-d H:i:s');
+    //$stmt_audit = $con->prepare("INSERT INTO Audit_Log (user_id, action, action_date) VALUES (:user_id, :action, :action_date)");
+    //$stmt_audit->bindParam(':user_id', $current_user_id);
+    //$stmt_audit->bindParam(':action', $action);
+    //$stmt_audit->bindParam(':action_date', $action_date);
+    //try {
+    //    $stmt_audit->execute();
+    //} catch (PDOException $e) {
+    //    error_log("Audit log insertion failed in " . __FILE__ . " on line " . __LINE__ . ": " . $e->getMessage());
+    //}
 
     $response['success'] = true;
     $response['message'] = 'Feedback submitted successfully';
