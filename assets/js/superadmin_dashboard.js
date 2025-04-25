@@ -1483,11 +1483,10 @@ function showAllEmployees() {
     let employeesTableHTML = `
             <div class="card">
                 <h2>Employees Assigned to Me</h2>
-                <div class="table-controls">
-                    <div class="filter-controls">
-                        <div class="form-group">
+                <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <div >
                             <label>Show:</label>
-                            <select id="records-per-page">
+                            <select id="records-per-page" style="padding: 5px; margin-right: 10px;">
                                 <option value="5" ${
                                   recordsPerPage === 5 ? 'selected' : ''
                                 }>5</option>
@@ -1501,10 +1500,8 @@ function showAllEmployees() {
                                   recordsPerPage === 20 ? 'selected' : ''
                                 }>20</option>
                             </select>
-                        </div>
-                        <div class="form-group">
                             <label>Department:</label>
-                            <select id="filter-department">
+                            <select id="filter-department" style="padding: 5px; margin-right: 10px;">
                                 <option value="All">All</option>
                                 ${departments
                                   .map(
@@ -1520,10 +1517,8 @@ function showAllEmployees() {
                                   )
                                   .join('')}
                             </select>
-                        </div>
-                        <div class="form-group">
                             <label>Role:</label>
-                            <select id="filter-role">
+                            <select id="filter-role" style="padding: 5px;">
                                 <option value="All">All</option>
                                 <option value="User" ${
                                   filterRole === 'User' ? 'selected' : ''
@@ -1535,28 +1530,25 @@ function showAllEmployees() {
                                   filterRole === 'HR' ? 'selected' : ''
                                 }>HR</option>
                             </select>
-                        </div>
                     </div>
-                    <div class="form-group search-controls">
                         <input type="text" id="search-input" placeholder="Search by name or email..." value="${searchQuery}">
-                    </div>
                 </div>
                 <div class="button-group download-controls">
                     <button class="download-btn" onclick="exportToExcel()">Download as Excel</button>
                 </div>
-                <table>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
                     <thead>
                         <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Department</th>
-                            <th>Hire Date</th>
-                            <th>Salary</th>
+                            <th style="padding: 10px; cursor: pointer;">ID</th>
+                            <th style="padding: 10px; cursor: pointer;">Name</th>
+                            <th style="padding: 10px; cursor: pointer;">Email</th>
+                            <th style="padding: 10px; cursor: pointer;">Role</th>
+                            <th style="padding: 10px; cursor: pointer;">Department</th>
+                            <th style="padding: 10px; cursor: pointer;">Hire Date</th>
+                            <th style="padding: 10px; cursor: pointer;">Salary</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="employees-table-body">
         `;
 
     paginatedEmployees.forEach((emp, index) => {
@@ -1564,16 +1556,18 @@ function showAllEmployees() {
         departments.find((d) => d.department_id === emp.department_id)
           ?.department_name || 'N/A';
       employeesTableHTML += `
-                        <tr>
-                            <td>${emp.employee_id || 'N/A'}</td>
-                            <td>${emp.first_name || 'N/A'} ${
+                        <tr style="border-bottom: 1px solid #ddd; background-color: ${
+                index % 2 === 0 ? '#f9f9f9' : '#ffffff'
+              };">
+                            <td style="padding: 10px;">${emp.employee_id || 'N/A'}</td>
+                            <td style="padding: 10px;">${emp.first_name || 'N/A'} ${
         emp.last_name || 'N/A'
       }</td>
-                            <td>${emp.email || 'N/A'}</td>
-                            <td>${emp.role || 'N/A'}</td>
-                            <td>${deptName}</td>
-                            <td>${emp.emp_hire_date || 'N/A'}</td>
-                            <td>${
+                            <td style="padding: 10px;">${emp.email || 'N/A'}</td>
+                            <td style="padding: 10px;">${emp.role || 'N/A'}</td>
+                            <td style="padding: 10px;">${deptName}</td>
+                            <td style="padding: 10px;">${emp.emp_hire_date || 'N/A'}</td>
+                            <td style="padding: 10px;">${
                               emp.salary
                                 ? '$' + parseFloat(emp.salary).toFixed(2)
                                 : 'N/A'
@@ -1585,7 +1579,7 @@ function showAllEmployees() {
     employeesTableHTML += `
                     </tbody>
                 </table>
-                <div class="pagination">
+                <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
                     <div>
                         Showing ${startIndex + 1} to ${Math.min(
       endIndex,
@@ -1593,7 +1587,7 @@ function showAllEmployees() {
     )} of ${totalRecords} employees
                     </div>
                     <div>
-                        <button class="${
+                        <button style="padding: 5px 10px; margin: 0 5px; class="${
                           currentPage === 1 ? 'disabled' : ''
                         }" onclick="changePage(${
       currentPage - 1
@@ -1609,22 +1603,25 @@ function showAllEmployees() {
 
     for (let i = startPage; i <= endPage; i++) {
       employeesTableHTML += `
-                        <button class="${
+                        <button style="padding: 5px 10px; margin: 0 5px; class="${
                           i === currentPage ? 'active' : ''
                         }" onclick="changePage(${i})">${i}</button>
             `;
     }
 
     employeesTableHTML += `
-                        <button class="${
+                        <button  style="padding: 5px 10px; margin: 0 5px; class="${
                           currentPage === totalPages ? 'disabled' : ''
                         }" onclick="changePage(${
       currentPage + 1
     })">Next</button>
                     </div>
                 </div>
-                <div class="form-group button-group">
-                    <button type="button" onclick="showWelcomeMessage()">Back</button>
+                <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                    <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                          onmouseover="this.style.backgroundColor='#5a6268'" 
+                          onmouseout="this.style.backgroundColor='#6c757d'"
+                          onclick="showWelcomeMessage()">Back</button>
                 </div>
             </div>
         `;
