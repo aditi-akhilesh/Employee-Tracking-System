@@ -1,4 +1,6 @@
 <?php
+ob_start();
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
@@ -18,51 +20,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // Check if department has employees assigned
-    $stmt = $con->prepare("SELECT COUNT(*) FROM employees WHERE department_id = ?");
-    if (!$stmt) {
-        $response['message'] = 'Database error: Failed to prepare statement';
-        echo json_encode($response);
-        exit;
-    }
-    $stmt->bind_param("s", $department_id);
-    $stmt->execute();
-    $stmt->bind_result($count);
-    $stmt->fetch();
-    $stmt->close();
+    try {
+        // Check if department has employees assigned
+        $stmt = $con->prepare("SELECT COUNT(*) FROM Employees WHERE department_id = ?");
+        if (!$stmt) {
+            $response['message'] = 'Database error: Failed to prepare statement';
+            echo json_encode($response);
+            exit;
+        }
+        $stmt->execute([$department_id]);
+        $count = $stmt->fetchColumn();
+        $stmt->closeCursor();
 
-    if ($count > 0) {
-        $response['message'] = "Cannot delete department: It has $count employee(s) assigned";
-        echo json_encode($response);
-        exit;
-    }
+        if ($count > 0) {
+            $response['message'] = "Cannot delete department: It has $count employee(s) assigned";
+            echo json_encode($response);
+            exit;
+        }
 
-    // Delete the department
-    $stmt = $con->prepare("DELETE FROM Department WHERE department_id = ?");
-    if (!$stmt) {
-        $response['message'] = 'Database error: Failed to prepare statement';
-        echo json_encode($response);
-        exit;
-    }
-    $stmt->bind_param("s", $department_id);
+        // Delete the department
+        $stmt = $con->prepare("DELETE FROM Department WHERE department_id = ?");
+        if (!$stmt) {
+            $response['message'] = 'Database error: Failed to prepare statement';
+            echo json_encode($response);
+            exit;
+        }
+        $stmt->execute([$department_id]);
 
-    if ($stmt->execute()) {
-        if ($stmt->affected_rows > 0) {
+        if ($stmt->rowCount() > 0) {
             $response['success'] = true;
             $response['message'] = 'Department deleted successfully';
         } else {
             $response['message'] = 'No department found with the given ID';
         }
-    } else {
-        $response['message'] = 'Error deleting department: ' . $stmt->error;
+    } catch (Exception $e) {
+        $response['message'] = 'Database error: ' . $e->getMessage();
     }
-
-    $stmt->close();
-    $con->close();
 } else {
     $response['message'] = 'Invalid request method';
 }
 
-echo json_encode($response);
+ob_end_clean();
+echo json_encode($response, JSON_THROW_ON_ERROR);
 exit;
 ?>

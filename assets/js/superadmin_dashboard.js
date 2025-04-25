@@ -2999,3 +2999,399 @@ function trackTasksStatus() {
       showError('Network error: ' + error.message, 'profile-update-form')
     );
 }
+
+
+function showDepartmentManagement(event) {
+  if (event) event.preventDefault();
+  console.log('showDepartmentManagement called');
+
+  // Use showSection to ensure only department-management-section is visible
+  if (!showSection('department-management-section')) {
+    console.error('Failed to show department-management-section');
+    return;
+  }
+
+  const departmentManagementSection = document.getElementById('department-management-section');
+  if (!departmentManagementSection) {
+    console.error('department-management-section not found');
+    showError('Department management section not found.', 'content-area');
+    return;
+  }
+
+  // Fetch departments on initial load
+  fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
+    method: 'GET',
+    headers: { 'Cache-Control': 'no-cache' },
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((fetchedDepartments) => {
+      console.log('Initial fetch departments:', fetchedDepartments);
+      if (!Array.isArray(fetchedDepartments)) {
+        console.error('Fetched departments is not an array:', fetchedDepartments);
+        if (fetchedDepartments.success === false) {
+          alert('Error fetching departments: ' + (fetchedDepartments.message || 'Unknown error'));
+        } else {
+          alert('Error: Invalid department data from server');
+        }
+        return;
+      }
+      manageDepartments.length = 0; // Clear the array
+      fetchedDepartments.forEach((dept) => manageDepartments.push(dept));
+      console.log('Initial manageDepartments array:', manageDepartments);
+      renderDepartmentList(); // Render the list after fetching
+    })
+    .catch((error) => {
+      console.error('Error fetching initial department list:', error);
+      alert('Error fetching initial department list: ' + error.message);
+    });
+
+  function renderDepartmentList() {
+    console.log('renderDepartmentList called with manageDepartments:', manageDepartments);
+
+    let html = `
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Department Management</h2>
+          <button class="add-btn" id="add-department-btn">Add New Department</button>
+        </div>
+        <div id="add-department-form" style="display: none; margin-top: 20px;">
+          <h3>Add New Department</h3>
+          <form id="insertDepartmentForm">
+            <div class="form-group">
+              <label>Department ID</label>
+              <input type="text" name="department_id" required>
+            </div>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" name="department_name" required>
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea name="description"></textarea>
+            </div>
+            <div class="form-group button-group">
+              <button type="submit">Add Department</button>
+              <button type="button" id="cancel-add-department-btn">Cancel</button>
+            </div>
+          </form>
+        </div>
+        <table style="margin-top: 20px; width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+          <thead>
+            <tr style="background-color: #003087; color: #FFFFFF;">
+              <th style="border: 1px solid #ddd; padding: 8px;">Department ID</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Name</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Description</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="department-table-body">
+    `;
+
+    if (manageDepartments.length > 0) {
+      manageDepartments.forEach((dept) => {
+        html += `
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_id}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_name}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_description || 'No description'}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">
+              <button class="update-btn" data-dept-id="${dept.department_id}">Update</button>
+              <button class="remove-btn" data-dept-id="${dept.department_id}">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+    } else {
+      html += `
+        <tr>
+          <td colspan="4" style="padding: 20px; text-align: center; color: #666;">No departments found.</td>
+        </tr>
+      `;
+    }
+
+    html += `
+          </tbody>
+        </table>
+        <div class="form-group button-group" style="margin-top: 20px;">
+          <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+        </div>
+      </div>
+    `;
+
+    departmentManagementSection.innerHTML = html;
+
+    // Attach event listeners dynamically
+    const addDepartmentBtn = document.getElementById('add-department-btn');
+    if (addDepartmentBtn) {
+      addDepartmentBtn.addEventListener('click', showAddDepartmentForm);
+    }
+
+    const cancelAddDepartmentBtn = document.getElementById('cancel-add-department-btn');
+    if (cancelAddDepartmentBtn) {
+      cancelAddDepartmentBtn.addEventListener('click', hideAddDepartmentForm);
+    }
+
+    const updateButtons = document.querySelectorAll('.update-btn');
+    updateButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const deptId = button.getAttribute('data-dept-id');
+        showUpdateDepartmentForm(deptId);
+      });
+    });
+
+    const deleteButtons = document.querySelectorAll('.remove-btn');
+    deleteButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const deptId = button.getAttribute('data-dept-id');
+        deleteDepartment(deptId);
+      });
+    });
+
+    const insertForm = document.getElementById('insertDepartmentForm');
+    if (insertForm) {
+      insertForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        const formData = new FormData(insertForm);
+        fetch('../pages/features/insert_department.php', {
+          method: 'POST',
+          body: formData,
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            console.log('Insert response:', data);
+            if (data.success) {
+              alert(data.message || 'Department added successfully');
+              fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
+                method: 'GET',
+                headers: { 'Cache-Control': 'no-cache' },
+              })
+                .then((response) => {
+                  if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                  }
+                  return response.json();
+                })
+                .then((updatedDepartments) => {
+                  console.log('Fetched departments:', updatedDepartments);
+                  if (!Array.isArray(updatedDepartments)) {
+                    console.error('Fetched departments is not an array:', updatedDepartments);
+                    if (updatedDepartments.success === false) {
+                      alert('Error fetching departments: ' + (updatedDepartments.message || 'Unknown error'));
+                    } else {
+                      alert('Error: Invalid department data from server');
+                    }
+                    return;
+                  }
+                  manageDepartments.length = 0;
+                  updatedDepartments.forEach((dept) => manageDepartments.push(dept));
+                  console.log('Updated manageDepartments array:', manageDepartments);
+                  renderDepartmentList();
+                  hideAddDepartmentForm();
+                })
+                .catch((error) => {
+                  console.error('Error fetching updated department list:', error);
+                  alert('Error fetching updated department list: ' + error.message);
+                });
+            } else {
+              alert(data.message || 'Error adding department');
+            }
+          })
+          .catch((error) => {
+            console.error('Error adding department:', error);
+            alert('Error adding department: ' + error.message);
+          });
+      });
+    }
+  }
+
+  function showAddDepartmentForm() {
+    const addForm = document.getElementById('add-department-form');
+    if (addForm) {
+      addForm.style.display = 'block';
+    }
+  }
+
+  function hideAddDepartmentForm() {
+    const addForm = document.getElementById('add-department-form');
+    if (addForm) {
+      addForm.style.display = 'none';
+      const formElement = addForm.querySelector('form');
+      if (formElement) {
+        formElement.reset();
+      }
+    }
+  }
+
+  function showUpdateDepartmentForm(deptId) {
+    const dept = manageDepartments.find((d) => d.department_id === deptId);
+    if (!dept) {
+      alert('Department not found');
+      return;
+    }
+
+    const formHtml = `
+      <div class="card">
+        <h3>Update Department</h3>
+        <form id="updateDepartmentForm">
+          <div class="form-group">
+            <label>Department ID</label>
+            <input type="text" name="department_id" value="${dept.department_id}" readonly>
+          </div>
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" name="department_name" value="${dept.department_name}" required>
+          </div>
+          <div class="form-group">
+            <label>Description</label>
+            <textarea name="description">${dept.department_description || ''}</textarea>
+          </div>
+          <div class="form-group button-group">
+            <button type="submit">Update Department</button>
+            <button type="button" id="cancel-update-department-btn">Cancel</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    departmentManagementSection.innerHTML = formHtml;
+
+    const cancelUpdateDepartmentBtn = document.getElementById('cancel-update-department-btn');
+    if (cancelUpdateDepartmentBtn) {
+      cancelUpdateDepartmentBtn.addEventListener('click', () => {
+        renderDepartmentList();
+      });
+    }
+
+    const updateForm = document.getElementById('updateDepartmentForm');
+    if (updateForm) {
+      updateForm.addEventListener('submit', function (event) {
+        event.preventDefault();
+        const formData = new FormData(updateForm);
+        fetch('../pages/features/update_department.php', {
+          method: 'POST',
+          body: formData,
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((data) => {
+            console.log('Update response:', data);
+            if (data.success) {
+              alert(data.message || 'Department updated successfully');
+              fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
+                method: 'GET',
+                headers: { 'Cache-Control': 'no-cache' },
+              })
+                .then((response) => {
+                  if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                  }
+                  return response.json();
+                })
+                .then((updatedDepartments) => {
+                  console.log('Fetched departments:', updatedDepartments);
+                  if (!Array.isArray(updatedDepartments)) {
+                    console.error('Fetched departments is not an array:', updatedDepartments);
+                    if (updatedDepartments.success === false) {
+                      alert('Error fetching departments: ' + (updatedDepartments.message || 'Unknown error'));
+                    } else {
+                      alert('Error: Invalid department data from server');
+                    }
+                    return;
+                  }
+                  manageDepartments.length = 0;
+                  updatedDepartments.forEach((dept) => manageDepartments.push(dept));
+                  console.log('Updated manageDepartments array:', manageDepartments);
+                  renderDepartmentList();
+                })
+                .catch((error) => {
+                  console.error('Error fetching updated department list:', error);
+                  alert('Error fetching updated department list: ' + error.message);
+                });
+            } else {
+              alert(data.message || 'Error updating department');
+            }
+          })
+          .catch((error) => {
+            console.error('Error updating department:', error);
+            alert('Error updating department: ' + error.message);
+          });
+      });
+    }
+  }
+
+  function deleteDepartment(deptId) {
+    if (!confirm('Are you sure you want to delete this department?')) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('department_id', deptId);
+
+    fetch('../pages/features/delete_department.php', {
+      method: 'POST',
+      body: formData,
+    })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        console.log('Delete response:', data);
+        if (data.success) {
+          alert(data.message || 'Department deleted successfully');
+          fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
+            method: 'GET',
+            headers: { 'Cache-Control': 'no-cache' },
+          })
+            .then((response) => {
+              if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+              }
+              return response.json();
+            })
+            .then((updatedDepartments) => {
+              console.log('Fetched departments:', updatedDepartments);
+              if (!Array.isArray(updatedDepartments)) {
+                console.error('Fetched departments is not an array:', updatedDepartments);
+                if (updatedDepartments.success === false) {
+                  alert('Error fetching departments: ' + (updatedDepartments.message || 'Unknown error'));
+                } else {
+                  alert('Error: Invalid department data from server');
+                }
+                return;
+              }
+              manageDepartments.length = 0;
+              updatedDepartments.forEach((dept) => manageDepartments.push(dept));
+              console.log('Updated manageDepartments array:', manageDepartments);
+              renderDepartmentList();
+            })
+            .catch((error) => {
+              console.error('Error fetching updated department list:', error);
+              alert('Error fetching updated department list: ' + error.message);
+            });
+        } else {
+          alert(data.message || 'Error deleting department');
+        }
+      })
+      .catch((error) => {
+        console.error('Error deleting department:', error);
+        alert('Error deleting department: ' + error.message);
+      });
+  }
+}
