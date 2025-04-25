@@ -1219,12 +1219,12 @@ function showDepartment() {
   departmentcontent .innerHTML = html;
 }
 
-
 function showAllEmployees() {
   if (!showSection('profile-update-form')) return;
 
   const profileUpdateForm = document.getElementById('profile-update-form');
 
+  // If no employees are assigned
   if (employeesadmin.length === 0) {
     profileUpdateForm.innerHTML = `
             <div class="card">
@@ -1238,41 +1238,292 @@ function showAllEmployees() {
     return;
   }
 
-  let employeesTableHTML = `
-        <div class="card">
-            <h2>Employees Assigned to Me</h2>
-            <table class="report-table">
-                <thead>
-                    <tr>
-                        <th>Employee Name</th>
-                        <th>Job Title</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
+  // State for pagination and filters
+  let currentPage = 1;
+  let recordsPerPage = 5;
+  let searchQuery = '';
+  let filterDepartment = 'All';
+  let filterRole = 'All';
 
-  employeesadmin.forEach((emp) => {
-    employeesTableHTML += `
-            <tr>
-                <td>${emp.first_name} ${emp.last_name}</td>
-                <td>${emp.emp_job_title || 'N/A'}</td>
-                <td>${emp.email || 'N/A'}</td>
-                <td>${emp.emp_status || 'N/A'}</td>
-            </tr>
+  // Define exportToExcel globally
+  window.exportToExcel = function () {
+    console.log('exportToExcel called, filteredEmployees:', filteredEmployees);
+    if (!filteredEmployees || filteredEmployees.length === 0) {
+      // If filteredEmployees is empty, fall back to the full dataset
+      if (employeesadmin && employeesadmin.length > 0) {
+        filteredEmployees = employeesadmin;
+        console.log('No filters applied, using full dataset:', filteredEmployees);
+      } else {
+        alert('No data available to export. Please ensure there are employees to export.');
+        return;
+      }
+    }
+
+    // Prepare the data for export
+    const exportData = filteredEmployees.map(emp => ({
+      ID: emp.employee_id || 'N/A',
+      Name: `${emp.first_name || 'N/A'} ${emp.last_name || 'N/A'}`,
+      Email: emp.email || 'N/A',
+      Role: emp.role || 'N/A',
+      Department:
+        departments.find(d => d.department_id === emp.department_id)?.department_name || 'N/A',
+      'Hire Date': emp.emp_hire_date || 'N/A',
+      Salary: emp.salary ? '$' + parseFloat(emp.salary).toFixed(2) : 'N/A',
+    }));
+
+    // Create a worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // Create a workbook and append the worksheet
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Employees');
+
+    // Export the workbook to an Excel file
+    XLSX.writeFile(wb, 'Employees_Data.xlsx');
+  };
+
+  function renderTable() {
+    // Always start with the full dataset
+    filteredEmployees = [...employeesadmin]; // Create a copy to avoid mutating the original
+    console.log('renderTable called, initial filteredEmployees:', filteredEmployees);
+
+    // Apply search filter if present
+    if (searchQuery) {
+      filteredEmployees = filteredEmployees.filter(
+        emp =>
+          `${emp.first_name || ''} ${emp.last_name || ''}`
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          (emp.email || '').toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Apply department filter if not 'All'
+    if (filterDepartment !== 'All') {
+      filteredEmployees = filteredEmployees.filter(emp => {
+        const deptName =
+          departments.find(d => d.department_id === emp.department_id)?.department_name || 'N/A';
+        return deptName === filterDepartment;
+      });
+    }
+
+    // Apply role filter if not 'All'
+    if (filterRole !== 'All') {
+      filteredEmployees = filteredEmployees.filter(
+        emp => (emp.role || '').toLowerCase() === filterRole.toLowerCase()
+      );
+    }
+
+    console.log('After applying filters, filteredEmployees:', filteredEmployees);
+
+    // If no employees after filtering
+    if (filteredEmployees.length === 0) {
+      profileUpdateForm.innerHTML = `
+                <div class="card">
+                    <h2>Employees Assigned to Me</h2>
+                    <p>No employees match the selected filters.</p>
+                    <div class="form-group button-group">
+                        <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                    </div>
+                </div>
+            `;
+      return;
+    }
+
+    // Pagination
+    const totalRecords = filteredEmployees.length;
+    const totalPages = Math.ceil(totalRecords / recordsPerPage);
+    currentPage = Math.min(currentPage, totalPages);
+    currentPage = Math.max(currentPage, 1);
+    const startIndex = (currentPage - 1) * recordsPerPage;
+    const endIndex = Math.min(startIndex + recordsPerPage, totalRecords);
+    const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
+
+    let employeesTableHTML = `
+            <div class="card">
+                <h2>Employees Assigned to Me</h2>
+                <div class="table-controls">
+                    <div class="filter-controls">
+                        <div class="form-group">
+                            <label>Show:</label>
+                            <select id="records-per-page">
+                                <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
+                                <option value="10" ${recordsPerPage === 10 ? 'selected' : ''}>10</option>
+                                <option value="15" ${recordsPerPage === 15 ? 'selected' : ''}>15</option>
+                                <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Department:</label>
+                            <select id="filter-department">
+                                <option value="All">All</option>
+                                ${departments
+                                  .map(
+                                    dept =>
+                                      `<option value="${dept.department_name}" ${
+                                        filterDepartment === dept.department_name ? 'selected' : ''
+                                      }>${dept.department_name}</option>`
+                                  )
+                                  .join('')}
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Role:</label>
+                            <select id="filter-role">
+                                <option value="All">All</option>
+                                <option value="User" ${filterRole === 'User' ? 'selected' : ''}>User</option>
+                                <option value="Manager" ${filterRole === 'Manager' ? 'selected' : ''}>Manager</option>
+                                <option value="HR" ${filterRole === 'HR' ? 'selected' : ''}>HR</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group search-controls">
+                        <input type="text" id="search-input" placeholder="Search by name or email..." value="${searchQuery}">
+                    </div>
+                </div>
+                <div class="button-group download-controls">
+                    <button class="download-btn" onclick="exportToExcel()">Download as Excel</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Department</th>
+                            <th>Hire Date</th>
+                            <th>Salary</th>
+                        </tr>
+                    </thead>
+                    <tbody>
         `;
-  });
 
-  employeesTableHTML += `
-                </tbody>
-            </table>
-            <div class="form-group button-group">
-                <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+    paginatedEmployees.forEach((emp, index) => {
+      const deptName =
+        departments.find(d => d.department_id === emp.department_id)?.department_name || 'N/A';
+      employeesTableHTML += `
+                        <tr>
+                            <td>${emp.employee_id || 'N/A'}</td>
+                            <td>${emp.first_name || 'N/A'} ${emp.last_name || 'N/A'}</td>
+                            <td>${emp.email || 'N/A'}</td>
+                            <td>${emp.role || 'N/A'}</td>
+                            <td>${deptName}</td>
+                            <td>${emp.emp_hire_date || 'N/A'}</td>
+                            <td>${emp.salary ? '$' + parseFloat(emp.salary).toFixed(2) : 'N/A'}</td>
+                        </tr>
+            `;
+    });
+
+    employeesTableHTML += `
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <div>
+                        Showing ${startIndex + 1} to ${Math.min(endIndex, totalRecords)} of ${totalRecords} employees
+                    </div>
+                    <div>
+                        <button class="${currentPage === 1 ? 'disabled' : ''}" onclick="changePage(${currentPage - 1})">Previous</button>
+        `;
+
+    const maxPagesToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      employeesTableHTML += `
+                        <button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
+            `;
+    }
+
+    employeesTableHTML += `
+                        <button class="${currentPage === totalPages ? 'disabled' : ''}" onclick="changePage(${currentPage + 1})">Next</button>
+                    </div>
+                </div>
+                <div class="form-group button-group">
+                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                </div>
             </div>
-        </div>
-    `;
+        `;
 
-  profileUpdateForm.innerHTML = employeesTableHTML;
+    profileUpdateForm.innerHTML = employeesTableHTML;
+
+    // Add event listeners for filters and pagination
+    const searchInput = document.getElementById('search-input');
+    const filterDepartmentSelect = document.getElementById('filter-department');
+    const filterRoleSelect = document.getElementById('filter-role');
+    const recordsPerPageSelect = document.getElementById('records-per-page');
+
+    if (searchInput) {
+      searchInput.addEventListener('input', e => {
+        searchQuery = e.target.value;
+        currentPage = 1;
+        renderTable();
+      });
+    }
+
+    if (filterDepartmentSelect) {
+      filterDepartmentSelect.addEventListener('change', e => {
+        filterDepartment = e.target.value;
+        currentPage = 1;
+        renderTable();
+      });
+    }
+
+    if (filterRoleSelect) {
+      filterRoleSelect.addEventListener('change', e => {
+        filterRole = e.target.value;
+        currentPage = 1;
+        renderTable();
+      });
+    }
+
+    if (recordsPerPageSelect) {
+      recordsPerPageSelect.addEventListener('change', e => {
+        recordsPerPage = parseInt(e.target.value, 10);
+        currentPage = 1;
+        renderTable();
+      });
+    }
+  }
+
+  // Define global function for pagination
+  window.changePage = function(page) {
+    currentPage = page;
+    renderTable();
+  };
+
+  // Initial render
+  renderTable();
 }
-
+function exportToExcel() {
+  if (!filteredEmployees.length) {
+    alert('No data to export.');
+    return;
+  }
+  const btn = document.querySelector('.download-btn');
+  btn.disabled = true;
+  btn.textContent = 'Downloading...';
+  setTimeout(() => {
+    const exportData = filteredEmployees.map(emp => ({
+      ID: emp.employee_id || 'N/A',
+      Name: `${emp.first_name || 'N/A'} ${emp.last_name || 'N/A'}`,
+      Email: emp.email || 'N/A',
+      Role: emp.role || 'N/A',
+      Department:
+        departments.find(d => d.department_id === emp.department_id)?.department_name ||
+        'N/A',
+      'Hire Date': emp.emp_hire_date || 'N/A',
+      Salary: emp.salary ? '$' + parseFloat(emp.salary).toFixed(2) : 'N/A',
+    }));
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Employees');
+    XLSX.writeFile(wb, 'Employees_Data.xlsx');
+    btn.disabled = false;
+    btn.textContent = 'Download as Excel';
+  }, 100);
+}

@@ -11,7 +11,7 @@ try {
             e.employee_id, e.user_id, u.first_name, u.last_name, u.email, u.role, 
             e.department_id, e.emp_hire_date, e.salary, e.emp_status,e.manager_id,e.is_manager
         FROM Employees e
-        JOIN Users u ON e.user_id = u.user_id where u.role!='Super Admin'
+        JOIN Users u ON e.user_id = u.user_id where u.role!='Super Admin' and  e.emp_status != 'Inactive' 
     ");
     $employeesadmin = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -29,7 +29,7 @@ try {
             d.department_description, 
             COUNT(e.employee_id) AS employee_count
         FROM Department d
-        LEFT JOIN Employees e ON d.department_id = e.department_id 
+        LEFT JOIN Employees e ON d.department_id = e.department_id  where  e.emp_status != 'Inactive' 
         GROUP BY d.department_id, d.department_name, d.department_description
     ");
     $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -634,9 +634,11 @@ $employee_trainings = $data['employee_trainings'] ?? [];
     const employeeTrainings = <?php echo json_encode($employee_trainings); ?>;
     const departments = <?php echo json_encode($departments ?: []); ?>;
     const employeesadmin = <?php echo json_encode($employeesadmin ?: []); ?>;
+let filteredEmployees = [];
 console.log(employeesadmin)
 
 </script>
 <script src="../assets/js/superadmin_dashboard.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </body>
 </html>

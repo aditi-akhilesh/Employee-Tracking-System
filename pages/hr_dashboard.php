@@ -25,7 +25,7 @@ try {
             d.department_description, 
             COUNT(e.employee_id) AS employee_count
         FROM Department d
-        LEFT JOIN Employees e ON d.department_id = e.department_id where d.department_id not in ('D00','DO2') and d.department_name not in ('Head','HR Department')
+        LEFT JOIN Employees e ON d.department_id = e.department_id where d.department_id not in ('D00','DO2') and d.department_name not in ('Head','HR Department') and  e.emp_status != 'Inactive' 
         GROUP BY d.department_id, d.department_name, d.department_description
     ");
     $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -61,7 +61,6 @@ $employeeTrainings = fetchData($con, "
     JOIN Employees e ON et.employee_id = e.employee_id
     JOIN Users u ON e.user_id = u.user_id", "Failed to fetch employee trainings");
 
-// Fetch employees with additional fields (role, hire date, salary, status)
 try {
     $stmt = $con->query("
         SELECT 
