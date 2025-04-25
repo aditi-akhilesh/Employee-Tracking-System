@@ -1715,9 +1715,7 @@ function showUpdateRemoveUserForm(event) {
   // Use showSection to ensure only update-remove-user-section is visible
   if (!showSection('update-remove-user-section')) return;
 
-  const updateRemoveUserSection = document.getElementById(
-    'update-remove-user-section'
-  );
+  const updateRemoveUserSection = document.getElementById('update-remove-user-section');
   if (!updateRemoveUserSection) {
     console.error('update-remove-user-section not found');
     showError('Update/Remove User section not found.', 'content-area');
@@ -1779,44 +1777,22 @@ function showUpdateRemoveUserForm(event) {
                 <h2>Update or Remove User</h2>
                 <div class="table-controls">
                     <div class="filter-controls">
-                        <div class="form-group">
                             <label>Show:</label>
                             <select id="records-per-page">
-                                <option value="5" ${
-                                  recordsPerPage === 5 ? 'selected' : ''
-                                }>5</option>
-                                <option value="10" ${
-                                  recordsPerPage === 10 ? 'selected' : ''
-                                }>10</option>
-                                <option value="15" ${
-                                  recordsPerPage === 15 ? 'selected' : ''
-                                }>15</option>
-                                <option value="20" ${
-                                  recordsPerPage === 20 ? 'selected' : ''
-                                }>20</option>
+                                <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
+                                <option value="10" ${recordsPerPage === 10 ? 'selected' : ''}>10</option>
+                                <option value="15" ${recordsPerPage === 15 ? 'selected' : ''}>15</option>
+                                <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
                             </select>
-                        </div>
-                        <div class="form-group">
                             <label>Role:</label>
                             <select id="role-filter">
-                                <option value="All" ${
-                                  filterRole === 'All' ? 'selected' : ''
-                                }>All</option>
-                                <option value="User" ${
-                                  filterRole === 'User' ? 'selected' : ''
-                                }>Employee</option>
-                                <option value="Manager" ${
-                                  filterRole === 'Manager' ? 'selected' : ''
-                                }>Manager</option>
-                                <option value="HR" ${
-                                  filterRole === 'HR' ? 'selected' : ''
-                                }>HR</option>
+                                <option value="All" ${filterRole === 'All' ? 'selected' : ''}>All</option>
+                                <option value="User" ${filterRole === 'User' ? 'selected' : ''}>Employee</option>
+                                <option value="Manager" ${filterRole === 'Manager' ? 'selected' : ''}>Manager</option>
+                                <option value="HR" ${filterRole === 'HR' ? 'selected' : ''}>HR</option>
                             </select>
-                        </div>
                     </div>
-                    <div class="form-group search-controls">
                         <input type="text" id="search-input" placeholder="Search not available..." disabled>
-                    </div>
                 </div>
                 <table>
                     <thead>
@@ -1849,17 +1825,10 @@ function showUpdateRemoveUserForm(event) {
                 </table>
                 <div class="pagination">
                     <div>
-                        Showing ${startIndex + 1} to ${Math.min(
-      endIndex,
-      totalRecords
-    )} of ${totalRecords} employees
+                        Showing ${startIndex + 1} to ${Math.min(endIndex, totalRecords)} of ${totalRecords} employees
                     </div>
                     <div>
-                        <button class="${
-                          currentPage === 1 ? 'disabled' : ''
-                        }" onclick="changePage(${
-      currentPage - 1
-    })">Previous</button>
+                        <button class="${currentPage === 1 ? 'disabled' : ''}" onclick="changePage(${currentPage - 1})">Previous</button>
         `;
 
     const maxPagesToShow = 5;
@@ -1871,18 +1840,12 @@ function showUpdateRemoveUserForm(event) {
 
     for (let i = startPage; i <= endPage; i++) {
       html += `
-                        <button class="${
-                          i === currentPage ? 'active' : ''
-                        }" onclick="changePage(${i})">${i}</button>
+                        <button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
             `;
     }
 
     html += `
-                        <button class="${
-                          currentPage === totalPages ? 'disabled' : ''
-                        }" onclick="changePage(${
-      currentPage + 1
-    })">Next</button>
+                        <button class="${currentPage === totalPages ? 'disabled' : ''}" onclick="changePage(${currentPage + 1})">Next</button>
                     </div>
                 </div>
                 <div class="form-group button-group">
@@ -1913,7 +1876,7 @@ function showUpdateRemoveUserForm(event) {
     }
   }
 
-  window.changePage = function (page) {
+  window.changePage = function(page) {
     currentPage = page;
     renderEmployeesTable();
   };
