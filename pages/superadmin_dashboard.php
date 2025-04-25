@@ -434,8 +434,10 @@ $employee_trainings = $data['employee_trainings'] ?? [];
             <p>You are in the Super Admin dashboard. Select an option from the menu on the left to get started.</p>
         </div>
         <div id="create-user-form" style="display: none;"></div>
+        <div id="update-remove-user-section" style="display: none;" ></div>
         <div id="profile-update-form" style="display: none;" ></div>
         <div id="Department_content" style="display: none;" ></div>
+        <div id="department-management-section" style="display: none;"></div>
 
         <div id="reports-analytics" style="display: none;" class="card">
             <h2>Reports and Analytics</h2>

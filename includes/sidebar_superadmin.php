@@ -15,7 +15,7 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'department-dropdown')"><i class="fas fa-building"></i> Department Management</a>
             <ul id="department-dropdown" class="dropdown" style="display: none;">
-                <li><a href="#">Update department assignment</a></li>
+                <li><a href="#" onclick="showDepartmentManagement()">Manage department</a></li>
                 <li><a href="#" onclick="showDepartment()">Track department information</a></li>
             </ul>
         </li>

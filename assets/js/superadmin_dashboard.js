@@ -10,7 +10,9 @@ function showSection(sectionToShowId) {
     'leave-requests',
     'department-metrics',
     'profile-update-form',
-'Department_content'
+'Department_content',
+'update-remove-user-section',
+'department-management-section'
   ];
 
   const mainContent = document.getElementById('content-area');
@@ -985,7 +987,7 @@ function showCreateUserForm() {
         </div>
         <div class="form-group button-group">
           <button type="submit">Create User</button>
-          <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+          <button type="button" onclick="showWelcomeMessage()">Back</button>
         </div>
       </form>
     </div>
@@ -1213,7 +1215,7 @@ function showDepartment() {
             <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
                     onmouseover="this.style.backgroundColor='#5a6268'" 
                     onmouseout="this.style.backgroundColor='#6c757d'"
-                    onclick="showWelcomeMessage(event)">Back</button>
+                    onclick="showWelcomeMessage()">Back</button>
         </div>
     `;
   departmentcontent .innerHTML = html;
@@ -1231,7 +1233,7 @@ function showAllEmployees() {
                 <h2>Employees Assigned to Me</h2>
                 <p>No employees are currently assigned to you.</p>
                 <div class="form-group button-group">
-                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                    <button type="button" onclick="showWelcomeMessage()">Back</button>
                 </div>
             </div>
         `;
@@ -1323,7 +1325,7 @@ function showAllEmployees() {
                     <h2>Employees Assigned to Me</h2>
                     <p>No employees match the selected filters.</p>
                     <div class="form-group button-group">
-                        <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                        <button type="button" onclick="showWelcomeMessage()">Back</button>
                     </div>
                 </div>
             `;
@@ -1444,7 +1446,7 @@ function showAllEmployees() {
                     </div>
                 </div>
                 <div class="form-group button-group">
-                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                    <button type="button" onclick="showWelcomeMessage()">Back</button>
                 </div>
             </div>
         `;
@@ -1529,194 +1531,187 @@ function exportToExcel() {
 }
 
 
-function showUpdateRemoveUserForm() {
-  const mainContent = document.getElementById('main-content');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  if (mainContent && profileUpdateForm) {
-    mainContent.style.display = 'block';
-    profileUpdateForm.style.display = 'none';
+function showUpdateRemoveUserForm(event) {
+  if (event) event.preventDefault();
+  console.log('showUpdateRemoveUserForm called');
 
-    // State for pagination and filters
-    let currentPage = 1;
-    let recordsPerPage = 5;
-    let filterRole = 'All';
+  // Use showSection to ensure only update-remove-user-section is visible
+  if (!showSection('update-remove-user-section')) return;
 
-    // Get the current filter value (if any) before re-rendering
-    const roleFilter = document.getElementById('role-filter');
-    if (roleFilter) {
-      filterRole = roleFilter.value;
-    }
-
-    // Debug: Log the employees array and their roles
-    console.log('Employees array:', employeesadmin);
-    console.log(
-      'Roles in employeesadmin:',
-      employeesadmin.map((emp) => emp.role)
-    );
-
-    function renderEmployeesTable() {
-      // Normalize roles and filter employees
-      let filtered = employeesadmin.filter((emp) => {
-        const role = emp.role ? emp.role.trim().toLowerCase() : '';
-        return (
-          (role === 'user' || role === 'manager' || role === 'hr') &&
-          emp.emp_status?.toLowerCase() !== 'inactive'
-        );
-      });
-
-      if (filterRole === 'User') {
-        filtered = filtered.filter(
-          (emp) => emp.role.trim().toLowerCase() === 'user'
-        );
-      } else if (filterRole === 'Manager') {
-        filtered = filtered.filter(
-          (emp) => emp.role.trim().toLowerCase() === 'manager'
-        );
-      } else if (filterRole === 'HR') {
-        filtered = filtered.filter(
-          (emp) => emp.role.trim().toLowerCase() === 'hr'
-        );
-      }
-
-      // Debug: Log the filtered employees
-      console.log('Filtered employees:', filtered);
-
-      // Pagination
-      const totalRecords = filtered.length;
-      const totalPages = Math.ceil(totalRecords / recordsPerPage);
-      currentPage = Math.min(currentPage, totalPages);
-      currentPage = Math.max(currentPage, 1);
-      const startIndex = (currentPage - 1) * recordsPerPage;
-      const endIndex = Math.min(startIndex + recordsPerPage, totalRecords);
-      const paginatedEmployees = filtered.slice(startIndex, endIndex);
-
-      // Initial HTML with filter dropdown and table
-      let html = `
-              <div class="card">
-                  <h2>Update or Remove User</h2>
-                  <div class="table-controls">
-                      <div class="filter-controls">
-                          <div class="form-group">
-                              <label>Show:</label>
-                              <select id="records-per-page">
-                                  <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
-                                  <option value="10" ${recordsPerPage === 10 ? 'selected' : ''}>10</option>
-                                  <option value="15" ${recordsPerPage === 15 ? 'selected' : ''}>15</option>
-                                  <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
-                              </select>
-                          </div>
-                          <div class="form-group">
-                              <label>Role:</label>
-                              <select id="role-filter">
-                                  <option value="All" ${filterRole === 'All' ? 'selected' : ''}>All</option>
-                                  <option value="User" ${filterRole === 'User' ? 'selected' : ''}>Employee</option>
-                                  <option value="Manager" ${filterRole === 'Manager' ? 'selected' : ''}>Manager</option>
-                                  <option value="HR" ${filterRole === 'HR' ? 'selected' : ''}>HR</option>
-                              </select>
-                          </div>
-                      </div>
-                      <div class="form-group search-controls">
-                          <!-- Placeholder for search input to maintain layout consistency -->
-                          <input type="text" id="search-input" placeholder="Search not available..." disabled>
-                      </div>
-                  </div>
-                  <table>
-                      <thead>
-                          <tr>
-                              <th>ID</th>
-                              <th>Name</th>
-                              <th>Email</th>
-                              <th>Actions</th>
-                          </tr>
-                      </thead>
-                      <tbody id="employees-table-body">
-          `;
-
-      // Populate the table with paginated employees
-      paginatedEmployees.forEach((emp) => {
-        html += `
-                          <tr>
-                              <td>${emp.employee_id}</td>
-                              <td>${emp.first_name} ${emp.last_name}</td>
-                              <td>${emp.email}</td>
-                              <td>
-                                  <button class="update-btn" onclick="showEmployeeUpdateForm(${emp.employee_id})">Update</button>
-                                  <button class="remove-btn" onclick="removeEmployee(${emp.employee_id})">Remove</button>
-                              </td>
-                          </tr>
-              `;
-      });
-
-      html += `
-                      </tbody>
-                  </table>
-                  <div class="pagination">
-                      <div>
-                          Showing ${startIndex + 1} to ${Math.min(endIndex, totalRecords)} of ${totalRecords} employees
-                      </div>
-                      <div>
-                          <button class="${currentPage === 1 ? 'disabled' : ''}" onclick="changePage(${currentPage - 1})">Previous</button>
-          `;
-
-      const maxPagesToShow = 5;
-      let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-      let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-      if (endPage - startPage + 1 < maxPagesToShow) {
-        startPage = Math.max(1, endPage - maxPagesToShow + 1);
-      }
-
-      for (let i = startPage; i <= endPage; i++) {
-        html += `
-                          <button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
-              `;
-      }
-
-      html += `
-                          <button class="${currentPage === totalPages ? 'disabled' : ''}" onclick="changePage(${currentPage + 1})">Next</button>
-                      </div>
-                  </div>
-                  <div class="form-group button-group">
-                      <button type="button" onclick="showWelcomeMessage()">Back</button>
-                  </div>
-              </div>
-          `;
-
-      mainContent.innerHTML = html;
-
-      // Add event listeners for filters and pagination
-      const roleFilterSelect = document.getElementById('role-filter');
-      const recordsPerPageSelect = document.getElementById('records-per-page');
-
-      if (roleFilterSelect) {
-        roleFilterSelect.addEventListener('change', (e) => {
-          filterRole = e.target.value;
-          currentPage = 1;
-          renderEmployeesTable();
-        });
-      }
-
-      if (recordsPerPageSelect) {
-        recordsPerPageSelect.addEventListener('change', (e) => {
-          recordsPerPage = parseInt(e.target.value, 10);
-          currentPage = 1;
-          renderEmployeesTable();
-        });
-      }
-    }
-
-    // Define global function for pagination
-    window.changePage = function(page) {
-      currentPage = page;
-      renderEmployeesTable();
-    };
-
-    // Initial render
-    renderEmployeesTable();
-  } else {
-    console.error('main-content or profile-update-form not found');
+  const updateRemoveUserSection = document.getElementById('update-remove-user-section');
+  if (!updateRemoveUserSection) {
+    console.error('update-remove-user-section not found');
+    showError('Update/Remove User section not found.', 'content-area');
+    return;
   }
-}
 
+  // State for pagination and filters
+  let currentPage = 1;
+  let recordsPerPage = 5;
+  let filterRole = 'All';
+
+  // Get the current filter value (if any) before re-rendering
+  const roleFilter = document.getElementById('role-filter');
+  if (roleFilter) {
+    filterRole = roleFilter.value;
+  }
+
+  console.log('Employees array:', employeesadmin);
+  console.log(
+    'Roles in employeesadmin:',
+    employeesadmin.map((emp) => emp.role)
+  );
+
+  function renderEmployeesTable() {
+    let filtered = employeesadmin.filter((emp) => {
+      const role = emp.role ? emp.role.trim().toLowerCase() : '';
+      return (
+        (role === 'user' || role === 'manager' || role === 'hr') &&
+        emp.emp_status?.toLowerCase() !== 'inactive'
+      );
+    });
+
+    if (filterRole === 'User') {
+      filtered = filtered.filter(
+        (emp) => emp.role.trim().toLowerCase() === 'user'
+      );
+    } else if (filterRole === 'Manager') {
+      filtered = filtered.filter(
+        (emp) => emp.role.trim().toLowerCase() === 'manager'
+      );
+    } else if (filterRole === 'HR') {
+      filtered = filtered.filter(
+        (emp) => emp.role.trim().toLowerCase() === 'hr'
+      );
+    }
+
+    console.log('Filtered employees:', filtered);
+
+    const totalRecords = filtered.length;
+    const totalPages = Math.ceil(totalRecords / recordsPerPage);
+    currentPage = Math.min(currentPage, totalPages);
+    currentPage = Math.max(currentPage, 1);
+    const startIndex = (currentPage - 1) * recordsPerPage;
+    const endIndex = Math.min(startIndex + recordsPerPage, totalRecords);
+    const paginatedEmployees = filtered.slice(startIndex, endIndex);
+
+    let html = `
+            <div class="card">
+                <h2>Update or Remove User</h2>
+                <div class="table-controls">
+                    <div class="filter-controls">
+                        <div class="form-group">
+                            <label>Show:</label>
+                            <select id="records-per-page">
+                                <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
+                                <option value="10" ${recordsPerPage === 10 ? 'selected' : ''}>10</option>
+                                <option value="15" ${recordsPerPage === 15 ? 'selected' : ''}>15</option>
+                                <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Role:</label>
+                            <select id="role-filter">
+                                <option value="All" ${filterRole === 'All' ? 'selected' : ''}>All</option>
+                                <option value="User" ${filterRole === 'User' ? 'selected' : ''}>Employee</option>
+                                <option value="Manager" ${filterRole === 'Manager' ? 'selected' : ''}>Manager</option>
+                                <option value="HR" ${filterRole === 'HR' ? 'selected' : ''}>HR</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group search-controls">
+                        <input type="text" id="search-input" placeholder="Search not available..." disabled>
+                    </div>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employees-table-body">
+        `;
+
+    paginatedEmployees.forEach((emp) => {
+      html += `
+                        <tr>
+                            <td>${emp.employee_id}</td>
+                            <td>${emp.first_name} ${emp.last_name}</td>
+                            <td>${emp.email}</td>
+                            <td>
+                                <button class="update-btn" onclick="showEmployeeUpdateForm(${emp.employee_id})">Update</button>
+                                <button class="remove-btn" onclick="removeEmployee(${emp.employee_id})">Remove</button>
+                            </td>
+                        </tr>
+            `;
+    });
+
+    html += `
+                    </tbody>
+                </table>
+                <div class="pagination">
+                    <div>
+                        Showing ${startIndex + 1} to ${Math.min(endIndex, totalRecords)} of ${totalRecords} employees
+                    </div>
+                    <div>
+                        <button class="${currentPage === 1 ? 'disabled' : ''}" onclick="changePage(${currentPage - 1})">Previous</button>
+        `;
+
+    const maxPagesToShow = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+    if (endPage - startPage + 1 < maxPagesToShow) {
+      startPage = Math.max(1, endPage - maxPagesToShow + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      html += `
+                        <button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
+            `;
+    }
+
+    html += `
+                        <button class="${currentPage === totalPages ? 'disabled' : ''}" onclick="changePage(${currentPage + 1})">Next</button>
+                    </div>
+                </div>
+                <div class="form-group button-group">
+                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                </div>
+            </div>
+        `;
+
+    updateRemoveUserSection.innerHTML = html;
+
+    const roleFilterSelect = document.getElementById('role-filter');
+    const recordsPerPageSelect = document.getElementById('records-per-page');
+
+    if (roleFilterSelect) {
+      roleFilterSelect.addEventListener('change', (e) => {
+        filterRole = e.target.value;
+        currentPage = 1;
+        renderEmployeesTable();
+      });
+    }
+
+    if (recordsPerPageSelect) {
+      recordsPerPageSelect.addEventListener('change', (e) => {
+        recordsPerPage = parseInt(e.target.value, 10);
+        currentPage = 1;
+        renderEmployeesTable();
+      });
+    }
+  }
+
+  window.changePage = function(page) {
+    currentPage = page;
+    renderEmployeesTable();
+  };
+
+  renderEmployeesTable();
+}
 function removeEmployee(employeeId) {
   // Show confirmation alert
   if (!confirm('Are you sure you want to deactivate this employee?')) {
@@ -1804,261 +1799,474 @@ function showEmployeeUpdateForm(employeeId) {
     return;
   }
 
-  const mainContent = document.getElementById('main-content');
+  // Use showSection to ensure only profile-update-form is visible
+  if (!showSection('profile-update-form')) return;
+
   const profileUpdateForm = document.getElementById('profile-update-form');
-  if (mainContent && profileUpdateForm) {
-    mainContent.style.display = 'none';
-    profileUpdateForm.style.display = 'block';
+  if (!profileUpdateForm) {
+    console.error('profile-update-form not found');
+    showError('Profile update form section not found.', 'content-area');
+    return;
+  }
 
-    const salary =
-      emp.salary !== undefined && emp.salary !== null
-        ? parseFloat(emp.salary)
-        : 0;
-    const originalValues = {
-      first_name: (emp.first_name || '').trim(),
-      last_name: (emp.last_name || '').trim(),
-      email: (emp.email || '').trim(),
-      role: (emp.role || '').trim(),
-      department_id: (emp.department_id || '').toString().trim(),
-      emp_hire_date: (emp.emp_hire_date || '').trim(),
-      salary: salary.toFixed(2),
-      manager_id: (emp.manager_id || '').toString().trim(),
-      is_manager: (emp.is_manager || '0').toString().trim(),
-    };
+  const salary =
+    emp.salary !== undefined && emp.salary !== null
+      ? parseFloat(emp.salary)
+      : 0;
+  const originalValues = {
+    first_name: (emp.first_name || '').trim(),
+    last_name: (emp.last_name || '').trim(),
+    email: (emp.email || '').trim(),
+    role: (emp.role || '').trim(),
+    department_id: (emp.department_id || '').toString().trim(),
+    emp_hire_date: (emp.emp_hire_date || '').trim(),
+    salary: salary.toFixed(2),
+    manager_id: (emp.manager_id || '').toString().trim(),
+    is_manager: (emp.is_manager || '0').toString().trim(),
+  };
 
-    const managers = employeesadmin.filter(
-      (emp) => emp.role === 'Manager' && emp.emp_status?.toLowerCase() !== 'inactive'
-    );
+  const managers = employeesadmin.filter(
+    (emp) => emp.role === 'Manager' && emp.emp_status?.toLowerCase() !== 'inactive'
+  );
 
-    const deptOptions = departments
-      .map(
-        (d) => `
-            <option value="${d.department_id}" ${
-          d.department_id == emp.department_id ? 'selected' : ''
-        }>
-                ${d.department_name}
-            </option>
-        `
-      )
-      .join('');
+  const deptOptions = departments
+    .map(
+      (d) => `
+          <option value="${d.department_id}" ${
+        d.department_id == emp.department_id ? 'selected' : ''
+      }>
+              ${d.department_name}
+          </option>
+      `
+    )
+    .join('');
 
-    profileUpdateForm.innerHTML = `
-            <h2>Update Employee</h2>
-            <form method="POST" action="../pages/features/update_employee_superadmin.php" id="updateUserForm">
-                <input type="hidden" name="employee_id" value="${
-                  emp.employee_id
-                }">
-                <input type="hidden" name="is_manager" value="${
-                  emp.is_manager || '0'
-                }">
-                <div class="form-group">
-                    <label>First Name</label>
-                    <input type="text" name="first_name" value="${
-                      emp.first_name || ''
-                    }" required>
-                </div>
-                <div class="form-group">
-                    <label>Last Name</label>
-                    <input type="text" name="last_name" value="${
-                      emp.last_name || ''
-                    }" required>
-                </div>
-                <div class="form-group">
-                    <label>Email</label>
-                    <input type="email" name="email" value="${
-                      emp.email || ''
-                    }" required>
-                </div>
-                <div class="form-group">
-                    <label>Role</label>
-                    <select name="role" id="role" required>
-                        <option value="User" ${
-                          emp.role === 'User' ? 'selected' : ''
-                        }>User</option>
-                        <option value="Manager" ${
-                          emp.role === 'Manager' ? 'selected' : ''
-                        }>Manager</option>
-                        <option value="HR" ${
-                          emp.role === 'HR' ? 'selected' : ''
-                        }>HR</option>
-                    </select>
-                </div>
-                <div class="form-group" id="assign-manager-group" style="display: ${
-                  emp.role === 'User' ? 'block' : 'none'
-                };">
-                    <label for="manager_id">Assign to Manager:</label>
-                    <select id="manager_id" name="manager_id">
-                        <option value="">Select a Manager</option>
-                        ${managers
-                          .map((manager) => {
-                            const empManagerId = emp.manager_id
-                              ? String(emp.manager_id).trim()
-                              : '';
-                            const managerEmployeeId = manager.employee_id
-                              ? String(manager.employee_id).trim()
-                              : '';
-                            const isSelected =
-                              empManagerId === managerEmployeeId;
-                            return `<option value="${
-                              manager.employee_id
-                            }" data-department-id="${manager.department_id}" ${
-                              isSelected ? 'selected' : ''
-                            }>${manager.first_name} ${manager.last_name} (ID: ${
-                              manager.employee_id
-                            })</option>`;
-                          })
-                          .join('')}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Department</label>
-                    <select name="department_id" id="department_id" required ${
-                      emp.role === 'User' ? 'disabled' : ''
-                    }>
-                        ${deptOptions}
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Hire Date</label>
-                    <input type="date" name="emp_hire_date" value="${
-                      emp.emp_hire_date || ''
-                    }" required>
-                </div>
-                <div class="form-group">
-                    <label>Salary</label>
-                    <input type="number" name="salary" value="${salary.toFixed(
-                      2
-                    )}" step="0.01" required>
-                </div>
-                <div class="form-group button-group">
-                    <button type="submit">Save Changes</button>
-                    <button type="button" onclick="showUpdateRemoveUserForm()">Back</button>
-                </div>
-            </form>
-        `;
+  profileUpdateForm.innerHTML = `
+          <h2>Update Employee</h2>
+          <form method="POST" action="../pages/features/update_employee_superadmin.php" id="updateUserForm">
+              <input type="hidden" name="employee_id" value="${
+                emp.employee_id
+              }">
+              <input type="hidden" name="is_manager" value="${
+                emp.is_manager || '0'
+              }">
+              <div class="form-group">
+                  <label>First Name</label>
+                  <input type="text" name="first_name" value="${
+                    emp.first_name || ''
+                  }" required>
+              </div>
+              <div class="form-group">
+                  <label>Last Name</label>
+                  <input type="text" name="last_name" value="${
+                    emp.last_name || ''
+                  }" required>
+              </div>
+              <div class="form-group">
+                  <label>Email</label>
+                  <input type="email" name="email" value="${
+                    emp.email || ''
+                  }" required>
+              </div>
+              <div class="form-group">
+                  <label>Role</label>
+                  <select name="role" id="role" required>
+                      <option value="User" ${
+                        emp.role === 'User' ? 'selected' : ''
+                      }>User</option>
+                      <option value="Manager" ${
+                        emp.role === 'Manager' ? 'selected' : ''
+                      }>Manager</option>
+                      <option value="HR" ${
+                        emp.role === 'HR' ? 'selected' : ''
+                      }>HR</option>
+                  </select>
+              </div>
+              <div class="form-group" id="assign-manager-group" style="display: ${
+                emp.role === 'User' ? 'block' : 'none'
+              };">
+                  <label for="manager_id">Assign to Manager:</label>
+                  <select id="manager_id" name="manager_id">
+                      <option value="">Select a Manager</option>
+                      ${managers
+                        .map((manager) => {
+                          const empManagerId = emp.manager_id
+                            ? String(emp.manager_id).trim()
+                            : '';
+                          const managerEmployeeId = manager.employee_id
+                            ? String(manager.employee_id).trim()
+                            : '';
+                          const isSelected =
+                            empManagerId === managerEmployeeId;
+                          return `<option value="${
+                            manager.employee_id
+                          }" data-department-id="${manager.department_id}" ${
+                            isSelected ? 'selected' : ''
+                          }>${manager.first_name} ${manager.last_name} (ID: ${
+                            manager.employee_id
+                          })</option>`;
+                        })
+                        .join('')}
+                  </select>
+              </div>
+              <div class="form-group">
+                  <label>Department</label>
+                  <select name="department_id" id="department_id" required ${
+                    emp.role === 'User' ? 'disabled' : ''
+                  }>
+                      ${deptOptions}
+                  </select>
+              </div>
+              <div class="form-group">
+                  <label>Hire Date</label>
+                  <input type="date" name="emp_hire_date" value="${
+                    emp.emp_hire_date || ''
+                  }" required>
+              </div>
+              <div class="form-group">
+                  <label>Salary</label>
+                  <input type="number" name="salary" value="${salary.toFixed(
+                    2
+                  )}" step="0.01" required>
+              </div>
+              <div class="form-group button-group">
+                  <button type="submit">Save Changes</button>
+                  <button type="button" onclick="showUpdateRemoveUserForm(event)">Back</button>
+              </div>
+          </form>
+      `;
 
-    const form = document.getElementById('updateUserForm');
-    const roleSelect = document.getElementById('role');
-    const assignManagerGroup = document.getElementById('assign-manager-group');
-    const departmentSelect = document.getElementById('department_id');
-    const managerSelect = document.getElementById('manager_id');
+  const form = document.getElementById('updateUserForm');
+  const roleSelect = document.getElementById('role');
+  const assignManagerGroup = document.getElementById('assign-manager-group');
+  const departmentSelect = document.getElementById('department_id');
+  const managerSelect = document.getElementById('manager_id');
 
-    if (
-      form &&
-      roleSelect &&
-      assignManagerGroup &&
-      departmentSelect &&
-      managerSelect
-    ) {
-      roleSelect.addEventListener('change', function () {
-        assignManagerGroup.style.display =
-          this.value === 'User' ? 'block' : 'none';
-        managerSelect.value =
-          this.value === 'User' ? originalValues.manager_id : '';
-        departmentSelect.disabled = this.value === 'User';
+  if (
+    form &&
+    roleSelect &&
+    assignManagerGroup &&
+    departmentSelect &&
+    managerSelect
+  ) {
+    roleSelect.addEventListener('change', function () {
+      assignManagerGroup.style.display =
+        this.value === 'User' ? 'block' : 'none';
+      managerSelect.value =
+        this.value === 'User' ? originalValues.manager_id : '';
+      departmentSelect.disabled = this.value === 'User';
+      departmentSelect.value = emp.department_id || '';
+    });
+
+    managerSelect.addEventListener('change', function () {
+      const selectedOption = this.options[this.selectedIndex];
+      const managerDepartmentId =
+        selectedOption.getAttribute('data-department-id');
+      if (managerDepartmentId) {
+        departmentSelect.value = managerDepartmentId;
+        departmentSelect.disabled = true;
+      } else {
         departmentSelect.value = emp.department_id || '';
-      });
+        departmentSelect.disabled = true;
+      }
+    });
 
-      managerSelect.addEventListener('change', function () {
-        const selectedOption = this.options[this.selectedIndex];
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      const formData = new FormData(form);
+      const currentValues = {
+        first_name: (formData.get('first_name') || '').trim(),
+        last_name: (formData.get('last_name') || '').trim(),
+        email: (formData.get('email') || '').trim(),
+        role: (formData.get('role') || '').trim(),
+        department_id: departmentSelect.disabled
+          ? originalValues.department_id
+          : (formData.get('department_id') || '').trim(),
+        emp_hire_date: (formData.get('emp_hire_date') || '').trim(),
+        salary: parseFloat(formData.get('salary') || '0').toFixed(2),
+        manager_id: (formData.get('manager_id') || '').toString().trim(),
+        is_manager: (formData.get('is_manager') || '0').toString().trim(),
+      };
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(currentValues.email)) {
+        alert('Please enter a valid email address');
+        return;
+      }
+      if (parseFloat(currentValues.salary) <= 0) {
+        alert('Salary must be a positive number');
+        return;
+      }
+      const today = new Date().toISOString().split('T')[0];
+      if (currentValues.emp_hire_date > today) {
+        alert('Hire date cannot be in the future');
+        return;
+      }
+
+      let hasChanges = false;
+      for (const key in originalValues) {
+        const originalValue = String(originalValues[key]).trim();
+        const currentValue = String(currentValues[key]).trim();
+        if (originalValue !== currentValue) {
+          hasChanges = true;
+          break;
+        }
+      }
+
+      if (!hasChanges) {
+        alert('No changes detected');
+        return;
+      }
+
+      // Check if changing from Manager to User and has subordinates
+      if (
+        originalValues.role === 'Manager' &&
+        currentValues.role === 'User'
+      ) {
+        const subordinates = employeesadmin.filter(
+          (e) =>
+            e.manager_id &&
+            String(e.manager_id).trim() === String(emp.employee_id).trim() &&
+            e.employee_id !== emp.employee_id // Exclude self
+        );
+        if (subordinates.length > 0) {
+          alert(
+            'Cannot change role to User: This manager has ' +
+              subordinates.length +
+              ' employee(s) assigned.'
+          );
+          return;
+        }
+      }
+
+      if (roleSelect.value === 'User') {
+        if (!managerSelect.value) {
+          alert('Please select a manager for the user.');
+          return;
+        }
+        const selectedOption =
+          managerSelect.options[managerSelect.selectedIndex];
         const managerDepartmentId =
           selectedOption.getAttribute('data-department-id');
         if (managerDepartmentId) {
-          departmentSelect.value = managerDepartmentId;
-          departmentSelect.disabled = true;
-        } else {
-          departmentSelect.value = emp.department_id || '';
-          departmentSelect.disabled = true;
+          formData.set('department_id', managerDepartmentId);
         }
+      } else {
+        formData.set('manager_id', '');
+        formData.set('is_manager', '1');
+      }
+
+      fetch(form.action, {
+        method: 'POST',
+        body: formData,
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response
+            .text()
+            .then((text) => ({ text, headers: response.headers }));
+        })
+        .then(({ text, headers }) => {
+          const contentType = headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server returned non-JSON response');
+          }
+          const data = JSON.parse(text);
+          if (data.success) {
+            alert(data.message || 'Employee updated successfully');
+            fetch(
+              '../pages/features/fetch_employees.php?ts=' +
+                new Date().getTime(),
+              {
+                method: 'GET',
+                headers: { 'Cache-Control': 'no-cache' },
+              }
+            )
+              .then((response) => response.json())
+              .then((updatedEmployees) => {
+                employeesadmin.length = 0;
+                updatedEmployees.forEach((emp) => employeesadmin.push(emp));
+                showUpdateRemoveUserForm();
+              })
+              .catch((error) => {
+                alert(
+                  'Error fetching updated employee list: ' + error.message
+                );
+              });
+          } else {
+            alert(data.message || data.error || 'Error updating employee');
+          }
+        })
+        .catch((error) => {
+          alert('Error updating employee: ' + error.message);
+        });
+    });
+  } else {
+    console.error('Form elements (updateUserForm, role, assign-manager-group, department_id, or manager_id) not found after rendering');
+    showError('Form setup error.', 'profile-update-form');
+  }
+}
+
+function showDepartmentManagement(event) {
+  if (event) event.preventDefault();
+  console.log('showDepartmentManagement called');
+
+  // Use showSection to ensure only department-management-section is visible
+  if (!showSection('department-management-section')) {
+    console.error('Failed to show department-management-section');
+    return;
+  }
+
+  const departmentManagementSection = document.getElementById('department-management-section');
+  if (!departmentManagementSection) {
+    console.error('department-management-section not found');
+    showError('Department management section not found.', 'content-area');
+    return;
+  }
+
+  // Fetch departments on initial load
+  fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
+    method: 'GET',
+    headers: { 'Cache-Control': 'no-cache' },
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((fetchedDepartments) => {
+      console.log('Initial fetch departments:', fetchedDepartments);
+      if (!Array.isArray(fetchedDepartments)) {
+        console.error('Fetched departments is not an array:', fetchedDepartments);
+        if (fetchedDepartments.success === false) {
+          alert('Error fetching departments: ' + (fetchedDepartments.message || 'Unknown error'));
+        } else {
+          alert('Error: Invalid department data from server');
+        }
+        return;
+      }
+      departments.length = 0; // Clear the array
+      fetchedDepartments.forEach((dept) => departments.push(dept));
+      console.log('Initial departments array:', departments);
+      renderDepartmentList(); // Render the list after fetching
+    })
+    .catch((error) => {
+      console.error('Error fetching initial department list:', error);
+      alert('Error fetching initial department list: ' + error.message);
+    });
+
+  function renderDepartmentList() {
+    console.log('renderDepartmentList called with departments:', departments);
+
+    let html = `
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <h2>Department Management</h2>
+          <button class="add-btn" id="add-department-btn">Add New Department</button>
+        </div>
+        <div id="add-department-form" style="display: none; margin-top: 20px;">
+          <h3>Add New Department</h3>
+          <form id="insertDepartmentForm">
+            <div class="form-group">
+              <label>Department ID</label>
+              <input type="text" name="department_id" required>
+            </div>
+            <div class="form-group">
+              <label>Name</label>
+              <input type="text" name="department_name" required>
+            </div>
+            <div class="form-group">
+              <label>Description</label>
+              <textarea name="description"></textarea>
+            </div>
+            <div class="form-group button-group">
+              <button type="submit">Add Department</button>
+              <button type="button" id="cancel-add-department-btn">Cancel</button>
+            </div>
+          </form>
+        </div>
+        <table style="margin-top: 20px; width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+          <thead>
+            <tr style="background-color: #003087; color: #FFFFFF;">
+              <th style="border: 1px solid #ddd; padding: 8px;">Department ID</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Name</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Description</th>
+              <th style="border: 1px solid #ddd; padding: 8px;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="department-table-body">
+    `;
+
+    if (departments.length > 0) {
+      departments.forEach((dept) => {
+        html += `
+          <tr>
+            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_id}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_name}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_description || 'No description'}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">
+              <button class="update-btn" data-dept-id="${dept.department_id}">Update</button>
+              <button class="remove-btn" data-dept-id="${dept.department_id}">Delete</button>
+            </td>
+          </tr>
+        `;
       });
+    } else {
+      html += `
+        <tr>
+          <td colspan="4" style="padding: 20px; text-align: center; color: #666;">No departments found.</td>
+        </tr>
+      `;
+    }
 
-      form.addEventListener('submit', function (event) {
+    html += `
+          </tbody>
+        </table>
+        <div class="form-group button-group" style="margin-top: 20px;">
+          <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+        </div>
+      </div>
+    `;
+
+    departmentManagementSection.innerHTML = html;
+
+    // Attach event listeners dynamically
+    const addDepartmentBtn = document.getElementById('add-department-btn');
+    if (addDepartmentBtn) {
+      addDepartmentBtn.addEventListener('click', showAddDepartmentForm);
+    }
+
+    const cancelAddDepartmentBtn = document.getElementById('cancel-add-department-btn');
+    if (cancelAddDepartmentBtn) {
+      cancelAddDepartmentBtn.addEventListener('click', hideAddDepartmentForm);
+    }
+
+    const updateButtons = document.querySelectorAll('.update-btn');
+    updateButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const deptId = button.getAttribute('data-dept-id');
+        showUpdateDepartmentForm(deptId);
+      });
+    });
+
+    const deleteButtons = document.querySelectorAll('.remove-btn');
+    deleteButtons.forEach((button) => {
+      button.addEventListener('click', () => {
+        const deptId = button.getAttribute('data-dept-id');
+        deleteDepartment(deptId);
+      });
+    });
+
+    const insertForm = document.getElementById('insertDepartmentForm');
+    if (insertForm) {
+      insertForm.addEventListener('submit', function (event) {
         event.preventDefault();
-
-        const formData = new FormData(form);
-        const currentValues = {
-          first_name: (formData.get('first_name') || '').trim(),
-          last_name: (formData.get('last_name') || '').trim(),
-          email: (formData.get('email') || '').trim(),
-          role: (formData.get('role') || '').trim(),
-          department_id: departmentSelect.disabled
-            ? originalValues.department_id
-            : (formData.get('department_id') || '').trim(),
-          emp_hire_date: (formData.get('emp_hire_date') || '').trim(),
-          salary: parseFloat(formData.get('salary') || '0').toFixed(2),
-          manager_id: (formData.get('manager_id') || '').toString().trim(),
-          is_manager: (formData.get('is_manager') || '0').toString().trim(),
-        };
-
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(currentValues.email)) {
-          alert('Please enter a valid email address');
-          return;
-        }
-        if (parseFloat(currentValues.salary) <= 0) {
-          alert('Salary must be a positive number');
-          return;
-        }
-        const today = new Date().toISOString().split('T')[0];
-        if (currentValues.emp_hire_date > today) {
-          alert('Hire date cannot be in the future');
-          return;
-        }
-
-        let hasChanges = false;
-        for (const key in originalValues) {
-          const originalValue = String(originalValues[key]).trim();
-          const currentValue = String(currentValues[key]).trim();
-          if (originalValue !== currentValue) {
-            hasChanges = true;
-            break;
-          }
-        }
-
-        if (!hasChanges) {
-          alert('No changes detected');
-          return;
-        }
-
-        // Check if changing from Manager to User and has subordinates
-        if (
-          originalValues.role === 'Manager' &&
-          currentValues.role === 'User'
-        ) {
-          const subordinates = employeesadmin.filter(
-            (e) =>
-              e.manager_id &&
-              String(e.manager_id).trim() === String(emp.employee_id).trim() &&
-              e.employee_id !== emp.employee_id // Exclude self
-          );
-          if (subordinates.length > 0) {
-            alert(
-              'Cannot change role to User: This manager has ' +
-                subordinates.length +
-                ' employee(s) assigned.'
-            );
-            return;
-          }
-        }
-
-        if (roleSelect.value === 'User') {
-          if (!managerSelect.value) {
-            alert('Please select a manager for the user.');
-            return;
-          }
-          const selectedOption =
-            managerSelect.options[managerSelect.selectedIndex];
-          const managerDepartmentId =
-            selectedOption.getAttribute('data-department-id');
-          if (managerDepartmentId) {
-            formData.set('department_id', managerDepartmentId);
-          }
-        } else {
-          formData.set('manager_id', '');
-          formData.set('is_manager', '1');
-        }
-
-        fetch(form.action, {
+        const formData = new FormData(insertForm);
+        fetch('../pages/features/insert_department.php', {
           method: 'POST',
           body: formData,
         })
@@ -2066,51 +2274,216 @@ function showEmployeeUpdateForm(employeeId) {
             if (!response.ok) {
               throw new Error(`HTTP error! Status: ${response.status}`);
             }
-            return response
-              .text()
-              .then((text) => ({ text, headers: response.headers }));
+            return response.json();
           })
-          .then(({ text, headers }) => {
-            const contentType = headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-              throw new Error('Server returned non-JSON response');
-            }
-            const data = JSON.parse(text);
+          .then((data) => {
+            console.log('Insert response:', data);
             if (data.success) {
-              alert(data.message || 'Employee updated successfully');
-              fetch(
-                '../pages/features/fetch_employees.php?ts=' +
-                  new Date().getTime(),
-                {
-                  method: 'GET',
-                  headers: { 'Cache-Control': 'no-cache' },
-                }
-              )
-                .then((response) => response.json())
-                .then((updatedEmployees) => {
-                  employeesadmin.length = 0;
-                  updatedEmployees.forEach((emp) => employeesadmin.push(emp));
-                  showUpdateRemoveUserForm();
+              alert(data.message || 'Department added successfully');
+              fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
+                method: 'GET',
+                headers: { 'Cache-Control': 'no-cache' },
+              })
+                .then((response) => {
+                  if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                  }
+                  return response.json();
+                })
+                .then((updatedDepartments) => {
+                  console.log('Fetched departments:', updatedDepartments);
+                  if (!Array.isArray(updatedDepartments)) {
+                    console.error('Fetched departments is not an array:', updatedDepartments);
+                    if (updatedDepartments.success === false) {
+                      alert('Error fetching departments: ' + (updatedDepartments.message || 'Unknown error'));
+                    } else {
+                      alert('Error: Invalid department data from server');
+                    }
+                    return;
+                  }
+                  departments.length = 0;
+                  updatedDepartments.forEach((dept) => departments.push(dept));
+                  console.log('Updated departments array:', departments);
+                  renderDepartmentList();
+                  hideAddDepartmentForm();
                 })
                 .catch((error) => {
-                  alert(
-                    'Error fetching updated employee list: ' + error.message
-                  );
+                  console.error('Error fetching updated department list:', error);
+                  alert('Error fetching updated department list: ' + error.message);
                 });
             } else {
-              alert(data.message || data.error || 'Error updating employee');
+              alert(data.message || 'Error adding department');
             }
           })
           .catch((error) => {
-            alert('Error updating employee: ' + error.message);
+            console.error('Error adding department:', error);
+            alert('Error adding department: ' + error.message);
           });
       });
-    } else {
-      // Handle form elements not found
     }
-  } else {
-    // Handle main-content or profile-update-form not found
   }
+
+  function showAddDepartmentForm() {
+    const addForm = document.getElementById('add-department-form');
+    if (addForm) {
+      addForm.style.display = 'block';
+    }
+  }
+
+  function hideAddDepartmentForm() {
+    const addForm = document.getElementById('add-department-form');
+    if (addForm) {
+      addForm.style.display = 'none';
+      // Fix: Use querySelector to get the form element and reset it
+      const formElement = addForm.querySelector('form');
+      if (formElement) {
+        formElement.reset();
+      }
+    }
+  }
+
+  // Note: renderDepartmentList is now called after the initial fetch
+}
+
+function deleteDepartment(departmentId) {
+  const dept = departments.find((d) => d.department_id == departmentId);
+  if (!dept) {
+    alert('Department not found!');
+    return;
+  }
+
+  // Check employee count on the frontend
+  const employeeCount = parseInt(dept.employee_count || 0, 10);
+  if (employeeCount > 0) {
+    alert(`Cannot delete department: It has ${employeeCount} employee(s) assigned.`);
+    return;
+  }
+
+  if (!confirm(`Are you sure you want to delete department with ID ${departmentId}?`)) {
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('department_id', departmentId);
+
+  fetch('../pages/features/delete_department.php', {
+    method: 'POST',
+    body: formData,
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      return response.json();
+    })
+    .then((data) => {
+      if (data.success) {
+        alert(data.message || 'Department deleted successfully');
+        // Refresh the departments list
+        fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
+          method: 'GET',
+          headers: { 'Cache-Control': 'no-cache' },
+        })
+          .then((response) => response.json())
+          .then((updatedDepartments) => {
+            departments.length = 0;
+            updatedDepartments.forEach((dept) => departments.push(dept));
+            showDepartmentManagement();
+          })
+          .catch((error) => {
+            alert('Error fetching updated department list: ' + error.message);
+          });
+      } else {
+        alert(data.message || 'Error deleting department');
+      }
+    })
+    .catch((error) => {
+      alert('Error deleting department: ' + error.message);
+    });
 }
 
 
+function showUpdateDepartmentForm(departmentId) {
+  const dept = departments.find((d) => d.department_id == departmentId);
+  if (!dept) {
+    alert('Department not found!');
+    return;
+  }
+
+  // Use showSection to ensure only department-management-section is visible
+  if (!showSection('department-management-section')) return;
+
+  const departmentManagementSection = document.getElementById('department-management-section');
+  if (!departmentManagementSection) {
+    console.error('department-management-section not found');
+    showError('Department management section not found.', 'content-area');
+    return;
+  }
+
+  departmentManagementSection.innerHTML = `
+    <div class="card">
+      <h2>Update Department</h2>
+      <form method="POST" action="../pages/features/update_department.php" id="updateDepartmentForm">
+        <input type="hidden" name="department_id" value="${dept.department_id}">
+        <div class="form-group">
+          <label>Department ID</label>
+          <input type="text" name="department_id_display" value="${dept.department_id}" disabled>
+        </div>
+        <div class="form-group">
+          <label>Name</label>
+          <input type="text" name="department_name" value="${dept.department_name}" required>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea name="description">${dept.description || ''}</textarea>
+        </div>
+        <div class="form-group button-group">
+          <button type="submit">Save Changes</button>
+          <button type="button" onclick="showDepartmentManagement(event)">Back</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  const form = document.getElementById('updateDepartmentForm');
+  if (form) {
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+      const formData = new FormData(form);
+      fetch(form.action, {
+        method: 'POST',
+        body: formData,
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          if (data.success) {
+            alert(data.message || 'Department updated successfully');
+            // Refresh the departments list
+            fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
+              method: 'GET',
+              headers: { 'Cache-Control': 'no-cache' },
+            })
+              .then((response) => response.json())
+              .then((updatedDepartments) => {
+                departments.length = 0;
+                updatedDepartments.forEach((dept) => departments.push(dept));
+                showDepartmentManagement();
+              })
+              .catch((error) => {
+                alert('Error fetching updated department list: ' + error.message);
+              });
+          } else {
+            alert(data.message || 'Error updating department');
+          }
+        })
+        .catch((error) => {
+          alert('Error updating department: ' + error.message);
+        });
+    });
+  }
+}
