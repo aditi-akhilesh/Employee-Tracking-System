@@ -3001,6 +3001,9 @@ function trackTasksStatus() {
 }
 
 
+// Define a separate array for Manage Departments
+let manageDepartments = [];
+
 function showDepartmentManagement(event) {
   if (event) event.preventDefault();
   console.log('showDepartmentManagement called');
