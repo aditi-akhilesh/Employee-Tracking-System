@@ -10,9 +10,9 @@ function showSection(sectionToShowId) {
     'leave-requests',
     'department-metrics',
     'profile-update-form',
-'Department_content',
-'update-remove-user-section',
-'department-management-section'
+    'Department_content',
+    'update-remove-user-section',
+    'department-management-section',
   ];
 
   const mainContent = document.getElementById('content-area');
@@ -219,7 +219,9 @@ function generateReport(selectedEmployeeId) {
   }
 
   // Populate Feedback Summary Table
-  const feedbackSummaryTable = document.getElementById('feedback-summary-table');
+  const feedbackSummaryTable = document.getElementById(
+    'feedback-summary-table'
+  );
   feedbackSummaryTable.innerHTML = '';
   if (filteredFeedback.length === 0) {
     feedbackSummaryTable.innerHTML = `<tr><td colspan="5">No feedback data available for this employee.</td></tr>`;
@@ -268,7 +270,9 @@ function showReportsAnalytics() {
       // Remove any existing listeners to prevent duplicates
       const newButton = generateReportBtn.cloneNode(true);
       generateReportBtn.parentNode.replaceChild(newButton, generateReportBtn);
-      const updatedGenerateReportBtn = document.getElementById('generate-report-btn');
+      const updatedGenerateReportBtn = document.getElementById(
+        'generate-report-btn'
+      );
 
       updatedGenerateReportBtn.addEventListener('click', function () {
         const selectedEmployeeId = employeeSearch.value;
@@ -280,7 +284,8 @@ function showReportsAnalytics() {
         // Refresh data before generating the report
         refreshReportData(() => {
           // Repopulate the employee dropdown
-          employeeSearch.innerHTML = '<option value="">Select an employee</option>';
+          employeeSearch.innerHTML =
+            '<option value="">Select an employee</option>';
           window.employees.forEach((emp) => {
             employeeSearch.innerHTML += `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`;
           });
@@ -301,9 +306,10 @@ function showReportsAnalytics() {
         // Remove any existing click event listeners to prevent duplicates
         const newButton = downloadPdfBtn.cloneNode(true);
         downloadPdfBtn.parentNode.replaceChild(newButton, downloadPdfBtn);
-        
+
         // Reassign the button reference
-        const updatedDownloadPdfBtn = document.getElementById('download-pdf-btn');
+        const updatedDownloadPdfBtn =
+          document.getElementById('download-pdf-btn');
 
         updatedDownloadPdfBtn.addEventListener('click', function () {
           const reportContent = document.getElementById('report-content');
@@ -355,9 +361,9 @@ function showReportsAnalytics() {
               const selectedEmployee =
                 employeeSearch.options[employeeSearch.selectedIndex].text;
               pdf.save(
-                `Employee_Report_${selectedEmployee}_${new Date()
-                  .toISOString()
-                  .split('T')[0]}.pdf`
+                `Employee_Report_${selectedEmployee}_${
+                  new Date().toISOString().split('T')[0]
+                }.pdf`
               );
               updatedDownloadPdfBtn.style.display = 'block';
             })
@@ -414,7 +420,13 @@ function showAttendanceRecords() {
   const startDateInput = document.getElementById('start-date');
   const endDateInput = document.getElementById('end-date');
 
-  if (!fetchAttendanceBtn || !attendanceTableBody || !employeeSearch || !startDateInput || !endDateInput) {
+  if (
+    !fetchAttendanceBtn ||
+    !attendanceTableBody ||
+    !employeeSearch ||
+    !startDateInput ||
+    !endDateInput
+  ) {
     showError('Required elements not found', 'attendance-records');
     return;
   }
@@ -425,9 +437,11 @@ function showAttendanceRecords() {
   // Remove existing listeners to prevent duplicates
   const newButton = fetchAttendanceBtn.cloneNode(true);
   fetchAttendanceBtn.parentNode.replaceChild(newButton, fetchAttendanceBtn);
-  const updatedFetchAttendanceBtn = document.getElementById('fetch-attendance-btn');
+  const updatedFetchAttendanceBtn = document.getElementById(
+    'fetch-attendance-btn'
+  );
 
-  updatedFetchAttendanceBtn.addEventListener('click', function() {
+  updatedFetchAttendanceBtn.addEventListener('click', function () {
     const employeeId = employeeSearch.value;
     const startDate = startDateInput.value;
     const endDate = endDateInput.value;
@@ -435,16 +449,20 @@ function showAttendanceRecords() {
     fetch('superadmin_dashboard.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `action=fetch_attendance&employee_id=${encodeURIComponent(employeeId)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}`
+      body: `action=fetch_attendance&employee_id=${encodeURIComponent(
+        employeeId
+      )}&start_date=${encodeURIComponent(
+        startDate
+      )}&end_date=${encodeURIComponent(endDate)}`,
     })
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         if (data.success) {
           attendanceTableBody.innerHTML = '';
           if (data.attendance_records.length === 0) {
             attendanceTableBody.innerHTML = `<tr><td colspan="5">No attendance records found.</td></tr>`;
           } else {
-            data.attendance_records.forEach(record => {
+            data.attendance_records.forEach((record) => {
               const row = document.createElement('tr');
               row.innerHTML = `
                 <td>${record.employee_name}</td>
@@ -457,10 +475,15 @@ function showAttendanceRecords() {
             });
           }
         } else {
-          showError(data.error || 'Failed to fetch attendance records', 'attendance-records');
+          showError(
+            data.error || 'Failed to fetch attendance records',
+            'attendance-records'
+          );
         }
       })
-      .catch(error => showError('Network error: ' + error.message, 'attendance-records'));
+      .catch((error) =>
+        showError('Network error: ' + error.message, 'attendance-records')
+      );
   });
 
   // Add sorting functionality
@@ -469,7 +492,7 @@ function showAttendanceRecords() {
     header.addEventListener('click', () => {
       const rows = Array.from(attendanceTableBody.querySelectorAll('tr'));
       const isAscending = header.classList.contains('sort-asc');
-      headers.forEach(h => {
+      headers.forEach((h) => {
         h.classList.remove('sort-asc', 'sort-desc');
         const icon = h.querySelector('i.fas');
         if (icon) icon.className = 'fas fa-sort';
@@ -477,12 +500,14 @@ function showAttendanceRecords() {
 
       header.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
       const icon = header.querySelector('i.fas');
-      if (icon) icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
+      if (icon)
+        icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
 
       rows.sort((a, b) => {
         const aText = a.cells[index].textContent.trim();
         const bText = b.cells[index].textContent.trim();
-        if (index === 2 || index === 3) { // Check In, Check Out (dates)
+        if (index === 2 || index === 3) {
+          // Check In, Check Out (dates)
           const aDate = aText === 'N/A' ? 0 : new Date(aText).getTime();
           const bDate = bText === 'N/A' ? 0 : new Date(bText).getTime();
           return isAscending ? bDate - aDate : aDate - bDate;
@@ -493,7 +518,7 @@ function showAttendanceRecords() {
       });
 
       attendanceTableBody.innerHTML = '';
-      rows.forEach(row => attendanceTableBody.appendChild(row));
+      rows.forEach((row) => attendanceTableBody.appendChild(row));
     });
   });
 }
@@ -524,27 +549,37 @@ function showLeaveRequests() {
     fetch('superadmin_dashboard.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `action=fetch_leave_applications&leave_filter=${encodeURIComponent(status)}`
+      body: `action=fetch_leave_applications&leave_filter=${encodeURIComponent(
+        status
+      )}`,
     })
-      .then(response => response.json())
-      .then(data => {
+      .then((response) => response.json())
+      .then((data) => {
         if (data.success) {
           leaveTableBody.innerHTML = '';
           if (data.leave_applications.length === 0) {
             leaveTableBody.innerHTML = `<tr><td colspan="6">No leave requests found.</td></tr>`;
           } else {
-            data.leave_applications.forEach(request => {
+            data.leave_applications.forEach((request) => {
               const row = document.createElement('tr');
-              const statusClass = request.status === 'ispending' ? 'status-pending' :
-                                request.status === 'approved' ? 'status-approved' : 'status-rejected';
+              const statusClass =
+                request.status === 'ispending'
+                  ? 'status-pending'
+                  : request.status === 'approved'
+                  ? 'status-approved'
+                  : 'status-rejected';
               row.innerHTML = `
                 <td>${request.employee_name}</td>
                 <td>${request.leave_start_date}</td>
                 <td>${request.leave_end_date}</td>
                 <td>${request.leave_reason}</td>
-                <td><span class="status-badge ${statusClass}">${request.status.charAt(0).toUpperCase() + request.status.slice(1)}</span></td>
+                <td><span class="status-badge ${statusClass}">${
+                request.status.charAt(0).toUpperCase() + request.status.slice(1)
+              }</span></td>
                 <td>
-                  ${request.status === 'ispending' ? `
+                  ${
+                    request.status === 'ispending'
+                      ? `
                     <form class="action-form approve-form" style="display:inline;">
                       <input type="hidden" name="request_id" value="${request.request_id}">
                       <button type="button" class="approve-btn" style="background-color:#4caf50;color:white;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;margin-right:5px;">Approve</button>
@@ -553,28 +588,61 @@ function showLeaveRequests() {
                       <input type="hidden" name="request_id" value="${request.request_id}">
                       <button type="button" class="reject-btn" style="background-color:#f44336;color:white;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;">Reject</button>
                     </form>
-                  ` : request.status === 'approved' || request.status === 'rejected' ? `
+                  `
+                      : request.status === 'approved' ||
+                        request.status === 'rejected'
+                      ? `
                     <button type="button" class="reconsider-btn" data-request-id="${request.request_id}">Reconsider</button>
-                  ` : ''}
+                  `
+                      : ''
+                  }
                 </td>
               `;
               leaveTableBody.appendChild(row);
 
               // Add event listeners for approve/reject buttons
               if (request.status === 'ispending') {
-                row.querySelector('.approve-btn').addEventListener('click', () => updateLeaveStatus(request.request_id, 'approved', fetchLeaves));
-                row.querySelector('.reject-btn').addEventListener('click', () => updateLeaveStatus(request.request_id, 'rejected', fetchLeaves));
+                row
+                  .querySelector('.approve-btn')
+                  .addEventListener('click', () =>
+                    updateLeaveStatus(
+                      request.request_id,
+                      'approved',
+                      fetchLeaves
+                    )
+                  );
+                row
+                  .querySelector('.reject-btn')
+                  .addEventListener('click', () =>
+                    updateLeaveStatus(
+                      request.request_id,
+                      'rejected',
+                      fetchLeaves
+                    )
+                  );
               }
-              if (request.status === 'approved' || request.status === 'rejected') {
-                row.querySelector('.reconsider-btn').addEventListener('click', () => reconsiderLeave(request.request_id, fetchLeaves));
+              if (
+                request.status === 'approved' ||
+                request.status === 'rejected'
+              ) {
+                row
+                  .querySelector('.reconsider-btn')
+                  .addEventListener('click', () =>
+                    reconsiderLeave(request.request_id, fetchLeaves)
+                  );
               }
             });
           }
         } else {
-          showError(data.error || 'Failed to fetch leave requests', 'leave-requests');
+          showError(
+            data.error || 'Failed to fetch leave requests',
+            'leave-requests'
+          );
         }
       })
-      .catch(error => showError('Network error: ' + error.message, 'leave-requests'));
+      .catch((error) =>
+        showError('Network error: ' + error.message, 'leave-requests')
+      );
   }
 
   // Initial fetch
@@ -592,18 +660,25 @@ function updateLeaveStatus(requestId, status, callback) {
   fetch('superadmin_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `action=update_leave_status&request_id=${encodeURIComponent(requestId)}&status=${encodeURIComponent(status)}`
+    body: `action=update_leave_status&request_id=${encodeURIComponent(
+      requestId
+    )}&status=${encodeURIComponent(status)}`,
   })
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
       if (data.success) {
         showSuccess(data.message, 'leave-requests');
         if (callback) callback();
       } else {
-        showError(data.error || 'Failed to update leave status', 'leave-requests');
+        showError(
+          data.error || 'Failed to update leave status',
+          'leave-requests'
+        );
       }
     })
-    .catch(error => showError('Network error: ' + error.message, 'leave-requests'));
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'leave-requests')
+    );
 }
 
 // Function to reconsider leave
@@ -611,10 +686,10 @@ function reconsiderLeave(requestId, callback) {
   fetch('superadmin_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `action=reconsider_leave&request_id=${encodeURIComponent(requestId)}`
+    body: `action=reconsider_leave&request_id=${encodeURIComponent(requestId)}`,
   })
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
       if (data.success) {
         showSuccess(data.message, 'leave-requests');
         if (callback) callback();
@@ -622,14 +697,18 @@ function reconsiderLeave(requestId, callback) {
         showError(data.error || 'Failed to reconsider leave', 'leave-requests');
       }
     })
-    .catch(error => showError('Network error: ' + error.message, 'leave-requests'));
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'leave-requests')
+    );
 }
 
 // Show Department-wise Performance Metrics Section
 function showDepartmentMetrics() {
   if (!showSection('department-metrics')) return;
 
-  const metricsTableBody = document.getElementById('department-metrics-table-body');
+  const metricsTableBody = document.getElementById(
+    'department-metrics-table-body'
+  );
 
   if (!metricsTableBody) {
     showError('Required elements not found', 'department-metrics');
@@ -643,16 +722,16 @@ function showDepartmentMetrics() {
   fetch('superadmin_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=fetch_department_metrics'
+    body: 'action=fetch_department_metrics',
   })
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
       if (data.success) {
         metricsTableBody.innerHTML = '';
         if (data.department_metrics.length === 0) {
           metricsTableBody.innerHTML = `<tr><td colspan="9">No department metrics found.</td></tr>`;
         } else {
-          data.department_metrics.forEach(metric => {
+          data.department_metrics.forEach((metric) => {
             const row = document.createElement('tr');
             row.innerHTML = `
               <td>${metric.department_name}</td>
@@ -669,10 +748,15 @@ function showDepartmentMetrics() {
           });
         }
       } else {
-        showError(data.error || 'Failed to fetch department metrics', 'department-metrics');
+        showError(
+          data.error || 'Failed to fetch department metrics',
+          'department-metrics'
+        );
       }
     })
-    .catch(error => showError('Network error: ' + error.message, 'department-metrics'));
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'department-metrics')
+    );
 
   // Add sorting functionality
   const headers = document.querySelectorAll('#department-metrics-table th');
@@ -680,7 +764,7 @@ function showDepartmentMetrics() {
     header.addEventListener('click', () => {
       const rows = Array.from(metricsTableBody.querySelectorAll('tr'));
       const isAscending = header.classList.contains('sort-asc');
-      headers.forEach(h => {
+      headers.forEach((h) => {
         h.classList.remove('sort-asc', 'sort-desc');
         const icon = h.querySelector('i.fas');
         if (icon) icon.className = 'fas fa-sort';
@@ -688,22 +772,26 @@ function showDepartmentMetrics() {
 
       header.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
       const icon = header.querySelector('i.fas');
-      if (icon) icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
+      if (icon)
+        icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
 
       rows.sort((a, b) => {
         let aText = a.cells[index].textContent.trim();
         let bText = b.cells[index].textContent.trim();
         // Convert to numbers for numeric columns
-        if (index !== 0) { // All columns except Department Name are numeric
+        if (index !== 0) {
+          // All columns except Department Name are numeric
           aText = parseFloat(aText) || 0;
           bText = parseFloat(bText) || 0;
           return isAscending ? bText - aText : aText - bText;
         }
-        return isAscending ? bText.localeCompare(aText) : aText.localeCompare(bText);
+        return isAscending
+          ? bText.localeCompare(aText)
+          : aText.localeCompare(bText);
       });
 
       metricsTableBody.innerHTML = '';
-      rows.forEach(row => metricsTableBody.appendChild(row));
+      rows.forEach((row) => metricsTableBody.appendChild(row));
     });
   });
 }
@@ -761,8 +849,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
-
-
 
 function validateForm(event, form) {
   console.log('validateForm called');
@@ -852,7 +938,10 @@ function validateForm(event, form) {
   const jobTitlePattern = /^[A-Za-z ]+$/;
   if (!jobTitlePattern.test(jobTitleInput.value)) {
     console.log('Job title validation failed: Invalid characters');
-    showError('Job title must contain only letters and spaces.', 'profile-update-form');
+    showError(
+      'Job title must contain only letters and spaces.',
+      'profile-update-form'
+    );
     event.preventDefault();
     return false;
   }
@@ -875,16 +964,21 @@ function showCreateUserForm() {
   if (!showSection('create-user-form')) return;
 
   const profileUpdateForm = document.getElementById('create-user-form');
-  if (!profileUpdateForm ) {
+  if (!profileUpdateForm) {
     showError('create-user-form not found.', 'create-user-form');
     return;
   }
 
   // Use superAdminEmployees if available (Super Admin dashboard), otherwise fall back to employees (HR dashboard)
-  const employeeList = typeof superAdminEmployees !== 'undefined' ? superAdminEmployees : employees;
+  const employeeList =
+    typeof superAdminEmployees !== 'undefined'
+      ? superAdminEmployees
+      : employees;
 
   // Get valid department IDs (convert to strings for comparison)
-  const validDepartmentIds = departments.map(dept => String(dept.department_id));
+  const validDepartmentIds = departments.map((dept) =>
+    String(dept.department_id)
+  );
 
   // Filter employees to get only managers with valid department_id
   const managers = employeeList.filter(
@@ -997,7 +1091,9 @@ function showCreateUserForm() {
   const roleSelect = document.getElementById('role');
   const assignManagerGroup = document.getElementById('assign-manager-group');
   const departmentGroup = document.getElementById('department-group');
-  const departmentDisplaySelect = document.getElementById('department_id_display');
+  const departmentDisplaySelect = document.getElementById(
+    'department_id_display'
+  );
   const departmentHiddenInput = document.getElementById('department_id');
   const managerSelect = document.getElementById('manager_id');
 
@@ -1030,13 +1126,18 @@ function showCreateUserForm() {
       } else if (this.value === 'HR') {
         assignManagerGroup.style.display = 'none';
         // Automatically set department to HR Department (D02)
-        const hrDepartment = departments.find(dept => dept.department_id === 'D02');
+        const hrDepartment = departments.find(
+          (dept) => dept.department_id === 'D02'
+        );
         if (hrDepartment) {
           departmentDisplaySelect.value = 'D02';
           departmentHiddenInput.value = 'D02';
           departmentDisplaySelect.disabled = true;
         } else {
-          showError('HR Department (D02) not found in departments list.', 'profile-update-form');
+          showError(
+            'HR Department (D02) not found in departments list.',
+            'profile-update-form'
+          );
           departmentDisplaySelect.disabled = false;
           departmentDisplaySelect.value = '';
           departmentHiddenInput.value = '';
@@ -1051,10 +1152,14 @@ function showCreateUserForm() {
 
     managerSelect.addEventListener('change', function () {
       const selectedOption = this.options[this.selectedIndex];
-      const managerDepartmentId = selectedOption.getAttribute('data-department-id');
+      const managerDepartmentId =
+        selectedOption.getAttribute('data-department-id');
       console.log('Selected manager ID:', this.value);
       console.log('Manager department ID:', managerDepartmentId);
-      if (managerDepartmentId && validDepartmentIds.includes(String(managerDepartmentId))) {
+      if (
+        managerDepartmentId &&
+        validDepartmentIds.includes(String(managerDepartmentId))
+      ) {
         departmentDisplaySelect.value = managerDepartmentId;
         departmentHiddenInput.value = managerDepartmentId;
         departmentDisplaySelect.disabled = true;
@@ -1062,7 +1167,10 @@ function showCreateUserForm() {
         departmentDisplaySelect.value = '';
         departmentHiddenInput.value = '';
         departmentDisplaySelect.disabled = true;
-        showError('Selected manager does not have a valid department assigned. Please assign a department to the manager first.', 'profile-update-form');
+        showError(
+          'Selected manager does not have a valid department assigned. Please assign a department to the manager first.',
+          'profile-update-form'
+        );
       }
     });
 
@@ -1087,28 +1195,44 @@ function showCreateUserForm() {
 
       // Additional validations specific to showCreateUserForm
       if (roleSelect.value === 'User' && !managerSelect.value) {
-        showError('Please select a manager for the user.', 'profile-update-form');
+        showError(
+          'Please select a manager for the user.',
+          'profile-update-form'
+        );
         return;
       }
 
       if (roleSelect.value === 'User') {
-        const selectedOption = managerSelect.options[managerSelect.selectedIndex];
-        const managerDepartmentId = selectedOption.getAttribute('data-department-id');
-        if (managerDepartmentId && validDepartmentIds.includes(String(managerDepartmentId))) {
+        const selectedOption =
+          managerSelect.options[managerSelect.selectedIndex];
+        const managerDepartmentId =
+          selectedOption.getAttribute('data-department-id');
+        if (
+          managerDepartmentId &&
+          validDepartmentIds.includes(String(managerDepartmentId))
+        ) {
           departmentHiddenInput.value = managerDepartmentId;
         } else {
-          showError('Manager does not have a valid department assigned.', 'profile-update-form');
+          showError(
+            'Manager does not have a valid department assigned.',
+            'profile-update-form'
+          );
           return;
         }
       }
 
       if (roleSelect.value === 'HR') {
         // Ensure department is set to D02 for HR role
-        const hrDepartment = departments.find(dept => dept.department_id === 'D02');
+        const hrDepartment = departments.find(
+          (dept) => dept.department_id === 'D02'
+        );
         if (hrDepartment) {
           departmentHiddenInput.value = 'D02';
         } else {
-          showError('HR Department (D02) not found. Cannot create HR user.', 'profile-update-form');
+          showError(
+            'HR Department (D02) not found. Cannot create HR user.',
+            'profile-update-form'
+          );
           return;
         }
       }
@@ -1126,10 +1250,10 @@ function showCreateUserForm() {
       // Submit the form via AJAX
       fetch('../pages/features/create_user_admin.php', {
         method: 'POST',
-        body: formData
+        body: formData,
       })
-        .then(response => response.json())
-        .then(data => {
+        .then((response) => response.json())
+        .then((data) => {
           submitButton.disabled = false;
           submitButton.innerHTML = 'Create User';
           if (data.success) {
@@ -1147,11 +1271,14 @@ function showCreateUserForm() {
             showError(data.error || 'Unknown error', 'profile-update-form');
           }
         })
-        .catch(error => {
+        .catch((error) => {
           submitButton.disabled = false;
           submitButton.innerHTML = 'Create User';
           console.error('Error submitting form:', error);
-          showError('An error occurred while creating the user. Please try again.', 'profile-update-form');
+          showError(
+            'An error occurred while creating the user. Please try again.',
+            'profile-update-form'
+          );
         });
     });
   } else {
@@ -1161,7 +1288,6 @@ function showCreateUserForm() {
     showError('Form setup error.', 'profile-update-form');
   }
 }
-
 
 function showDepartment() {
   console.log('showDepartmentInfo called');
@@ -1218,7 +1344,7 @@ function showDepartment() {
                     onclick="showWelcomeMessage()">Back</button>
         </div>
     `;
-  departmentcontent .innerHTML = html;
+  departmentcontent.innerHTML = html;
 }
 
 function showAllEmployees() {
@@ -1254,21 +1380,27 @@ function showAllEmployees() {
       // If filteredEmployees is empty, fall back to the full dataset
       if (employeesadmin && employeesadmin.length > 0) {
         filteredEmployees = employeesadmin;
-        console.log('No filters applied, using full dataset:', filteredEmployees);
+        console.log(
+          'No filters applied, using full dataset:',
+          filteredEmployees
+        );
       } else {
-        alert('No data available to export. Please ensure there are employees to export.');
+        alert(
+          'No data available to export. Please ensure there are employees to export.'
+        );
         return;
       }
     }
 
     // Prepare the data for export
-    const exportData = filteredEmployees.map(emp => ({
+    const exportData = filteredEmployees.map((emp) => ({
       ID: emp.employee_id || 'N/A',
       Name: `${emp.first_name || 'N/A'} ${emp.last_name || 'N/A'}`,
       Email: emp.email || 'N/A',
       Role: emp.role || 'N/A',
       Department:
-        departments.find(d => d.department_id === emp.department_id)?.department_name || 'N/A',
+        departments.find((d) => d.department_id === emp.department_id)
+          ?.department_name || 'N/A',
       'Hire Date': emp.emp_hire_date || 'N/A',
       Salary: emp.salary ? '$' + parseFloat(emp.salary).toFixed(2) : 'N/A',
     }));
@@ -1287,12 +1419,15 @@ function showAllEmployees() {
   function renderTable() {
     // Always start with the full dataset
     filteredEmployees = [...employeesadmin]; // Create a copy to avoid mutating the original
-    console.log('renderTable called, initial filteredEmployees:', filteredEmployees);
+    console.log(
+      'renderTable called, initial filteredEmployees:',
+      filteredEmployees
+    );
 
     // Apply search filter if present
     if (searchQuery) {
       filteredEmployees = filteredEmployees.filter(
-        emp =>
+        (emp) =>
           `${emp.first_name || ''} ${emp.last_name || ''}`
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
@@ -1302,9 +1437,10 @@ function showAllEmployees() {
 
     // Apply department filter if not 'All'
     if (filterDepartment !== 'All') {
-      filteredEmployees = filteredEmployees.filter(emp => {
+      filteredEmployees = filteredEmployees.filter((emp) => {
         const deptName =
-          departments.find(d => d.department_id === emp.department_id)?.department_name || 'N/A';
+          departments.find((d) => d.department_id === emp.department_id)
+            ?.department_name || 'N/A';
         return deptName === filterDepartment;
       });
     }
@@ -1312,11 +1448,14 @@ function showAllEmployees() {
     // Apply role filter if not 'All'
     if (filterRole !== 'All') {
       filteredEmployees = filteredEmployees.filter(
-        emp => (emp.role || '').toLowerCase() === filterRole.toLowerCase()
+        (emp) => (emp.role || '').toLowerCase() === filterRole.toLowerCase()
       );
     }
 
-    console.log('After applying filters, filteredEmployees:', filteredEmployees);
+    console.log(
+      'After applying filters, filteredEmployees:',
+      filteredEmployees
+    );
 
     // If no employees after filtering
     if (filteredEmployees.length === 0) {
@@ -1349,10 +1488,18 @@ function showAllEmployees() {
                         <div class="form-group">
                             <label>Show:</label>
                             <select id="records-per-page">
-                                <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
-                                <option value="10" ${recordsPerPage === 10 ? 'selected' : ''}>10</option>
-                                <option value="15" ${recordsPerPage === 15 ? 'selected' : ''}>15</option>
-                                <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
+                                <option value="5" ${
+                                  recordsPerPage === 5 ? 'selected' : ''
+                                }>5</option>
+                                <option value="10" ${
+                                  recordsPerPage === 10 ? 'selected' : ''
+                                }>10</option>
+                                <option value="15" ${
+                                  recordsPerPage === 15 ? 'selected' : ''
+                                }>15</option>
+                                <option value="20" ${
+                                  recordsPerPage === 20 ? 'selected' : ''
+                                }>20</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -1361,9 +1508,14 @@ function showAllEmployees() {
                                 <option value="All">All</option>
                                 ${departments
                                   .map(
-                                    dept =>
-                                      `<option value="${dept.department_name}" ${
-                                        filterDepartment === dept.department_name ? 'selected' : ''
+                                    (dept) =>
+                                      `<option value="${
+                                        dept.department_name
+                                      }" ${
+                                        filterDepartment ===
+                                        dept.department_name
+                                          ? 'selected'
+                                          : ''
                                       }>${dept.department_name}</option>`
                                   )
                                   .join('')}
@@ -1373,9 +1525,15 @@ function showAllEmployees() {
                             <label>Role:</label>
                             <select id="filter-role">
                                 <option value="All">All</option>
-                                <option value="User" ${filterRole === 'User' ? 'selected' : ''}>User</option>
-                                <option value="Manager" ${filterRole === 'Manager' ? 'selected' : ''}>Manager</option>
-                                <option value="HR" ${filterRole === 'HR' ? 'selected' : ''}>HR</option>
+                                <option value="User" ${
+                                  filterRole === 'User' ? 'selected' : ''
+                                }>User</option>
+                                <option value="Manager" ${
+                                  filterRole === 'Manager' ? 'selected' : ''
+                                }>Manager</option>
+                                <option value="HR" ${
+                                  filterRole === 'HR' ? 'selected' : ''
+                                }>HR</option>
                             </select>
                         </div>
                     </div>
@@ -1403,16 +1561,23 @@ function showAllEmployees() {
 
     paginatedEmployees.forEach((emp, index) => {
       const deptName =
-        departments.find(d => d.department_id === emp.department_id)?.department_name || 'N/A';
+        departments.find((d) => d.department_id === emp.department_id)
+          ?.department_name || 'N/A';
       employeesTableHTML += `
                         <tr>
                             <td>${emp.employee_id || 'N/A'}</td>
-                            <td>${emp.first_name || 'N/A'} ${emp.last_name || 'N/A'}</td>
+                            <td>${emp.first_name || 'N/A'} ${
+        emp.last_name || 'N/A'
+      }</td>
                             <td>${emp.email || 'N/A'}</td>
                             <td>${emp.role || 'N/A'}</td>
                             <td>${deptName}</td>
                             <td>${emp.emp_hire_date || 'N/A'}</td>
-                            <td>${emp.salary ? '$' + parseFloat(emp.salary).toFixed(2) : 'N/A'}</td>
+                            <td>${
+                              emp.salary
+                                ? '$' + parseFloat(emp.salary).toFixed(2)
+                                : 'N/A'
+                            }</td>
                         </tr>
             `;
     });
@@ -1422,10 +1587,17 @@ function showAllEmployees() {
                 </table>
                 <div class="pagination">
                     <div>
-                        Showing ${startIndex + 1} to ${Math.min(endIndex, totalRecords)} of ${totalRecords} employees
+                        Showing ${startIndex + 1} to ${Math.min(
+      endIndex,
+      totalRecords
+    )} of ${totalRecords} employees
                     </div>
                     <div>
-                        <button class="${currentPage === 1 ? 'disabled' : ''}" onclick="changePage(${currentPage - 1})">Previous</button>
+                        <button class="${
+                          currentPage === 1 ? 'disabled' : ''
+                        }" onclick="changePage(${
+      currentPage - 1
+    })">Previous</button>
         `;
 
     const maxPagesToShow = 5;
@@ -1437,12 +1609,18 @@ function showAllEmployees() {
 
     for (let i = startPage; i <= endPage; i++) {
       employeesTableHTML += `
-                        <button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
+                        <button class="${
+                          i === currentPage ? 'active' : ''
+                        }" onclick="changePage(${i})">${i}</button>
             `;
     }
 
     employeesTableHTML += `
-                        <button class="${currentPage === totalPages ? 'disabled' : ''}" onclick="changePage(${currentPage + 1})">Next</button>
+                        <button class="${
+                          currentPage === totalPages ? 'disabled' : ''
+                        }" onclick="changePage(${
+      currentPage + 1
+    })">Next</button>
                     </div>
                 </div>
                 <div class="form-group button-group">
@@ -1460,7 +1638,7 @@ function showAllEmployees() {
     const recordsPerPageSelect = document.getElementById('records-per-page');
 
     if (searchInput) {
-      searchInput.addEventListener('input', e => {
+      searchInput.addEventListener('input', (e) => {
         searchQuery = e.target.value;
         currentPage = 1;
         renderTable();
@@ -1468,7 +1646,7 @@ function showAllEmployees() {
     }
 
     if (filterDepartmentSelect) {
-      filterDepartmentSelect.addEventListener('change', e => {
+      filterDepartmentSelect.addEventListener('change', (e) => {
         filterDepartment = e.target.value;
         currentPage = 1;
         renderTable();
@@ -1476,7 +1654,7 @@ function showAllEmployees() {
     }
 
     if (filterRoleSelect) {
-      filterRoleSelect.addEventListener('change', e => {
+      filterRoleSelect.addEventListener('change', (e) => {
         filterRole = e.target.value;
         currentPage = 1;
         renderTable();
@@ -1484,7 +1662,7 @@ function showAllEmployees() {
     }
 
     if (recordsPerPageSelect) {
-      recordsPerPageSelect.addEventListener('change', e => {
+      recordsPerPageSelect.addEventListener('change', (e) => {
         recordsPerPage = parseInt(e.target.value, 10);
         currentPage = 1;
         renderTable();
@@ -1493,7 +1671,7 @@ function showAllEmployees() {
   }
 
   // Define global function for pagination
-  window.changePage = function(page) {
+  window.changePage = function (page) {
     currentPage = page;
     renderTable();
   };
@@ -1510,14 +1688,14 @@ function exportToExcel() {
   btn.disabled = true;
   btn.textContent = 'Downloading...';
   setTimeout(() => {
-    const exportData = filteredEmployees.map(emp => ({
+    const exportData = filteredEmployees.map((emp) => ({
       ID: emp.employee_id || 'N/A',
       Name: `${emp.first_name || 'N/A'} ${emp.last_name || 'N/A'}`,
       Email: emp.email || 'N/A',
       Role: emp.role || 'N/A',
       Department:
-        departments.find(d => d.department_id === emp.department_id)?.department_name ||
-        'N/A',
+        departments.find((d) => d.department_id === emp.department_id)
+          ?.department_name || 'N/A',
       'Hire Date': emp.emp_hire_date || 'N/A',
       Salary: emp.salary ? '$' + parseFloat(emp.salary).toFixed(2) : 'N/A',
     }));
@@ -1530,7 +1708,6 @@ function exportToExcel() {
   }, 100);
 }
 
-
 function showUpdateRemoveUserForm(event) {
   if (event) event.preventDefault();
   console.log('showUpdateRemoveUserForm called');
@@ -1538,7 +1715,9 @@ function showUpdateRemoveUserForm(event) {
   // Use showSection to ensure only update-remove-user-section is visible
   if (!showSection('update-remove-user-section')) return;
 
-  const updateRemoveUserSection = document.getElementById('update-remove-user-section');
+  const updateRemoveUserSection = document.getElementById(
+    'update-remove-user-section'
+  );
   if (!updateRemoveUserSection) {
     console.error('update-remove-user-section not found');
     showError('Update/Remove User section not found.', 'content-area');
@@ -1603,19 +1782,35 @@ function showUpdateRemoveUserForm(event) {
                         <div class="form-group">
                             <label>Show:</label>
                             <select id="records-per-page">
-                                <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
-                                <option value="10" ${recordsPerPage === 10 ? 'selected' : ''}>10</option>
-                                <option value="15" ${recordsPerPage === 15 ? 'selected' : ''}>15</option>
-                                <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
+                                <option value="5" ${
+                                  recordsPerPage === 5 ? 'selected' : ''
+                                }>5</option>
+                                <option value="10" ${
+                                  recordsPerPage === 10 ? 'selected' : ''
+                                }>10</option>
+                                <option value="15" ${
+                                  recordsPerPage === 15 ? 'selected' : ''
+                                }>15</option>
+                                <option value="20" ${
+                                  recordsPerPage === 20 ? 'selected' : ''
+                                }>20</option>
                             </select>
                         </div>
                         <div class="form-group">
                             <label>Role:</label>
                             <select id="role-filter">
-                                <option value="All" ${filterRole === 'All' ? 'selected' : ''}>All</option>
-                                <option value="User" ${filterRole === 'User' ? 'selected' : ''}>Employee</option>
-                                <option value="Manager" ${filterRole === 'Manager' ? 'selected' : ''}>Manager</option>
-                                <option value="HR" ${filterRole === 'HR' ? 'selected' : ''}>HR</option>
+                                <option value="All" ${
+                                  filterRole === 'All' ? 'selected' : ''
+                                }>All</option>
+                                <option value="User" ${
+                                  filterRole === 'User' ? 'selected' : ''
+                                }>Employee</option>
+                                <option value="Manager" ${
+                                  filterRole === 'Manager' ? 'selected' : ''
+                                }>Manager</option>
+                                <option value="HR" ${
+                                  filterRole === 'HR' ? 'selected' : ''
+                                }>HR</option>
                             </select>
                         </div>
                     </div>
@@ -1654,10 +1849,17 @@ function showUpdateRemoveUserForm(event) {
                 </table>
                 <div class="pagination">
                     <div>
-                        Showing ${startIndex + 1} to ${Math.min(endIndex, totalRecords)} of ${totalRecords} employees
+                        Showing ${startIndex + 1} to ${Math.min(
+      endIndex,
+      totalRecords
+    )} of ${totalRecords} employees
                     </div>
                     <div>
-                        <button class="${currentPage === 1 ? 'disabled' : ''}" onclick="changePage(${currentPage - 1})">Previous</button>
+                        <button class="${
+                          currentPage === 1 ? 'disabled' : ''
+                        }" onclick="changePage(${
+      currentPage - 1
+    })">Previous</button>
         `;
 
     const maxPagesToShow = 5;
@@ -1669,12 +1871,18 @@ function showUpdateRemoveUserForm(event) {
 
     for (let i = startPage; i <= endPage; i++) {
       html += `
-                        <button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
+                        <button class="${
+                          i === currentPage ? 'active' : ''
+                        }" onclick="changePage(${i})">${i}</button>
             `;
     }
 
     html += `
-                        <button class="${currentPage === totalPages ? 'disabled' : ''}" onclick="changePage(${currentPage + 1})">Next</button>
+                        <button class="${
+                          currentPage === totalPages ? 'disabled' : ''
+                        }" onclick="changePage(${
+      currentPage + 1
+    })">Next</button>
                     </div>
                 </div>
                 <div class="form-group button-group">
@@ -1705,7 +1913,7 @@ function showUpdateRemoveUserForm(event) {
     }
   }
 
-  window.changePage = function(page) {
+  window.changePage = function (page) {
     currentPage = page;
     renderEmployeesTable();
   };
@@ -1791,7 +1999,6 @@ function removeEmployee(employeeId) {
     });
 }
 
-
 function showEmployeeUpdateForm(employeeId) {
   const emp = employeesadmin.find((e) => e.employee_id == employeeId);
   if (!emp) {
@@ -1826,7 +2033,8 @@ function showEmployeeUpdateForm(employeeId) {
   };
 
   const managers = employeesadmin.filter(
-    (emp) => emp.role === 'Manager' && emp.emp_status?.toLowerCase() !== 'inactive'
+    (emp) =>
+      emp.role === 'Manager' && emp.emp_status?.toLowerCase() !== 'inactive'
   );
 
   const deptOptions = departments
@@ -1896,8 +2104,7 @@ function showEmployeeUpdateForm(employeeId) {
                           const managerEmployeeId = manager.employee_id
                             ? String(manager.employee_id).trim()
                             : '';
-                          const isSelected =
-                            empManagerId === managerEmployeeId;
+                          const isSelected = empManagerId === managerEmployeeId;
                           return `<option value="${
                             manager.employee_id
                           }" data-department-id="${manager.department_id}" ${
@@ -2020,10 +2227,7 @@ function showEmployeeUpdateForm(employeeId) {
       }
 
       // Check if changing from Manager to User and has subordinates
-      if (
-        originalValues.role === 'Manager' &&
-        currentValues.role === 'User'
-      ) {
+      if (originalValues.role === 'Manager' && currentValues.role === 'User') {
         const subordinates = employeesadmin.filter(
           (e) =>
             e.manager_id &&
@@ -2092,9 +2296,7 @@ function showEmployeeUpdateForm(employeeId) {
                 showUpdateRemoveUserForm();
               })
               .catch((error) => {
-                alert(
-                  'Error fetching updated employee list: ' + error.message
-                );
+                alert('Error fetching updated employee list: ' + error.message);
               });
           } else {
             alert(data.message || data.error || 'Error updating employee');
@@ -2105,7 +2307,9 @@ function showEmployeeUpdateForm(employeeId) {
         });
     });
   } else {
-    console.error('Form elements (updateUserForm, role, assign-manager-group, department_id, or manager_id) not found after rendering');
+    console.error(
+      'Form elements (updateUserForm, role, assign-manager-group, department_id, or manager_id) not found after rendering'
+    );
     showError('Form setup error.', 'profile-update-form');
   }
 }
@@ -2120,7 +2324,9 @@ function showDepartmentManagement(event) {
     return;
   }
 
-  const departmentManagementSection = document.getElementById('department-management-section');
+  const departmentManagementSection = document.getElementById(
+    'department-management-section'
+  );
   if (!departmentManagementSection) {
     console.error('department-management-section not found');
     showError('Department management section not found.', 'content-area');
@@ -2141,9 +2347,15 @@ function showDepartmentManagement(event) {
     .then((fetchedDepartments) => {
       console.log('Initial fetch departments:', fetchedDepartments);
       if (!Array.isArray(fetchedDepartments)) {
-        console.error('Fetched departments is not an array:', fetchedDepartments);
+        console.error(
+          'Fetched departments is not an array:',
+          fetchedDepartments
+        );
         if (fetchedDepartments.success === false) {
-          alert('Error fetching departments: ' + (fetchedDepartments.message || 'Unknown error'));
+          alert(
+            'Error fetching departments: ' +
+              (fetchedDepartments.message || 'Unknown error')
+          );
         } else {
           alert('Error: Invalid department data from server');
         }
@@ -2205,12 +2417,22 @@ function showDepartmentManagement(event) {
       departments.forEach((dept) => {
         html += `
           <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_id}</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_name}</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_description || 'No description'}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${
+              dept.department_id
+            }</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${
+              dept.department_name
+            }</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${
+              dept.department_description || 'No description'
+            }</td>
             <td style="border: 1px solid #ddd; padding: 8px;">
-              <button class="update-btn" data-dept-id="${dept.department_id}">Update</button>
-              <button class="remove-btn" data-dept-id="${dept.department_id}">Delete</button>
+              <button class="update-btn" data-dept-id="${
+                dept.department_id
+              }">Update</button>
+              <button class="remove-btn" data-dept-id="${
+                dept.department_id
+              }">Delete</button>
             </td>
           </tr>
         `;
@@ -2240,7 +2462,9 @@ function showDepartmentManagement(event) {
       addDepartmentBtn.addEventListener('click', showAddDepartmentForm);
     }
 
-    const cancelAddDepartmentBtn = document.getElementById('cancel-add-department-btn');
+    const cancelAddDepartmentBtn = document.getElementById(
+      'cancel-add-department-btn'
+    );
     if (cancelAddDepartmentBtn) {
       cancelAddDepartmentBtn.addEventListener('click', hideAddDepartmentForm);
     }
@@ -2280,10 +2504,14 @@ function showDepartmentManagement(event) {
             console.log('Insert response:', data);
             if (data.success) {
               alert(data.message || 'Department added successfully');
-              fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
-                method: 'GET',
-                headers: { 'Cache-Control': 'no-cache' },
-              })
+              fetch(
+                '../pages/features/fetch_departments.php?ts=' +
+                  new Date().getTime(),
+                {
+                  method: 'GET',
+                  headers: { 'Cache-Control': 'no-cache' },
+                }
+              )
                 .then((response) => {
                   if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
@@ -2293,9 +2521,15 @@ function showDepartmentManagement(event) {
                 .then((updatedDepartments) => {
                   console.log('Fetched departments:', updatedDepartments);
                   if (!Array.isArray(updatedDepartments)) {
-                    console.error('Fetched departments is not an array:', updatedDepartments);
+                    console.error(
+                      'Fetched departments is not an array:',
+                      updatedDepartments
+                    );
                     if (updatedDepartments.success === false) {
-                      alert('Error fetching departments: ' + (updatedDepartments.message || 'Unknown error'));
+                      alert(
+                        'Error fetching departments: ' +
+                          (updatedDepartments.message || 'Unknown error')
+                      );
                     } else {
                       alert('Error: Invalid department data from server');
                     }
@@ -2308,8 +2542,13 @@ function showDepartmentManagement(event) {
                   hideAddDepartmentForm();
                 })
                 .catch((error) => {
-                  console.error('Error fetching updated department list:', error);
-                  alert('Error fetching updated department list: ' + error.message);
+                  console.error(
+                    'Error fetching updated department list:',
+                    error
+                  );
+                  alert(
+                    'Error fetching updated department list: ' + error.message
+                  );
                 });
             } else {
               alert(data.message || 'Error adding department');
@@ -2355,11 +2594,17 @@ function deleteDepartment(departmentId) {
   // Check employee count on the frontend
   const employeeCount = parseInt(dept.employee_count || 0, 10);
   if (employeeCount > 0) {
-    alert(`Cannot delete department: It has ${employeeCount} employee(s) assigned.`);
+    alert(
+      `Cannot delete department: It has ${employeeCount} employee(s) assigned.`
+    );
     return;
   }
 
-  if (!confirm(`Are you sure you want to delete department with ID ${departmentId}?`)) {
+  if (
+    !confirm(
+      `Are you sure you want to delete department with ID ${departmentId}?`
+    )
+  ) {
     return;
   }
 
@@ -2380,10 +2625,13 @@ function deleteDepartment(departmentId) {
       if (data.success) {
         alert(data.message || 'Department deleted successfully');
         // Refresh the departments list
-        fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
-          method: 'GET',
-          headers: { 'Cache-Control': 'no-cache' },
-        })
+        fetch(
+          '../pages/features/fetch_departments.php?ts=' + new Date().getTime(),
+          {
+            method: 'GET',
+            headers: { 'Cache-Control': 'no-cache' },
+          }
+        )
           .then((response) => response.json())
           .then((updatedDepartments) => {
             departments.length = 0;
@@ -2402,7 +2650,6 @@ function deleteDepartment(departmentId) {
     });
 }
 
-
 function showUpdateDepartmentForm(departmentId) {
   const dept = departments.find((d) => d.department_id == departmentId);
   if (!dept) {
@@ -2413,7 +2660,9 @@ function showUpdateDepartmentForm(departmentId) {
   // Use showSection to ensure only department-management-section is visible
   if (!showSection('department-management-section')) return;
 
-  const departmentManagementSection = document.getElementById('department-management-section');
+  const departmentManagementSection = document.getElementById(
+    'department-management-section'
+  );
   if (!departmentManagementSection) {
     console.error('department-management-section not found');
     showError('Department management section not found.', 'content-area');
@@ -2427,11 +2676,15 @@ function showUpdateDepartmentForm(departmentId) {
         <input type="hidden" name="department_id" value="${dept.department_id}">
         <div class="form-group">
           <label>Department ID</label>
-          <input type="text" name="department_id_display" value="${dept.department_id}" disabled>
+          <input type="text" name="department_id_display" value="${
+            dept.department_id
+          }" disabled>
         </div>
         <div class="form-group">
           <label>Name</label>
-          <input type="text" name="department_name" value="${dept.department_name}" required>
+          <input type="text" name="department_name" value="${
+            dept.department_name
+          }" required>
         </div>
         <div class="form-group">
           <label>Description</label>
@@ -2464,10 +2717,14 @@ function showUpdateDepartmentForm(departmentId) {
           if (data.success) {
             alert(data.message || 'Department updated successfully');
             // Refresh the departments list
-            fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
-              method: 'GET',
-              headers: { 'Cache-Control': 'no-cache' },
-            })
+            fetch(
+              '../pages/features/fetch_departments.php?ts=' +
+                new Date().getTime(),
+              {
+                method: 'GET',
+                headers: { 'Cache-Control': 'no-cache' },
+              }
+            )
               .then((response) => response.json())
               .then((updatedDepartments) => {
                 departments.length = 0;
@@ -2475,7 +2732,9 @@ function showUpdateDepartmentForm(departmentId) {
                 showDepartmentManagement();
               })
               .catch((error) => {
-                alert('Error fetching updated department list: ' + error.message);
+                alert(
+                  'Error fetching updated department list: ' + error.message
+                );
               });
           } else {
             alert(data.message || 'Error updating department');
@@ -2486,4 +2745,257 @@ function showUpdateDepartmentForm(departmentId) {
         });
     });
   }
+}
+
+// Function to show Project Status tracking
+function trackProjectStatus() {
+  if (!showSection('profile-update-form')) return;
+
+  const profileUpdateForm = document.getElementById('profile-update-form');
+  if (!profileUpdateForm) {
+    showError('Profile update form section not found.', 'content-area');
+    return;
+  }
+
+  // Fetch project data via AJAX
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=refresh_data&section=project_assignments',
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success && data.project_assignments) {
+        const projects = data.project_assignments.reduce((acc, assignment) => {
+          if (!acc[assignment.project_id]) {
+            acc[assignment.project_id] = {
+              project_id: assignment.project_id,
+              project_name: assignment.project_name,
+              employees: [],
+            };
+          }
+          acc[assignment.project_id].employees.push({
+            employee_name: `${assignment.first_name} ${assignment.last_name}`,
+            role_in_project: assignment.role_in_project,
+          });
+          return acc;
+        }, {});
+
+        let html = `
+          <div class="card">
+            <h2>Track Project Status</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Project ID</th>
+                  <th>Project Name</th>
+                  <th>Assigned Employees</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+
+        const projectList = Object.values(projects);
+        if (projectList.length === 0) {
+          html += `<tr><td colspan="3">No active projects found.</td></tr>`;
+        } else {
+          projectList.forEach((project) => {
+            const employeeList = project.employees
+              .map((emp) => `${emp.employee_name} (${emp.role_in_project})`)
+              .join(', ');
+            html += `
+              <tr>
+                <td>${project.project_id}</td>
+                <td>${project.project_name}</td>
+                <td>${employeeList || 'No employees assigned'}</td>
+              </tr>
+            `;
+          });
+        }
+
+        html += `
+              </tbody>
+            </table>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+          </div>
+        `;
+
+        profileUpdateForm.innerHTML = html;
+      } else {
+        showError(
+          data.error || 'Failed to fetch project data',
+          'profile-update-form'
+        );
+      }
+    })
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'profile-update-form')
+    );
+}
+
+// Function to show Employee Distribution across projects
+function showEmployeeDistribution() {
+  if (!showSection('profile-update-form')) return;
+
+  const profileUpdateForm = document.getElementById('profile-update-form');
+  if (!profileUpdateForm) {
+    showError('Profile update form section not found.', 'content-area');
+    return;
+  }
+
+  // Fetch project assignments
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=refresh_data&section=project_assignments',
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success && data.project_assignments) {
+        const employeeDistribution = data.project_assignments.reduce(
+          (acc, assignment) => {
+            const employeeKey = `${assignment.employee_id}_${assignment.first_name}_${assignment.last_name}`;
+            if (!acc[employeeKey]) {
+              acc[employeeKey] = {
+                employee_id: assignment.employee_id,
+                employee_name: `${assignment.first_name} ${assignment.last_name}`,
+                projects: [],
+              };
+            }
+            acc[employeeKey].projects.push({
+              project_name: assignment.project_name,
+              role_in_project: assignment.role_in_project,
+            });
+            return acc;
+          },
+          {}
+        );
+
+        let html = `
+          <div class="card">
+            <h2>Employee Distribution Across Projects</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Employee ID</th>
+                  <th>Employee Name</th>
+                  <th>Assigned Projects</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+
+        const employeeList = Object.values(employeeDistribution);
+        if (employeeList.length === 0) {
+          html += `<tr><td colspan="3">No employees assigned to projects.</td></tr>`;
+        } else {
+          employeeList.forEach((employee) => {
+            const projectList = employee.projects
+              .map((proj) => `${proj.project_name} (${proj.role_in_project})`)
+              .join(', ');
+            html += `
+              <tr>
+                <td>${employee.employee_id}</td>
+                <td>${employee.employee_name}</td>
+                <td>${projectList}</td>
+              </tr>
+            `;
+          });
+        }
+
+        html += `
+              </tbody>
+            </table>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+          </div>
+        `;
+
+        profileUpdateForm.innerHTML = html;
+      } else {
+        showError(
+          data.error || 'Failed to fetch employee distribution data',
+          'profile-update-form'
+        );
+      }
+    })
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'profile-update-form')
+    );
+}
+
+// Function to track Task Status
+function trackTasksStatus() {
+  if (!showSection('profile-update-form')) return;
+
+  const profileUpdateForm = document.getElementById('profile-update-form');
+  if (!profileUpdateForm) {
+    showError('Profile update form section not found.', 'content-area');
+    return;
+  }
+
+  // Fetch task data (we'll need to add a new AJAX handler in superadmin_dashboard.php)
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=fetch_tasks_status',
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success && data.tasks) {
+        let html = `
+          <div class="card">
+            <h2>Track Task Status</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Task ID</th>
+                  <th>Task Description</th>
+                  <th>Project Name</th>
+                  <th>Status</th>
+                  <th>Assigned Employees</th>
+                </tr>
+              </thead>
+              <tbody>
+        `;
+
+        if (data.tasks.length === 0) {
+          html += `<tr><td colspan="5">No tasks found.</td></tr>`;
+        } else {
+          data.tasks.forEach((task) => {
+            html += `
+              <tr>
+                <td>${task.task_id}</td>
+                <td>${task.task_description}</td>
+                <td>${task.project_name}</td>
+                <td>${task.status}</td>
+                <td>${task.assigned_employees || 'Not assigned'}</td>
+              </tr>
+            `;
+          });
+        }
+
+        html += `
+              </tbody>
+            </table>
+            <div class="form-group button-group">
+              <button type="button" onclick="showWelcomeMessage()">Back</button>
+            </div>
+          </div>
+        `;
+
+        profileUpdateForm.innerHTML = html;
+      } else {
+        showError(
+          data.error || 'Failed to fetch task status data',
+          'profile-update-form'
+        );
+      }
+    })
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'profile-update-form')
+    );
 }

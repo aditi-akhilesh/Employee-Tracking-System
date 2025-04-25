@@ -339,6 +339,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
             $response['department_metrics'] = $metrics;
             $response['success'] = true;
+        } elseif ($_POST['action'] === 'fetch_tasks_status') {
+            $stmt = $con->prepare("
+                SELECT 
+                    t.task_id, 
+                    t.task_description, 
+                    t.status, 
+                    p.project_name,
+                    GROUP_CONCAT(CONCAT(u.first_name, ' ', u.last_name) SEPARATOR ', ') AS assigned_employees
+                FROM Task t
+                JOIN Projects p ON t.project_id = p.project_id
+                LEFT JOIN Assignment_Task at ON t.task_id = at.task_id
+                LEFT JOIN Employees e ON at.employee_id = e.employee_id
+                LEFT JOIN Users u ON e.user_id = u.user_id
+                GROUP BY t.task_id, t.task_description, t.status, p.project_name
+            ");
+            $stmt->execute();
+            $response['tasks'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $response['success'] = true;
         }
     } catch (PDOException $e) {
         $response['error'] = "Database error: " . $e->getMessage();

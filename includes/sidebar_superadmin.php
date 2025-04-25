@@ -21,9 +21,9 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'project-dropdown')"><i class="fas fa-tasks"></i> Projects and Tasks</a>
             <ul id="project-dropdown" class="dropdown" style="display: none;">
-                <li><a href="#">Add new project to department</a></li>
-                <li><a href="#">Add new tasks to project</a></li>
-                <li><a href="#">Track project status</a></li>
+                <li><a href="#" onclick="trackProjectStatus()">Track Project Status</a></li>
+                <li><a href="#" onclick="showEmployeeDistribution()">Show Employee Distribution</a></li>
+                <li><a href="#" onclick="trackTasksStatus()">Track Tasks Status</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'training-dropdown')"><i class="fas fa-graduation-cap"></i> Training Management</a>
