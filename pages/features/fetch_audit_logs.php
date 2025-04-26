@@ -19,6 +19,8 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
 // Get filter parameters
 $user_id = isset($_GET['user_id']) ? trim($_GET['user_id']) : '';
 $action_keyword = isset($_GET['action_keyword']) ? trim($_GET['action_keyword']) : '';
+$start_date = isset($_GET['start_date']) ? trim($_GET['start_date']) : '';
+$end_date = isset($_GET['end_date']) ? trim($_GET['end_date']) : '';
 
 try {
     // Build the SQL query
@@ -33,6 +35,18 @@ try {
     if ($action_keyword !== '') {
         $query .= " AND action LIKE ?";
         $params[] = '%' . $action_keyword . '%';
+    }
+
+    if ($start_date !== '' && $end_date !== '') {
+        $query .= " AND action_date BETWEEN ? AND ?";
+        $params[] = $start_date . ' 00:00:00'; // Start of the day
+        $params[] = $end_date . ' 23:59:59';   // End of the day
+    } elseif ($start_date !== '') {
+        $query .= " AND action_date >= ?";
+        $params[] = $start_date . ' 00:00:00';
+    } elseif ($end_date !== '') {
+        $query .= " AND action_date <= ?";
+        $params[] = $end_date . ' 23:59:59';
     }
 
     $query .= " ORDER BY action_date DESC";

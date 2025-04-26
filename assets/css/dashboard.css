@@ -710,3 +710,48 @@ table tr:hover {
   height: 80px;
   resize: vertical;
 }
+
+
+.filter-input {
+  padding: 5px;
+  width: 150px;
+  margin-right: 10px;
+}
+
+.audit-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 20px;
+}
+
+.audit-table th,
+.audit-table td {
+  padding: 10px;
+}
+
+.audit-table th {
+  background-color: #003087;
+  color: #FFFFFF;
+}
+
+.audit-table tr {
+  cursor: default;
+}
+
+.audit-table .row-even {
+  background-color: #f9f9f9;
+}
+
+.audit-table .row-odd {
+  background-color: #ffffff;
+}
+
+.audit-table .row-even td,
+.audit-table .row-odd td {
+  border-bottom: 1px solid #ddd;
+}
+
+.filter-date {
+  padding: 5px;
+  margin-right: 10px;
+}

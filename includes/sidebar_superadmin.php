@@ -41,7 +41,7 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'audit-dropdown')"><i class="fas fa-file-alt"></i> Audits</a>
             <ul id="audit-dropdown" class="dropdown" style="display: none;">
-                <li><a href="#">Track audit logs</a></li>
+                <li><a href="#" onclick="showAuditLogs()">Track audit logs</a></li>
             </ul>
         </li>
     </ul>

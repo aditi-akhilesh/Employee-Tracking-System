@@ -3374,15 +3374,44 @@ function showAuditLogs() {
   // State for pagination and filters
   let currentPage = 1;
   let recordsPerPage = 5;
-  let userIdFilter = ''; // Will store the selected employee_id or empty for "All"
+  let userIdFilter = '';
   let actionKeyword = '';
+  let startDate = '';
+  let endDate = '';
+  let filteredAuditLogs = []; // Store filtered logs for export
 
   // Predefined action keywords
   const actionKeywords = ['update', 'remove', 'login', 'request'];
 
+  // Define exportToExcel globally
+  window.exportAuditLogsToExcel = function () {
+    console.log('exportAuditLogsToExcel called, filteredAuditLogs:', filteredAuditLogs);
+    if (!filteredAuditLogs || filteredAuditLogs.length === 0) {
+      alert('No data available to export. Please ensure there are audit logs to export.');
+      return;
+    }
+
+    // Prepare the data for export
+    const exportData = filteredAuditLogs.map(log => ({
+      'User ID': log.user_id || 'N/A',
+      Action: log.action || 'N/A',
+      'Action Date': log.action_date || 'N/A',
+    }));
+
+    // Create a worksheet
+    const ws = XLSX.utils.json_to_sheet(exportData);
+
+    // Create a workbook and append the worksheet
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Audit Logs');
+
+    // Export the workbook to an Excel file
+    XLSX.writeFile(wb, 'Audit_Logs.xlsx');
+  };
+
   function renderTable() {
     // Fetch audit logs with filters
-    fetch(`../pages/features/fetch_audit_logs.php?user_id=${encodeURIComponent(userIdFilter)}&action_keyword=${encodeURIComponent(actionKeyword)}&ts=${new Date().getTime()}`, {
+    fetch(`../pages/features/fetch_audit_logs.php?user_id=${encodeURIComponent(userIdFilter)}&action_keyword=${encodeURIComponent(actionKeyword)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&ts=${new Date().getTime()}`, {
       method: 'GET',
       headers: { 'Cache-Control': 'no-cache' },
     })
@@ -3401,10 +3430,10 @@ function showAuditLogs() {
           return;
         }
 
-        const auditLogs = data.data;
+        filteredAuditLogs = data.data; // Store filtered logs for export
 
         // If no audit logs
-        if (auditLogs.length === 0) {
+        if (filteredAuditLogs.length === 0) {
           auditLogsSection.innerHTML = `
             <div class="card">
               <h2>Audit Logs</h2>
@@ -3418,13 +3447,13 @@ function showAuditLogs() {
         }
 
         // Pagination
-        const totalRecords = auditLogs.length;
+        const totalRecords = filteredAuditLogs.length;
         const totalPages = Math.ceil(totalRecords / recordsPerPage);
         currentPage = Math.min(currentPage, totalPages);
         currentPage = Math.max(currentPage, 1);
         const startIndex = (currentPage - 1) * recordsPerPage;
         const endIndex = Math.min(startIndex + recordsPerPage, totalRecords);
-        const paginatedLogs = auditLogs.slice(startIndex, endIndex);
+        const paginatedLogs = filteredAuditLogs.slice(startIndex, endIndex);
 
         let auditLogsHTML = `
           <div class="card">
@@ -3448,7 +3477,11 @@ function showAuditLogs() {
                   ${actionKeywords
                     .map(keyword => `<option value="${keyword}" ${actionKeyword === keyword ? 'selected' : ''}>${keyword}</option>`)
                     .join('')}
-                </select>
+                </select></br>
+                <label>Start Date:</label>
+                <input type="date" id="start-date-filter" class="filter-date" value="${startDate}">
+                <label>End Date:</label>
+                <input type="date" id="end-date-filter" class="filter-date" value="${endDate}">
                 <label>Show:</label>
                 <select id="records-per-page" class="filter-select">
                   <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
@@ -3457,6 +3490,9 @@ function showAuditLogs() {
                   <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
                 </select>
               </div>
+            </div>
+            <div class="button-group download-controls">
+              <button class="download-btn" onclick="exportAuditLogsToExcel()">Download as Excel</button>
             </div>
             <table class="audit-table">
               <thead>
@@ -3518,6 +3554,8 @@ function showAuditLogs() {
         // Add event listeners for filters and pagination
         const userIdSelect = document.getElementById('user-id-filter');
         const actionKeywordSelect = document.getElementById('action-keyword-filter');
+        const startDateInput = document.getElementById('start-date-filter');
+        const endDateInput = document.getElementById('end-date-filter');
         const recordsPerPageSelect = document.getElementById('records-per-page');
 
         if (userIdSelect) {
@@ -3531,6 +3569,22 @@ function showAuditLogs() {
         if (actionKeywordSelect) {
           actionKeywordSelect.addEventListener('change', e => {
             actionKeyword = e.target.value;
+            currentPage = 1;
+            renderTable();
+          });
+        }
+
+        if (startDateInput) {
+          startDateInput.addEventListener('change', e => {
+            startDate = e.target.value;
+            currentPage = 1;
+            renderTable();
+          });
+        }
+
+        if (endDateInput) {
+          endDateInput.addEventListener('change', e => {
+            endDate = e.target.value;
             currentPage = 1;
             renderTable();
           });

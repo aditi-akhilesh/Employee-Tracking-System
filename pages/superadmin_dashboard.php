@@ -456,6 +456,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
         <div id="profile-update-form" style="display: none;" ></div>
         <div id="Department_content" style="display: none;" ></div>
         <div id="department-management-section" style="display: none;"></div>
+<div id="audit-logs-section" style="display: none;"></div>
 
         <div id="reports-analytics" style="display: none;" class="card">
             <h2>Reports and Analytics</h2>
@@ -660,5 +661,6 @@ console.log(employeesadmin)
 </script>
 <script src="../assets/js/superadmin_dashboard.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </body>
 </html>
