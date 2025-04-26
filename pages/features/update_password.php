@@ -8,6 +8,8 @@ error_reporting(E_ALL);
 session_start();
 include '../../auth/dbconnect.php'; // Adjust the path as needed
 
+$con->exec("SET @current_user_id := " . intval($user_id));
+
 // Check if the user is authenticated
 if (!isset($_SESSION['employee_id'])) {
   echo json_encode(['success' => false, 'error' => 'Not authenticated. Please log in.']);

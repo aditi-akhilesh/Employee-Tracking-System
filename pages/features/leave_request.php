@@ -6,6 +6,9 @@ ob_start();
 
 require_once '../../auth/dbconnect.php';
 
+$currentUser = intval($_SESSION['user_id']);
+$con->exec("SET @current_user_id := {$currentUser}");
+
 header('Content-Type: application/json');
 $response = ['success' => false];
 

@@ -7,6 +7,9 @@ $page_title = "Employee Dashboard";
 // Fetch employee_id from session
 $employee_id = $_SESSION['employee_id'];
 
+$currentUser = intval($_SESSION['user_id']); 
+$con->exec("SET @current_user_id := {$currentUser}");
+
 // Fetch the employee's department_id
 $stmt = $con->prepare("SELECT department_id FROM Employees WHERE employee_id = ?");
 $stmt->execute([$employee_id]);
