@@ -3391,11 +3391,12 @@ function showAuditLogs() {
       return;
     }
 
-    // Prepare the data for export
+    // Prepare the data for export, including change_details
     const exportData = filteredAuditLogs.map(log => ({
       'User ID': log.user_id || 'N/A',
       Action: log.action || 'N/A',
       'Action Date': log.action_date || 'N/A',
+      'Change Details': log.change_details || 'N/A',
     }));
 
     // Create a worksheet
@@ -3477,7 +3478,7 @@ function showAuditLogs() {
                   ${actionKeywords
                     .map(keyword => `<option value="${keyword}" ${actionKeyword === keyword ? 'selected' : ''}>${keyword}</option>`)
                     .join('')}
-                </select></br>
+                </select>
                 <label>Start Date:</label>
                 <input type="date" id="start-date-filter" class="filter-date" value="${startDate}">
                 <label>End Date:</label>
@@ -3577,6 +3578,12 @@ function showAuditLogs() {
         if (startDateInput) {
           startDateInput.addEventListener('change', e => {
             startDate = e.target.value;
+            if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+              alert('Start date cannot be after end date.');
+              startDate = '';
+              startDateInput.value = '';
+              return;
+            }
             currentPage = 1;
             renderTable();
           });
@@ -3585,6 +3592,12 @@ function showAuditLogs() {
         if (endDateInput) {
           endDateInput.addEventListener('change', e => {
             endDate = e.target.value;
+            if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+              alert('End date cannot be before start date.');
+              endDate = '';
+              endDateInput.value = '';
+              return;
+            }
             currentPage = 1;
             renderTable();
           });

@@ -23,8 +23,8 @@ $start_date = isset($_GET['start_date']) ? trim($_GET['start_date']) : '';
 $end_date = isset($_GET['end_date']) ? trim($_GET['end_date']) : '';
 
 try {
-    // Build the SQL query
-    $query = "SELECT user_id, action, action_date FROM Audit_Log WHERE 1=1";
+    // Build the SQL query, including change_details
+    $query = "SELECT user_id, action, action_date, change_details FROM Audit_Log WHERE 1=1";
     $params = [];
 
     if ($user_id !== '') {
