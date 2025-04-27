@@ -15,6 +15,33 @@ function escapeHTML(str) {
       }[match])
   );
 }
+function toggleDropdown(event, id) {
+  event.preventDefault();
+  const allDropdowns = document.querySelectorAll('.dropdown');
+  allDropdowns.forEach((dropdown) => {
+    if (dropdown.id !== id) {
+      dropdown.style.opacity = '0';
+      setTimeout(() => (dropdown.style.display = 'none'), 200);
+    }
+  });
+  const currentDropdown = document.getElementById(id);
+  if (currentDropdown.style.display === 'block') {
+    currentDropdown.style.opacity = '0';
+    setTimeout(() => (currentDropdown.style.display = 'none'), 200);
+  } else {
+    currentDropdown.style.display = 'block';
+    setTimeout(() => (currentDropdown.style.opacity = '1'), 10);
+  }
+}
+
+document.addEventListener('click', function (event) {
+  if (!event.target.closest('.sidebar')) {
+    document.querySelectorAll('.dropdown').forEach((dropdown) => {
+      dropdown.style.opacity = '0';
+      setTimeout(() => (dropdown.style.display = 'none'), 200);
+    });
+  }
+});
 
 // Fallback for showError if not defined
 if (typeof showError === 'undefined') {
@@ -1162,17 +1189,6 @@ function showCreateUserForm() {
   `;
 }
 
-// Toggle dropdown menu without hiding sidebar text
-function toggleDropdown(event, dropdownId) {
-  event.preventDefault();
-  const dropdown = document.getElementById(dropdownId);
-  if (dropdown) {
-    const isDisplayed = dropdown.style.display === 'block';
-    dropdown.style.display = isDisplayed ? 'none' : 'block';
-    dropdown.classList.toggle('show', !isDisplayed);
-  }
-}
-
 // Show welcome message (default view)
 function showWelcomeMessage() {
   showSection('main-content');
@@ -1638,7 +1654,7 @@ function showDepartment() {
 
   let html = `
         <h2 style="font-size: 24px; color: #333; margin-bottom: 20px;">Department Information</h2>
-        <table style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+        <table id="departmentTable" style="width: 100%; border-collapse: collapse; font-family: 'Roboto', sans-serif; background-color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
             <thead>
                 <tr style="background-color: #003087; color: #FFFFFF;">
                     <th style="border: 1px solid #ddd; padding: 8px;">Department ID</th>
@@ -1653,18 +1669,10 @@ function showDepartment() {
     departments.forEach((dept) => {
       html += `
                 <tr>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${
-                      dept.department_id
-                    }</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${
-                      dept.department_name
-                    }</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${
-                      dept.department_description || 'No description'
-                    }</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${
-                      dept.employee_count
-                    }</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_id}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_name}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_description || 'No description'}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${dept.employee_count}</td>
                 </tr>
             `;
     });
@@ -1683,11 +1691,35 @@ function showDepartment() {
                     onmouseover="this.style.backgroundColor='#5a6268'" 
                     onmouseout="this.style.backgroundColor='#6c757d'"
                     onclick="showWelcomeMessage()">Back</button>
+            <button type="button" id="downloadExcelBtn" style="padding: 8px 12px; margin-left: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;" 
+                    onmouseover="this.style.backgroundColor='#218838'" 
+                    onmouseout="this.style.backgroundColor='#28a745'"
+                    onclick="downloadAsExcel()">Download as Excel</button>
         </div>
     `;
   departmentcontent.innerHTML = html;
 }
 
+function downloadAsExcel() {
+  // Get the table element
+  const table = document.getElementById('departmentTable');
+  
+  // Check if table exists and has data
+  if (!table || table.querySelector('tbody').children.length === 0 || table.querySelector('td').textContent === 'No departments found.') {
+    alert('No data available to download.');
+    return;
+  }
+
+  // Convert the table to a worksheet
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.table_to_sheet(table);
+  
+  // Append the worksheet to the workbook
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Departments');
+  
+  // Generate the Excel file and trigger download
+  XLSX.writeFile(workbook, 'Department_Information.xlsx');
+}
 function showAllEmployees() {
   if (!showSection('profile-update-form')) return;
 

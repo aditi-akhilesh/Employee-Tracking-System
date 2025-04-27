@@ -3,8 +3,9 @@
 session_start();
 require_once '../../auth/dbconnect.php';
 
-
-$con->exec("SET @current_user_id := " . intval($_SESSION['user_id']));
+// Tell MySQL who the current user is
+$currentUser = intval($_SESSION['user_id']);
+$con->exec("SET @current_user_id := {$currentUser}");
 
 header('Content-Type: application/json');
 
@@ -20,7 +21,7 @@ if (!isset($_SESSION['user_id']) || !isset($_SESSION['employee_id'])) {
 $employee_id = $_SESSION['employee_id'];
 
 try {
-    if ($_POST['action'] === 'submit_exit_interview') {
+      if ($_POST['action'] === 'submit_exit_interview') {
         $resignation_type = $_POST['resignation_type'] ?? '';
         $primary_reason = $_POST['primary_reason'] ?? '';
         $overall_satisfaction_rating = $_POST['overall_satisfaction_rating'] ?? '';
