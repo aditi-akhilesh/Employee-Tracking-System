@@ -70,6 +70,17 @@ if ($stmt->rowCount() === 0) {
     exit();
 }
 
+// Check if an exit interview already exists for this employee
+$stmt = $con->prepare("SELECT COUNT(*) FROM Exit_Interviews WHERE employee_id = :employee_id");
+$stmt->execute(['employee_id' => $employee_id]);
+$exitInterviewCount = $stmt->fetchColumn();
+
+if ($exitInterviewCount > 0) {
+    $response['error'] = 'Exit interview already requested for this employee';
+    echo json_encode($response);
+    exit();
+}
+
 try {
     $stmt = $con->prepare("
         INSERT INTO Exit_Interviews (
