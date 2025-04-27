@@ -3211,7 +3211,6 @@ function trackProjectStatus() {
     );
 }
 
-// Function to show Employee Distribution across projects
 function showEmployeeDistribution() {
   if (!showSection('profile-update-form')) return;
 
@@ -3225,7 +3224,7 @@ function showEmployeeDistribution() {
   fetch('superadmin_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data&section=project_assignments',
+    body: 'action=refresh_data&section=project_assignments', // Fixed the body syntax
   })
     .then((response) => response.json())
     .then((data) => {
@@ -3286,6 +3285,10 @@ function showEmployeeDistribution() {
             </table>
             <div class="form-group button-group">
               <button type="button" onclick="showWelcomeMessage()">Back</button>
+              <button type="button" style="padding: 8px 12px; margin-left: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;" 
+                      onmouseover="this.style.backgroundColor='#218838'" 
+                      onmouseout="this.style.backgroundColor='#28a745'"
+                      onclick="downloadEmployeeDistributionAsExcel()">Download more information</button>
             </div>
           </div>
         `;
@@ -3303,6 +3306,63 @@ function showEmployeeDistribution() {
     );
 }
 
+function downloadEmployeeDistributionAsExcel() {
+  // Fetch detailed data from the view via superadmin_dashboard.php
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=refresh_data&section=employee_task_project_view',
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (!data.success || !data.employee_task_project_view || data.employee_task_project_view.length === 0) {
+        alert('No data available to download.');
+        return;
+      }
+
+      // Prepare data for Excel
+      const worksheetData = data.employee_task_project_view.map(row => ({
+        'Employee ID': row.employee_id,
+        'Employee Name': row.employee_name,
+        'Project ID': row.project_id,
+        'Project Name': row.project_name,
+        'Role in Project': row.role_in_project,
+        'Project Status': row.assignment_status || 'N/A',
+        'Task ID': row.task_id || 'N/A',
+        'Task Description': row.task_description || 'N/A',
+        'Task Status': row.task_status || 'N/A',
+        'Due Date': row.due_date || 'N/A'
+      }));
+
+      // Create a worksheet
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+
+      // Set column widths (in characters)
+      worksheet['!cols'] = [
+        { wch: 15 }, // Employee ID
+        { wch: 25 }, // Employee Name
+        { wch: 15 }, // Project ID
+        { wch: 30 }, // Project Name
+        { wch: 20 }, // Role in Project
+        { wch: 20 }, // Project Status
+        { wch: 15 }, // Task ID
+        { wch: 40 }, // Task Description
+        { wch: 20 }, // Task Status
+        { wch: 15 }  // Due Date
+      ];
+
+      // Append the worksheet to the workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Employee_Distribution');
+
+      // Generate the Excel file and trigger download
+      XLSX.writeFile(workbook, 'Employee_Distribution_Detailed.xlsx');
+    })
+    .catch((error) => {
+      console.error('Error fetching data for download:', error);
+      alert('Failed to fetch data for download: ' + error.message);
+    });
+}
 // Function to track Task Status
 function trackTasksStatus() {
   if (!showSection('profile-update-form')) return;

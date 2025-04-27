@@ -113,6 +113,29 @@ function fetchData($con, $sections = ['all']) {
         $stmt->execute();
         $data['project_assignments'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
+// Fetch data from Employee_Task_Project_View for Excel download
+    if ($shouldFetch('employee_task_project_view')) {
+        $stmt = $con->prepare("
+            SELECT 
+                employee_id,
+                employee_name,
+                project_id,
+                project_name,
+                role_in_project,
+                assignment_status,
+                task_id,
+                task_description,
+                task_status,
+                due_date
+            FROM 
+                Employee_Task_Project_View
+            WHERE 
+                project_id IS NOT NULL
+        ");
+        $stmt->execute();
+        $data['employee_task_project_view'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
 
     if ($shouldFetch('training_certificates')) {
         $stmt = $con->prepare("
