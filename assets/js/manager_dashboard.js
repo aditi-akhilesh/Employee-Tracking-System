@@ -1351,7 +1351,7 @@ function updateExitInterview(selectedInterviewId = null) {
                                         <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Last Working Date</th>
                                         <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Manager Rating</th>
                                         <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Eligible for Rehire</th>
-                                        <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Action</th>
+                                        <th style="padding: 12px 15px; text-align: left; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #ddd;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -1384,10 +1384,13 @@ function updateExitInterview(selectedInterviewId = null) {
                                 <td style="padding: 12px 15px; text-align: left; color: #555; border-bottom: 1px solid #ddd;">${
                                   ei.eligible_for_rehire == 1 ? 'Yes' : 'No'
                                 }</td>
-                                <td style="padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd;">
-                                    <button class="update-exit-interview-btn" data-interview-id="${
+                                <td style="border: 1px solid #ddd; padding: 8px;">
+                                    <button class="update-btn" data-interview-id="${
                                       ei.interview_id
-                                    }">Update</button>
+                                    }" style="margin-right: 5px;">Update</button>
+                                    <button class="remove-btn" data-interview-id="${
+                                      ei.interview_id
+                                    }" style="background-color: #dc3545; color: white;">Delete</button>
                                 </td>
                             </tr>
                         `;
@@ -1406,13 +1409,59 @@ function updateExitInterview(selectedInterviewId = null) {
 
         profileUpdateForm.innerHTML = tableHTML;
 
-        const updateButtons = profileUpdateForm.querySelectorAll(
-          '.update-exit-interview-btn'
-        );
+        // Add event listeners for Update buttons
+        const updateButtons = profileUpdateForm.querySelectorAll('.update-btn');
         updateButtons.forEach((button) => {
           button.addEventListener('click', function () {
             const interviewId = this.getAttribute('data-interview-id');
             updateExitInterview(interviewId);
+          });
+        });
+
+        // Add event listeners for Delete buttons
+        const deleteButtons = profileUpdateForm.querySelectorAll('.remove-btn');
+        deleteButtons.forEach((button) => {
+          button.addEventListener('click', function () {
+            const interviewId = this.getAttribute('data-interview-id');
+            if (confirm('Are you sure you want to delete this exit interview request?')) {
+              fetch('../pages/features/delete_exit_interview.php', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ interview_id: interviewId }),
+              })
+                .then((response) => {
+                  if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                  }
+                  return response.json();
+                })
+                .then((data) => {
+                  if (data.success) {
+                    showSuccess(
+                      'Exit interview request deleted successfully!',
+                      'profile-update-form'
+                    );
+                    fetchExitInterviews().then((updatedData) => {
+                      exitInterviews = updatedData;
+                      updateExitInterview();
+                    });
+                  } else {
+                    showError(
+                      data.error || 'Failed to delete exit interview request',
+                      'profile-update-form'
+                    );
+                  }
+                })
+                .catch((error) => {
+                  console.error('Delete error:', error);
+                  showError(
+                    'Network error: ' + error.message,
+                    'profile-update-form'
+                  );
+                });
+            }
           });
         });
       }
@@ -1433,9 +1482,7 @@ document.querySelectorAll('.sidebar-menu a').forEach((link) => {
       window[action]();
     }
   });
-});
-
-function showDepartment() {
+});function showDepartment() {
   console.log('showDepartmentInfo called');
   if (!showSection('Department_content')) return;
 
