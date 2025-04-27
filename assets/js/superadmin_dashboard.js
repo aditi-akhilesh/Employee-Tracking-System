@@ -352,6 +352,8 @@ function showSection(sectionToShowId) {
     'update-remove-user-section',
     'department-management-section',
     'audit-logs-section',
+    'training-programs',
+    'training-assignments',
   ];
 
   const mainContent = document.getElementById('content-area');
@@ -4169,6 +4171,8 @@ function showAuditLogs() {
 }
 
 function showTrainingPrograms() {
+  if (!showSection('training-programs')) return;
+
   const contentArea = document.getElementById('content-area');
   if (!contentArea) {
     console.error('Content area not found');
@@ -4253,6 +4257,8 @@ function renderTrainingTable(trainings) {
 }
 
 function showTrainingAssignments() {
+  if (!showSection('training-assignments')) return;
+
   const contentArea = document.getElementById('content-area');
   if (!contentArea) {
     console.error('Content area not found');
