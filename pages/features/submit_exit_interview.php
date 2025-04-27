@@ -3,6 +3,9 @@
 session_start();
 require_once '../../auth/dbconnect.php';
 
+
+$con->exec("SET @current_user_id := " . intval($_SESSION['user_id']));
+
 header('Content-Type: application/json');
 
 $response = ['success' => false, 'error' => ''];
