@@ -172,51 +172,114 @@ function renderTrainingCertificatesTable() {
 
 // Function to show Training Programs
 function showTrainingPrograms() {
-  const section = document.getElementById('training-programs');
-  const contentArea = document.getElementById('content-area');
-  if (!section || !contentArea) {
-    console.error('Training programs section or content area not found');
-    return;
-  }
-
-  contentArea
-    .querySelectorAll('.card, #main-content')
-    .forEach((el) => (el.style.display = 'none'));
-  section.style.display = 'block';
-
-  fetch('superadmin_dashboard.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=fetch_trainings',
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (!data.success) {
-        showError(data.error || 'Failed to fetch training programs');
+    const section = document.getElementById('training-programs');
+    const contentArea = document.getElementById('content-area');
+    if (!section || !contentArea) {
+        console.error('Training programs section or content area not found');
         return;
-      }
-      const tbody = document.getElementById('training-table-body');
-      if (!tbody) return;
-      tbody.innerHTML = '';
-      data.trainings.forEach((training) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-              <td>${escapeHTML(training.training_name)}</td>
-              <td>${escapeHTML(training.department_name || 'N/A')}</td>
-              <td>${escapeHTML(training.training_date)}</td>
-              <td>${escapeHTML(training.end_date)}</td>
-              <td>${
-                training.duration_days !== null ? training.duration_days : 'N/A'
-              }</td>
-              <td>${escapeHTML(training.certificate)}</td>
-          `;
-        tbody.appendChild(row);
-      });
-      addTableSorting('training-table');
+    }
+
+    contentArea
+        .querySelectorAll('.card, #main-content')
+        .forEach((el) => (el.style.display = 'none'));
+    section.style.display = 'block';
+
+    fetch('superadmin_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=fetch_trainings',
     })
-    .catch((err) =>
-      showError('Error fetching training programs: ' + err.message)
-    );
+        .then((response) => response.json())
+        .then((data) => {
+            if (!data.success) {
+                showError(data.error || 'Failed to fetch training programs');
+                return;
+            }
+            const tbody = document.getElementById('training-table-body');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            data.trainings.forEach((training) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${escapeHTML(training.training_name)}</td>
+                    <td>${escapeHTML(training.department_name || 'N/A')}</td>
+                    <td>${escapeHTML(training.training_date)}</td>
+                    <td>${escapeHTML(training.end_date)}</td>
+                    <td>${
+                        training.duration_days !== null ? training.duration_days : 'N/A'
+                    }</td>
+                    <td>${escapeHTML(training.certificate)}</td>
+                `;
+                tbody.appendChild(row);
+            });
+            addTableSorting('training-table');
+        })
+        .catch((err) =>
+            showError('Error fetching training programs: ' + err.message)
+        );
+}
+
+function downloadTrainingProgramsAsExcel() {
+    // Fetch detailed data from the view via superadmin_dashboard.php
+    fetch('superadmin_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=refresh_data&section=training_programs_view', // Fixed typo: § to &
+    })
+        .then((response) => response.json())
+        .then((data) => {
+            console.log('Fetched data:', data); // Debugging: Log the response
+            if (!data.success || !data.training_programs_view || data.training_programs_view.length === 0) {
+                alert('No data available to download.');
+                return;
+            }
+
+            // Prepare data for Excel
+            const worksheetData = data.training_programs_view.map(row => ({
+                'Training ID': row.training_id,
+                'Training Name': row.training_name,
+                'Department': row.department_name || 'N/A',
+                'Start Date': row.training_date,
+                'End Date': row.end_date,
+                'Duration (Days)': row.duration_days !== null ? row.duration_days : 'N/A',
+                'Certificate': row.certificate,
+                'Employee ID': row.employee_id || 'N/A',
+                'Employee Name': row.employee_name || 'N/A',
+                'Training Status': row.training_status || 'N/A',
+                'Score': row.score !== null ? row.score : 'N/A',
+                'Enrollment Date': row.enrollment_date || 'N/A'
+            }));
+
+            // Create a worksheet
+            const workbook = XLSX.utils.book_new();
+            const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+
+            // Set column widths (in characters)
+            worksheet['!cols'] = [
+                { wch: 15 }, // Training ID
+                { wch: 30 }, // Training Name
+                { wch: 25 }, // Department
+                { wch: 15 }, // Start Date
+                { wch: 15 }, // End Date
+                { wch: 15 }, // Duration (Days)
+                { wch: 25 }, // Certificate
+                { wch: 15 }, // Employee ID
+                { wch: 25 }, // Employee Name
+                { wch: 20 }, // Training Status
+                { wch: 10 }, // Score
+                { wch: 15 }  // Enrollment Date
+            ];
+
+            // Append the worksheet to the workbook
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Training_Programs');
+
+            // Generate the Excel file and trigger download
+            XLSX.writeFile(workbook, 'Training_Programs_Detailed.xlsx');
+        })
+        .catch((error) => {
+            console.error('Error fetching data for download:', error);
+            alert('Failed to fetch data for download: ' + error.message);
+        });
 }
 
 // Function to show Training Assignments
@@ -1933,7 +1996,10 @@ function showAllEmployees() {
               </br><input type="text" id="search-input" placeholder="Search by name or email..." value="${searchQuery}">
           </div>
           <div class="button-group download-controls">
-              <button class="download-btn" onclick="exportToExcel()">Download as Excel</button>
+              <button type="button" id="downloadExcelBtn" style="padding: 8px 12px; margin-left: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;" 
+                    onmouseover="this.style.backgroundColor='#218838'" 
+                    onmouseout="this.style.backgroundColor='#28a745'"
+ onclick="exportToExcel()">Download employee information</button>
           </div>
           <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
               <thead>

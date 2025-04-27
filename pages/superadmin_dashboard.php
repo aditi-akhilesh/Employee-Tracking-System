@@ -136,6 +136,28 @@ function fetchData($con, $sections = ['all']) {
         $data['employee_task_project_view'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
+// Fetch data from Training_Programs_View for Excel download
+    if ($shouldFetch('training_programs_view')) {
+        $stmt = $con->prepare("
+            SELECT 
+                training_id,
+                training_name,
+                department_name,
+                training_date,
+                end_date,
+                duration_days,
+                certificate,
+                employee_id,
+                employee_name,
+                training_status,
+                score,
+                enrollment_date
+            FROM 
+                Training_Programs_View
+        ");
+        $stmt->execute();
+        $data['training_programs_view'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     if ($shouldFetch('training_certificates')) {
         $stmt = $con->prepare("
@@ -740,6 +762,10 @@ $training_certificates = $data['training_certificates'] ?? [];
                 <tbody id="training-table-body"></tbody>
             </table>
             <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
+<button button type="button" id="downloadExcelBtn" style="padding: 8px 12px; margin-left: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;" 
+                    onmouseover="this.style.backgroundColor='#218838'" 
+                    onmouseout="this.style.backgroundColor='#28a745'"
+ onclick="downloadTrainingProgramsAsExcel()" >Download Trainging data</button>
         </div>
         <div id="training-assignments" style="display: none;" class="card">
             <h2>Training Assignments</h2>
