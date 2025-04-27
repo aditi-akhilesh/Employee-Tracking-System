@@ -26,11 +26,10 @@
                 <li><a href="#" onclick="trackTasksStatus()">Track Tasks Status</a></li>
             </ul>
         </li>
-        <li><a href="#" onclick="toggleDropdown(event, 'training-dropdown')"><i class="fas fa-graduation-cap"></i> Training Management</a>
+        <li><a href="#" onclick="toggleDropdown(event, 'training-dropdown')"><i class="fas fa-graduation-cap"></i> Training</a>
             <ul id="training-dropdown" class="dropdown" style="display: none;">
-                <li><a href="#">Add/manage training programs</a></li>
-                <li><a href="#">Assign employees to training</a></li>
-                <li><a href="#">View training status</a></li>
+                <li><a href="#" onclick="showTrainingPrograms()">View Training Programs</a></li>
+                <li><a href="#" onclick="showTrainingAssignments()">View Training Assignments</a></li>
             </ul>
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'reports-dropdown')"><i class="fas fa-chart-bar"></i> Reports & Analytics</a>

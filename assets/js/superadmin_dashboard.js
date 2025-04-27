@@ -1,5 +1,343 @@
 // superadmin_dashboard.js
 
+// Utility function to escape HTML characters to prevent XSS
+function escapeHTML(str) {
+  if (typeof str !== 'string') return str || '';
+  return str.replace(
+    /[&<>"']/g,
+    (match) =>
+      ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      }[match])
+  );
+}
+
+// Fallback for showError if not defined
+if (typeof showError === 'undefined') {
+  function showError(message) {
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'alert alert-error';
+    errorDiv.textContent = message;
+    errorDiv.onclick = () => (errorDiv.style.display = 'none');
+    document.getElementById('content-area').prepend(errorDiv);
+  }
+}
+
+// Function to implement table sorting
+function addTableSorting(tableId) {
+  const table = document.getElementById(tableId);
+  if (!table) {
+    console.error(`Table with ID ${tableId} not found`);
+    return;
+  }
+
+  const headers = table.querySelectorAll('th');
+  headers.forEach((header, index) => {
+    // Skip the last column ("Certificate Name") for training-assignments-table
+    if (
+      tableId === 'training-assignments-table' &&
+      index === headers.length - 1
+    ) {
+      return;
+    }
+
+    header.style.cursor = 'pointer';
+    header.addEventListener('click', () => {
+      const tbody = table.querySelector('tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const isAscending = header.getAttribute('data-sort') !== 'asc';
+      const sortDirection = isAscending ? 'asc' : 'desc';
+
+      // Update sort direction attribute
+      headers.forEach((h) => h.removeAttribute('data-sort'));
+      header.setAttribute('data-sort', sortDirection);
+
+      // Update sort icons
+      headers.forEach((h) => {
+        const icon = h.querySelector('i.fas');
+        if (icon) {
+          icon.className = 'fas fa-sort';
+        }
+      });
+      const icon = header.querySelector('i.fas');
+      if (icon) {
+        icon.className = isAscending ? 'fas fa-sort-up' : 'fas fa-sort-down';
+      }
+
+      // Sort rows
+      rows.sort((a, b) => {
+        let aValue, bValue;
+
+        // Special handling for the "Status" column (index 3 in training-assignments-table)
+        if (tableId === 'training-assignments-table' && index === 3) {
+          aValue =
+            a.cells[index].querySelector('.status-badge')?.textContent || '';
+          bValue =
+            b.cells[index].querySelector('.status-badge')?.textContent || '';
+        } else {
+          aValue = a.cells[index].textContent.trim();
+          bValue = b.cells[index].textContent.trim();
+        }
+
+        // Handle special cases for "N/A" values
+        if (aValue === 'N/A')
+          aValue =
+            tableId === 'training-assignments-table' && index === 4
+              ? -Infinity
+              : '';
+        if (bValue === 'N/A')
+          bValue =
+            tableId === 'training-assignments-table' && index === 4
+              ? -Infinity
+              : '';
+
+        // Handle numeric values (e.g., Score, Duration)
+        const isNumeric =
+          !isNaN(parseFloat(aValue)) && !isNaN(parseFloat(bValue));
+        if (isNumeric) {
+          aValue = parseFloat(aValue);
+          bValue = parseFloat(bValue);
+        }
+
+        // Handle date values (e.g., Enrollment Date)
+        if (tableId === 'training-assignments-table' && index === 2) {
+          aValue = new Date(aValue).getTime();
+          bValue = new Date(bValue).getTime();
+        }
+        if (tableId === 'training-table' && (index === 2 || index === 3)) {
+          aValue = new Date(aValue).getTime();
+          bValue = new Date(bValue).getTime();
+        }
+
+        // Compare values
+        if (aValue < bValue) return isAscending ? -1 : 1;
+        if (aValue > bValue) return isAscending ? 1 : -1;
+        return 0;
+      });
+
+      // Re-append sorted rows
+      tbody.innerHTML = '';
+      rows.forEach((row) => tbody.appendChild(row));
+    });
+  });
+}
+
+// Function to render Training Certificates table
+function renderTrainingCertificatesTable() {
+  const tbody = document.getElementById('training-certificates-table');
+  if (!tbody || !window.trainingCertificates) return;
+  tbody.innerHTML = '';
+  window.trainingCertificates.forEach((cert) => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+          <td>${escapeHTML(cert.training_name)}</td>
+          <td>${escapeHTML(cert.training_date)}</td>
+          <td>${escapeHTML(cert.certificate)}</td>
+          <td>${cert.score ? escapeHTML(cert.score) : 'N/A'}</td>
+      `;
+    tbody.appendChild(row);
+  });
+}
+
+// Function to show Training Programs
+function showTrainingPrograms() {
+  const section = document.getElementById('training-programs');
+  const contentArea = document.getElementById('content-area');
+  if (!section || !contentArea) {
+    console.error('Training programs section or content area not found');
+    return;
+  }
+
+  contentArea
+    .querySelectorAll('.card, #main-content')
+    .forEach((el) => (el.style.display = 'none'));
+  section.style.display = 'block';
+
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=fetch_trainings',
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (!data.success) {
+        showError(data.error || 'Failed to fetch training programs');
+        return;
+      }
+      const tbody = document.getElementById('training-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      data.trainings.forEach((training) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+              <td>${escapeHTML(training.training_name)}</td>
+              <td>${escapeHTML(training.department_name || 'N/A')}</td>
+              <td>${escapeHTML(training.training_date)}</td>
+              <td>${escapeHTML(training.end_date)}</td>
+              <td>${
+                training.duration_days !== null ? training.duration_days : 'N/A'
+              }</td>
+              <td>${escapeHTML(training.certificate)}</td>
+          `;
+        tbody.appendChild(row);
+      });
+      addTableSorting('training-table');
+    })
+    .catch((err) =>
+      showError('Error fetching training programs: ' + err.message)
+    );
+}
+
+// Function to show Training Assignments
+function showTrainingAssignments() {
+  const section = document.getElementById('training-assignments');
+  const contentArea = document.getElementById('content-area');
+  if (!section || !contentArea) {
+    console.error('Training assignments section or content area not found');
+    return;
+  }
+
+  contentArea
+    .querySelectorAll('.card, #main-content')
+    .forEach((el) => (el.style.display = 'none'));
+  section.style.display = 'block';
+
+  const fetchBtn = document.getElementById('fetch-training-assignments-btn');
+  if (fetchBtn) {
+    // Clone button to prevent duplicate listeners
+    const newFetchBtn = fetchBtn.cloneNode(true);
+    fetchBtn.parentNode.replaceChild(newFetchBtn, fetchBtn);
+    newFetchBtn.addEventListener('click', () => {
+      const trainingId = document.getElementById(
+        'training-assignments-filter'
+      ).value;
+      fetch('superadmin_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `action=fetch_employee_trainings&training_id=${encodeURIComponent(
+          trainingId
+        )}`,
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (!data.success) {
+            showError(data.error || 'Failed to fetch training assignments');
+            return;
+          }
+          const tbody = document.getElementById(
+            'training-assignments-table-body'
+          );
+          if (!tbody) return;
+          tbody.innerHTML = '';
+          data.employee_trainings.forEach((assignment) => {
+            const certificateName =
+              assignment.certificate === 'Yes' &&
+              assignment.completion_status === 'completed'
+                ? escapeHTML(assignment.training_name)
+                : 'N/A';
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                      <td>${escapeHTML(assignment.training_name)}</td>
+                      <td>${escapeHTML(assignment.employee_name)}</td>
+                      <td>${escapeHTML(assignment.enrollment_date)}</td>
+                      <td><span class="status-badge status-${assignment.completion_status.toLowerCase()}">${escapeHTML(
+              assignment.completion_status
+            )}</span></td>
+                      <td>${
+                        assignment.score ? escapeHTML(assignment.score) : 'N/A'
+                      }</td>
+                      <td>${certificateName}</td>
+                  `;
+            tbody.appendChild(row);
+          });
+          addTableSorting('training-assignments-table');
+        })
+        .catch((err) =>
+          showError('Error fetching training assignments: ' + err.message)
+        );
+    });
+  }
+}
+
+// Existing generate-report-btn handler (unchanged, included for context)
+const generateReportBtn = document.getElementById('generate-report-btn');
+if (generateReportBtn) {
+  const newButton = generateReportBtn.cloneNode(true);
+  generateReportBtn.parentNode.replaceChild(newButton, generateReportBtn);
+  const updatedGenerateReportBtn = document.getElementById(
+    'generate-report-btn'
+  );
+  updatedGenerateReportBtn.addEventListener('click', () => {
+    const employeeId = document.getElementById('employee-search').value;
+    const reportContent = document.getElementById('report-content');
+    if (!reportContent) return;
+
+    reportContent.style.display = 'block';
+
+    fetch('superadmin_dashboard.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: 'action=refresh_data&section=reports',
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (!data.success) {
+          showError(data.error || 'Failed to generate report');
+          return;
+        }
+
+        renderTrainingCertificatesTable();
+
+        // Placeholder for other report tables
+        const avgRatingsTbody = document.getElementById('avg-ratings-table');
+        if (avgRatingsTbody && data.report_avg_ratings) {
+          avgRatingsTbody.innerHTML = '';
+          data.report_avg_ratings
+            .filter(
+              (rating) => !employeeId || rating.employee_id === employeeId
+            )
+            .forEach((rating) => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
+                          <td>${escapeHTML(
+                            rating.first_name + ' ' + rating.last_name
+                          )}</td>
+                          <td>${
+                            rating.avg_rating
+                              ? parseFloat(rating.avg_rating).toFixed(2)
+                              : 'N/A'
+                          }</td>
+                          <td>${rating.feedback_count || 0}</td>
+                      `;
+              avgRatingsTbody.appendChild(row);
+            });
+        }
+
+        const feedbackTypesTbody = document.getElementById(
+          'feedback-types-table'
+        );
+        if (feedbackTypesTbody && data.report_feedback_types) {
+          feedbackTypesTbody.innerHTML = '';
+          data.report_feedback_types.forEach((type) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                      <td>${escapeHTML(type.feedback_type)}</td>
+                      <td>${type.type_count || 0}</td>
+                  `;
+            feedbackTypesTbody.appendChild(row);
+          });
+        }
+
+        // Add more table population logic here
+      })
+      .catch((err) => showError('Error generating report: ' + err.message));
+  });
+}
+
 // Centralized function to manage section visibility
 function showSection(sectionToShowId) {
   const sections = [
@@ -13,7 +351,7 @@ function showSection(sectionToShowId) {
     'Department_content',
     'update-remove-user-section',
     'department-management-section',
-'audit-logs-section'
+    'audit-logs-section',
   ];
 
   const mainContent = document.getElementById('content-area');
@@ -1367,13 +1705,13 @@ function showAllEmployees() {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   })
-    .then(response => {
+    .then((response) => {
       if (!response.ok) {
         throw new Error(`HTTP error! Status: ${response.status}`);
       }
       return response.json();
     })
-    .then(data => {
+    .then((data) => {
       if (data.success) {
         employeesData = data.employees;
         if (employeesData.length === 0) {
@@ -1402,7 +1740,7 @@ function showAllEmployees() {
         `;
       }
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('Fetch error:', error);
       profileUpdateForm.innerHTML = `
         <div class="card">
@@ -1433,7 +1771,7 @@ function showAllEmployees() {
         }
       }
 
-      const exportData = filteredEmployees.map(emp => ({
+      const exportData = filteredEmployees.map((emp) => ({
         ID: emp.employee_id || 'N/A',
         Name: `${emp.first_name || 'N/A'} ${emp.last_name || 'N/A'}`,
         Email: emp.email || 'N/A',
@@ -1445,7 +1783,9 @@ function showAllEmployees() {
         'Completed Trainings': emp.completed_trainings || 0,
         'Total Tasks': emp.task_count || 0,
         'Total Leaves': emp.leave_count || 0,
-        'Average Feedback Rating': emp.avg_feedback_rating ? parseFloat(emp.avg_feedback_rating).toFixed(2) : 'N/A',
+        'Average Feedback Rating': emp.avg_feedback_rating
+          ? parseFloat(emp.avg_feedback_rating).toFixed(2)
+          : 'N/A',
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -1463,7 +1803,7 @@ function showAllEmployees() {
 
     if (searchQuery) {
       filteredEmployees = filteredEmployees.filter(
-        emp =>
+        (emp) =>
           `${emp.first_name || ''} ${emp.last_name || ''}`
             .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
@@ -1473,13 +1813,13 @@ function showAllEmployees() {
 
     if (filterDepartment !== 'All') {
       filteredEmployees = filteredEmployees.filter(
-        emp => (emp.department_name || 'N/A') === filterDepartment
+        (emp) => (emp.department_name || 'N/A') === filterDepartment
       );
     }
 
     if (filterRole !== 'All') {
       filteredEmployees = filteredEmployees.filter(
-        emp => (emp.role || '').toLowerCase() === filterRole.toLowerCase()
+        (emp) => (emp.role || '').toLowerCase() === filterRole.toLowerCase()
       );
     }
 
@@ -1504,8 +1844,12 @@ function showAllEmployees() {
     const endIndex = Math.min(startIndex + recordsPerPage, totalRecords);
     const paginatedEmployees = filteredEmployees.slice(startIndex, endIndex);
 
-    const uniqueDepartments = [...new Set(employeesData.map(emp => emp.department_name || 'N/A'))];
-    const uniqueRoles = [...new Set(employeesData.map(emp => emp.role || 'N/A'))];
+    const uniqueDepartments = [
+      ...new Set(employeesData.map((emp) => emp.department_name || 'N/A')),
+    ];
+    const uniqueRoles = [
+      ...new Set(employeesData.map((emp) => emp.role || 'N/A')),
+    ];
 
     let employeesTableHTML = `
       <div class="card">
@@ -1514,17 +1858,25 @@ function showAllEmployees() {
               <div>
                   <label>Show:</label>
                   <select id="records-per-page" style="padding: 5px; margin-right: 10px;">
-                      <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
-                      <option value="10" ${recordsPerPage === 10 ? 'selected' : ''}>10</option>
-                      <option value="15" ${recordsPerPage === 15 ? 'selected' : ''}>15</option>
-                      <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
+                      <option value="5" ${
+                        recordsPerPage === 5 ? 'selected' : ''
+                      }>5</option>
+                      <option value="10" ${
+                        recordsPerPage === 10 ? 'selected' : ''
+                      }>10</option>
+                      <option value="15" ${
+                        recordsPerPage === 15 ? 'selected' : ''
+                      }>15</option>
+                      <option value="20" ${
+                        recordsPerPage === 20 ? 'selected' : ''
+                      }>20</option>
                   </select>
                   <label>Department:</label>
                   <select id="filter-department" style="padding: 5px; margin-right: 10px;">
                       <option value="All">All</option>
                       ${uniqueDepartments
                         .map(
-                          dept =>
+                          (dept) =>
                             `<option value="${dept}" ${
                               filterDepartment === dept ? 'selected' : ''
                             }>${dept}</option>`
@@ -1536,7 +1888,7 @@ function showAllEmployees() {
                       <option value="All">All</option>
                       ${uniqueRoles
                         .map(
-                          role =>
+                          (role) =>
                             `<option value="${role}" ${
                               filterRole === role ? 'selected' : ''
                             }>${role}</option>`
@@ -1566,14 +1918,20 @@ function showAllEmployees() {
 
     paginatedEmployees.forEach((emp, index) => {
       employeesTableHTML += `
-        <tr style="border-bottom: 1px solid #ddd; background-color: ${index % 2 === 0 ? '#f9f9f9' : '#ffffff'};">
+        <tr style="border-bottom: 1px solid #ddd; background-color: ${
+          index % 2 === 0 ? '#f9f9f9' : '#ffffff'
+        };">
             <td style="padding: 10px;">${emp.employee_id || 'N/A'}</td>
-            <td style="padding: 10px;">${emp.first_name || 'N/A'} ${emp.last_name || 'N/A'}</td>
+            <td style="padding: 10px;">${emp.first_name || 'N/A'} ${
+        emp.last_name || 'N/A'
+      }</td>
             <td style="padding: 10px;">${emp.email || 'N/A'}</td>
             <td style="padding: 10px;">${emp.role || 'N/A'}</td>
             <td style="padding: 10px;">${emp.department_name || 'N/A'}</td>
             <td style="padding: 10px;">${emp.emp_hire_date || 'N/A'}</td>
-            <td style="padding: 10px;">${emp.salary ? '$' + parseFloat(emp.salary).toFixed(2) : 'N/A'}</td>
+            <td style="padding: 10px;">${
+              emp.salary ? '$' + parseFloat(emp.salary).toFixed(2) : 'N/A'
+            }</td>
         </tr>
       `;
     });
@@ -1583,10 +1941,15 @@ function showAllEmployees() {
           </table>
           <div style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
               <div>
-                  Showing ${startIndex + 1} to ${Math.min(endIndex, totalRecords)} of ${totalRecords} employees
+                  Showing ${startIndex + 1} to ${Math.min(
+      endIndex,
+      totalRecords
+    )} of ${totalRecords} employees
               </div>
               <div>
-                  <button style="padding: 5px 10px; margin: 0 5px;" class="${currentPage === 1 ? 'disabled' : ''}" onclick="changePage(${currentPage - 1})">Previous</button>
+                  <button style="padding: 5px 10px; margin: 0 5px;" class="${
+                    currentPage === 1 ? 'disabled' : ''
+                  }" onclick="changePage(${currentPage - 1})">Previous</button>
     `;
 
     const maxPagesToShow = 5;
@@ -1598,12 +1961,16 @@ function showAllEmployees() {
 
     for (let i = startPage; i <= endPage; i++) {
       employeesTableHTML += `
-        <button style="padding: 5px 10px; margin: 0 5px;" class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
+        <button style="padding: 5px 10px; margin: 0 5px;" class="${
+          i === currentPage ? 'active' : ''
+        }" onclick="changePage(${i})">${i}</button>
       `;
     }
 
     employeesTableHTML += `
-                  <button style="padding: 5px 10px; margin: 0 5px;" class="${currentPage === totalPages ? 'disabled' : ''}" onclick="changePage(${currentPage + 1})">Next</button>
+                  <button style="padding: 5px 10px; margin: 0 5px;" class="${
+                    currentPage === totalPages ? 'disabled' : ''
+                  }" onclick="changePage(${currentPage + 1})">Next</button>
               </div>
           </div>
           <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
@@ -1689,7 +2056,6 @@ function exportToExcel() {
   }, 100);
 }
 
-
 function showUpdateRemoveUserForm(event) {
   if (event) event.preventDefault();
   console.log('showUpdateRemoveUserForm called');
@@ -1697,7 +2063,9 @@ function showUpdateRemoveUserForm(event) {
   // Use showSection to ensure only update-remove-user-section is visible
   if (!showSection('update-remove-user-section')) return;
 
-  const updateRemoveUserSection = document.getElementById('update-remove-user-section');
+  const updateRemoveUserSection = document.getElementById(
+    'update-remove-user-section'
+  );
   if (!updateRemoveUserSection) {
     console.error('update-remove-user-section not found');
     showError('Update/Remove User section not found.', 'content-area');
@@ -1761,17 +2129,33 @@ function showUpdateRemoveUserForm(event) {
                     <div class="filter-controls">
                             <label>Show:</label>
                             <select id="records-per-page">
-                                <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
-                                <option value="10" ${recordsPerPage === 10 ? 'selected' : ''}>10</option>
-                                <option value="15" ${recordsPerPage === 15 ? 'selected' : ''}>15</option>
-                                <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
+                                <option value="5" ${
+                                  recordsPerPage === 5 ? 'selected' : ''
+                                }>5</option>
+                                <option value="10" ${
+                                  recordsPerPage === 10 ? 'selected' : ''
+                                }>10</option>
+                                <option value="15" ${
+                                  recordsPerPage === 15 ? 'selected' : ''
+                                }>15</option>
+                                <option value="20" ${
+                                  recordsPerPage === 20 ? 'selected' : ''
+                                }>20</option>
                             </select>
                             <label>Role:</label>
                             <select id="role-filter">
-                                <option value="All" ${filterRole === 'All' ? 'selected' : ''}>All</option>
-                                <option value="User" ${filterRole === 'User' ? 'selected' : ''}>Employee</option>
-                                <option value="Manager" ${filterRole === 'Manager' ? 'selected' : ''}>Manager</option>
-                                <option value="HR" ${filterRole === 'HR' ? 'selected' : ''}>HR</option>
+                                <option value="All" ${
+                                  filterRole === 'All' ? 'selected' : ''
+                                }>All</option>
+                                <option value="User" ${
+                                  filterRole === 'User' ? 'selected' : ''
+                                }>Employee</option>
+                                <option value="Manager" ${
+                                  filterRole === 'Manager' ? 'selected' : ''
+                                }>Manager</option>
+                                <option value="HR" ${
+                                  filterRole === 'HR' ? 'selected' : ''
+                                }>HR</option>
                             </select>
                     </div>
                         <input type="text" id="search-input" placeholder="Search not available..." disabled>
@@ -1807,10 +2191,17 @@ function showUpdateRemoveUserForm(event) {
                 </table>
                 <div class="pagination">
                     <div>
-                        Showing ${startIndex + 1} to ${Math.min(endIndex, totalRecords)} of ${totalRecords} employees
+                        Showing ${startIndex + 1} to ${Math.min(
+      endIndex,
+      totalRecords
+    )} of ${totalRecords} employees
                     </div>
                     <div>
-                        <button class="${currentPage === 1 ? 'disabled' : ''}" onclick="changePage(${currentPage - 1})">Previous</button>
+                        <button class="${
+                          currentPage === 1 ? 'disabled' : ''
+                        }" onclick="changePage(${
+      currentPage - 1
+    })">Previous</button>
         `;
 
     const maxPagesToShow = 5;
@@ -1822,12 +2213,18 @@ function showUpdateRemoveUserForm(event) {
 
     for (let i = startPage; i <= endPage; i++) {
       html += `
-                        <button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
+                        <button class="${
+                          i === currentPage ? 'active' : ''
+                        }" onclick="changePage(${i})">${i}</button>
             `;
     }
 
     html += `
-                        <button class="${currentPage === totalPages ? 'disabled' : ''}" onclick="changePage(${currentPage + 1})">Next</button>
+                        <button class="${
+                          currentPage === totalPages ? 'disabled' : ''
+                        }" onclick="changePage(${
+      currentPage + 1
+    })">Next</button>
                     </div>
                 </div>
                 <div class="form-group button-group">
@@ -1858,7 +2255,7 @@ function showUpdateRemoveUserForm(event) {
     }
   }
 
-  window.changePage = function(page) {
+  window.changePage = function (page) {
     currentPage = page;
     renderEmployeesTable();
   };
@@ -2945,7 +3342,6 @@ function trackTasksStatus() {
     );
 }
 
-
 // Define a separate array for Manage Departments
 let manageDepartments = [];
 
@@ -2959,7 +3355,9 @@ function showDepartmentManagement(event) {
     return;
   }
 
-  const departmentManagementSection = document.getElementById('department-management-section');
+  const departmentManagementSection = document.getElementById(
+    'department-management-section'
+  );
   if (!departmentManagementSection) {
     console.error('department-management-section not found');
     showError('Department management section not found.', 'content-area');
@@ -2980,9 +3378,15 @@ function showDepartmentManagement(event) {
     .then((fetchedDepartments) => {
       console.log('Initial fetch departments:', fetchedDepartments);
       if (!Array.isArray(fetchedDepartments)) {
-        console.error('Fetched departments is not an array:', fetchedDepartments);
+        console.error(
+          'Fetched departments is not an array:',
+          fetchedDepartments
+        );
         if (fetchedDepartments.success === false) {
-          alert('Error fetching departments: ' + (fetchedDepartments.message || 'Unknown error'));
+          alert(
+            'Error fetching departments: ' +
+              (fetchedDepartments.message || 'Unknown error')
+          );
         } else {
           alert('Error: Invalid department data from server');
         }
@@ -2999,7 +3403,10 @@ function showDepartmentManagement(event) {
     });
 
   function renderDepartmentList() {
-    console.log('renderDepartmentList called with manageDepartments:', manageDepartments);
+    console.log(
+      'renderDepartmentList called with manageDepartments:',
+      manageDepartments
+    );
 
     let html = `
       <div class="card">
@@ -3044,12 +3451,22 @@ function showDepartmentManagement(event) {
       manageDepartments.forEach((dept) => {
         html += `
           <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_id}</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_name}</td>
-            <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_description || 'No description'}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${
+              dept.department_id
+            }</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${
+              dept.department_name
+            }</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${
+              dept.department_description || 'No description'
+            }</td>
             <td style="border: 1px solid #ddd; padding: 8px;">
-              <button class="update-btn" data-dept-id="${dept.department_id}">Update</button>
-              <button class="remove-btn" data-dept-id="${dept.department_id}">Delete</button>
+              <button class="update-btn" data-dept-id="${
+                dept.department_id
+              }">Update</button>
+              <button class="remove-btn" data-dept-id="${
+                dept.department_id
+              }">Delete</button>
             </td>
           </tr>
         `;
@@ -3079,7 +3496,9 @@ function showDepartmentManagement(event) {
       addDepartmentBtn.addEventListener('click', showAddDepartmentForm);
     }
 
-    const cancelAddDepartmentBtn = document.getElementById('cancel-add-department-btn');
+    const cancelAddDepartmentBtn = document.getElementById(
+      'cancel-add-department-btn'
+    );
     if (cancelAddDepartmentBtn) {
       cancelAddDepartmentBtn.addEventListener('click', hideAddDepartmentForm);
     }
@@ -3119,10 +3538,14 @@ function showDepartmentManagement(event) {
             console.log('Insert response:', data);
             if (data.success) {
               alert(data.message || 'Department added successfully');
-              fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
-                method: 'GET',
-                headers: { 'Cache-Control': 'no-cache' },
-              })
+              fetch(
+                '../pages/features/fetch_departments.php?ts=' +
+                  new Date().getTime(),
+                {
+                  method: 'GET',
+                  headers: { 'Cache-Control': 'no-cache' },
+                }
+              )
                 .then((response) => {
                   if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
@@ -3132,23 +3555,39 @@ function showDepartmentManagement(event) {
                 .then((updatedDepartments) => {
                   console.log('Fetched departments:', updatedDepartments);
                   if (!Array.isArray(updatedDepartments)) {
-                    console.error('Fetched departments is not an array:', updatedDepartments);
+                    console.error(
+                      'Fetched departments is not an array:',
+                      updatedDepartments
+                    );
                     if (updatedDepartments.success === false) {
-                      alert('Error fetching departments: ' + (updatedDepartments.message || 'Unknown error'));
+                      alert(
+                        'Error fetching departments: ' +
+                          (updatedDepartments.message || 'Unknown error')
+                      );
                     } else {
                       alert('Error: Invalid department data from server');
                     }
                     return;
                   }
                   manageDepartments.length = 0;
-                  updatedDepartments.forEach((dept) => manageDepartments.push(dept));
-                  console.log('Updated manageDepartments array:', manageDepartments);
+                  updatedDepartments.forEach((dept) =>
+                    manageDepartments.push(dept)
+                  );
+                  console.log(
+                    'Updated manageDepartments array:',
+                    manageDepartments
+                  );
                   renderDepartmentList();
                   hideAddDepartmentForm();
                 })
                 .catch((error) => {
-                  console.error('Error fetching updated department list:', error);
-                  alert('Error fetching updated department list: ' + error.message);
+                  console.error(
+                    'Error fetching updated department list:',
+                    error
+                  );
+                  alert(
+                    'Error fetching updated department list: ' + error.message
+                  );
                 });
             } else {
               alert(data.message || 'Error adding department');
@@ -3193,15 +3632,21 @@ function showDepartmentManagement(event) {
         <form id="updateDepartmentForm">
           <div class="form-group">
             <label>Department ID</label>
-            <input type="text" name="department_id" value="${dept.department_id}" readonly>
+            <input type="text" name="department_id" value="${
+              dept.department_id
+            }" readonly>
           </div>
           <div class="form-group">
             <label>Name</label>
-            <input type="text" name="department_name" value="${dept.department_name}" required>
+            <input type="text" name="department_name" value="${
+              dept.department_name
+            }" required>
           </div>
           <div class="form-group">
             <label>Description</label>
-            <textarea name="description">${dept.department_description || ''}</textarea>
+            <textarea name="description">${
+              dept.department_description || ''
+            }</textarea>
           </div>
           <div class="form-group button-group">
             <button type="submit">Update Department</button>
@@ -3213,7 +3658,9 @@ function showDepartmentManagement(event) {
 
     departmentManagementSection.innerHTML = formHtml;
 
-    const cancelUpdateDepartmentBtn = document.getElementById('cancel-update-department-btn');
+    const cancelUpdateDepartmentBtn = document.getElementById(
+      'cancel-update-department-btn'
+    );
     if (cancelUpdateDepartmentBtn) {
       cancelUpdateDepartmentBtn.addEventListener('click', () => {
         renderDepartmentList();
@@ -3239,10 +3686,14 @@ function showDepartmentManagement(event) {
             console.log('Update response:', data);
             if (data.success) {
               alert(data.message || 'Department updated successfully');
-              fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
-                method: 'GET',
-                headers: { 'Cache-Control': 'no-cache' },
-              })
+              fetch(
+                '../pages/features/fetch_departments.php?ts=' +
+                  new Date().getTime(),
+                {
+                  method: 'GET',
+                  headers: { 'Cache-Control': 'no-cache' },
+                }
+              )
                 .then((response) => {
                   if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
@@ -3252,22 +3703,38 @@ function showDepartmentManagement(event) {
                 .then((updatedDepartments) => {
                   console.log('Fetched departments:', updatedDepartments);
                   if (!Array.isArray(updatedDepartments)) {
-                    console.error('Fetched departments is not an array:', updatedDepartments);
+                    console.error(
+                      'Fetched departments is not an array:',
+                      updatedDepartments
+                    );
                     if (updatedDepartments.success === false) {
-                      alert('Error fetching departments: ' + (updatedDepartments.message || 'Unknown error'));
+                      alert(
+                        'Error fetching departments: ' +
+                          (updatedDepartments.message || 'Unknown error')
+                      );
                     } else {
                       alert('Error: Invalid department data from server');
                     }
                     return;
                   }
                   manageDepartments.length = 0;
-                  updatedDepartments.forEach((dept) => manageDepartments.push(dept));
-                  console.log('Updated manageDepartments array:', manageDepartments);
+                  updatedDepartments.forEach((dept) =>
+                    manageDepartments.push(dept)
+                  );
+                  console.log(
+                    'Updated manageDepartments array:',
+                    manageDepartments
+                  );
                   renderDepartmentList();
                 })
                 .catch((error) => {
-                  console.error('Error fetching updated department list:', error);
-                  alert('Error fetching updated department list: ' + error.message);
+                  console.error(
+                    'Error fetching updated department list:',
+                    error
+                  );
+                  alert(
+                    'Error fetching updated department list: ' + error.message
+                  );
                 });
             } else {
               alert(data.message || 'Error updating department');
@@ -3303,10 +3770,14 @@ function showDepartmentManagement(event) {
         console.log('Delete response:', data);
         if (data.success) {
           alert(data.message || 'Department deleted successfully');
-          fetch('../pages/features/fetch_departments.php?ts=' + new Date().getTime(), {
-            method: 'GET',
-            headers: { 'Cache-Control': 'no-cache' },
-          })
+          fetch(
+            '../pages/features/fetch_departments.php?ts=' +
+              new Date().getTime(),
+            {
+              method: 'GET',
+              headers: { 'Cache-Control': 'no-cache' },
+            }
+          )
             .then((response) => {
               if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
@@ -3316,17 +3787,28 @@ function showDepartmentManagement(event) {
             .then((updatedDepartments) => {
               console.log('Fetched departments:', updatedDepartments);
               if (!Array.isArray(updatedDepartments)) {
-                console.error('Fetched departments is not an array:', updatedDepartments);
+                console.error(
+                  'Fetched departments is not an array:',
+                  updatedDepartments
+                );
                 if (updatedDepartments.success === false) {
-                  alert('Error fetching departments: ' + (updatedDepartments.message || 'Unknown error'));
+                  alert(
+                    'Error fetching departments: ' +
+                      (updatedDepartments.message || 'Unknown error')
+                  );
                 } else {
                   alert('Error: Invalid department data from server');
                 }
                 return;
               }
               manageDepartments.length = 0;
-              updatedDepartments.forEach((dept) => manageDepartments.push(dept));
-              console.log('Updated manageDepartments array:', manageDepartments);
+              updatedDepartments.forEach((dept) =>
+                manageDepartments.push(dept)
+              );
+              console.log(
+                'Updated manageDepartments array:',
+                manageDepartments
+              );
               renderDepartmentList();
             })
             .catch((error) => {
@@ -3343,7 +3825,6 @@ function showDepartmentManagement(event) {
       });
   }
 }
-
 
 function showAuditLogs() {
   if (!showSection('audit-logs-section')) return;
@@ -3369,14 +3850,19 @@ function showAuditLogs() {
 
   // Define exportToExcel globally
   window.exportAuditLogsToExcel = function () {
-    console.log('exportAuditLogsToExcel called, filteredAuditLogs:', filteredAuditLogs);
+    console.log(
+      'exportAuditLogsToExcel called, filteredAuditLogs:',
+      filteredAuditLogs
+    );
     if (!filteredAuditLogs || filteredAuditLogs.length === 0) {
-      alert('No data available to export. Please ensure there are audit logs to export.');
+      alert(
+        'No data available to export. Please ensure there are audit logs to export.'
+      );
       return;
     }
 
     // Prepare the data for export, including change_details
-    const exportData = filteredAuditLogs.map(log => ({
+    const exportData = filteredAuditLogs.map((log) => ({
       'User ID': log.user_id || 'N/A',
       Action: log.action || 'N/A',
       'Action Date': log.action_date || 'N/A',
@@ -3396,17 +3882,28 @@ function showAuditLogs() {
 
   function renderTable() {
     // Fetch audit logs with filters
-    fetch(`../pages/features/fetch_audit_logs.php?user_id=${encodeURIComponent(userIdFilter)}&action_keyword=${encodeURIComponent(actionKeyword)}&start_date=${encodeURIComponent(startDate)}&end_date=${encodeURIComponent(endDate)}&ts=${new Date().getTime()}`, {
-      method: 'GET',
-      headers: { 'Cache-Control': 'no-cache' },
-    })
-      .then(response => response.json())
-      .then(data => {
+    fetch(
+      `../pages/features/fetch_audit_logs.php?user_id=${encodeURIComponent(
+        userIdFilter
+      )}&action_keyword=${encodeURIComponent(
+        actionKeyword
+      )}&start_date=${encodeURIComponent(
+        startDate
+      )}&end_date=${encodeURIComponent(endDate)}&ts=${new Date().getTime()}`,
+      {
+        method: 'GET',
+        headers: { 'Cache-Control': 'no-cache' },
+      }
+    )
+      .then((response) => response.json())
+      .then((data) => {
         if (!data.success) {
           auditLogsSection.innerHTML = `
             <div class="card">
               <h2>Audit Logs</h2>
-              <p class="error-message">${data.message || 'Error fetching audit logs.'}</p>
+              <p class="error-message">${
+                data.message || 'Error fetching audit logs.'
+              }</p>
               <div class="form-group button-group">
                 <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
               </div>
@@ -3449,9 +3946,14 @@ function showAuditLogs() {
                 <select id="user-id-filter" class="filter-select">
                   <option value="">All</option>
                   ${employeesadmin
-                    .map(emp => 
-                      `<option value="${emp.employee_id}" ${userIdFilter === emp.employee_id ? 'selected' : ''}>
-                        ${emp.employee_id} - ${emp.first_name || ''} ${emp.last_name || ''}
+                    .map(
+                      (emp) =>
+                        `<option value="${emp.employee_id}" ${
+                          userIdFilter === emp.employee_id ? 'selected' : ''
+                        }>
+                        ${emp.employee_id} - ${emp.first_name || ''} ${
+                          emp.last_name || ''
+                        }
                       </option>`
                     )
                     .join('')}
@@ -3460,7 +3962,12 @@ function showAuditLogs() {
                 <select id="action-keyword-filter" class="filter-select">
                   <option value="">All</option>
                   ${actionKeywords
-                    .map(keyword => `<option value="${keyword}" ${actionKeyword === keyword ? 'selected' : ''}>${keyword}</option>`)
+                    .map(
+                      (keyword) =>
+                        `<option value="${keyword}" ${
+                          actionKeyword === keyword ? 'selected' : ''
+                        }>${keyword}</option>`
+                    )
                     .join('')}
                 </select>
                 <label>Start Date:</label>
@@ -3469,10 +3976,18 @@ function showAuditLogs() {
                 <input type="date" id="end-date-filter" class="filter-date" value="${endDate}">
                 <label>Show:</label>
                 <select id="records-per-page" class="filter-select">
-                  <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
-                  <option value="10" ${recordsPerPage === 10 ? 'selected' : ''}>10</option>
-                  <option value="15" ${recordsPerPage === 15 ? 'selected' : ''}>15</option>
-                  <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
+                  <option value="5" ${
+                    recordsPerPage === 5 ? 'selected' : ''
+                  }>5</option>
+                  <option value="10" ${
+                    recordsPerPage === 10 ? 'selected' : ''
+                  }>10</option>
+                  <option value="15" ${
+                    recordsPerPage === 15 ? 'selected' : ''
+                  }>15</option>
+                  <option value="20" ${
+                    recordsPerPage === 20 ? 'selected' : ''
+                  }>20</option>
                 </select>
               </div>
             </div>
@@ -3505,14 +4020,22 @@ function showAuditLogs() {
             </table>
             <div class="pagination-container">
               <div>
-                Showing ${startIndex + 1} to ${Math.min(endIndex, totalRecords)} of ${totalRecords} logs
+                Showing ${startIndex + 1} to ${Math.min(
+          endIndex,
+          totalRecords
+        )} of ${totalRecords} logs
               </div>
               <div>
-                <button class="pagination-btn ${currentPage === 1 ? 'disabled' : ''}" onclick="changePage(${currentPage - 1})">Previous</button>
+                <button class="pagination-btn ${
+                  currentPage === 1 ? 'disabled' : ''
+                }" onclick="changePage(${currentPage - 1})">Previous</button>
         `;
 
         const maxPagesToShow = 5;
-        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+        let startPage = Math.max(
+          1,
+          currentPage - Math.floor(maxPagesToShow / 2)
+        );
         let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
         if (endPage - startPage + 1 < maxPagesToShow) {
           startPage = Math.max(1, endPage - maxPagesToShow + 1);
@@ -3520,12 +4043,16 @@ function showAuditLogs() {
 
         for (let i = startPage; i <= endPage; i++) {
           auditLogsHTML += `
-            <button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
+            <button class="pagination-btn ${
+              i === currentPage ? 'active' : ''
+            }" onclick="changePage(${i})">${i}</button>
           `;
         }
 
         auditLogsHTML += `
-                <button class="pagination-btn ${currentPage === totalPages ? 'disabled' : ''}" onclick="changePage(${currentPage + 1})">Next</button>
+                <button class="pagination-btn ${
+                  currentPage === totalPages ? 'disabled' : ''
+                }" onclick="changePage(${currentPage + 1})">Next</button>
               </div>
             </div>
             <div class="form-group button-group">
@@ -3538,13 +4065,16 @@ function showAuditLogs() {
 
         // Add event listeners for filters and pagination
         const userIdSelect = document.getElementById('user-id-filter');
-        const actionKeywordSelect = document.getElementById('action-keyword-filter');
+        const actionKeywordSelect = document.getElementById(
+          'action-keyword-filter'
+        );
         const startDateInput = document.getElementById('start-date-filter');
         const endDateInput = document.getElementById('end-date-filter');
-        const recordsPerPageSelect = document.getElementById('records-per-page');
+        const recordsPerPageSelect =
+          document.getElementById('records-per-page');
 
         if (userIdSelect) {
-          userIdSelect.addEventListener('change', e => {
+          userIdSelect.addEventListener('change', (e) => {
             userIdFilter = e.target.value;
             currentPage = 1;
             renderTable();
@@ -3552,7 +4082,7 @@ function showAuditLogs() {
         }
 
         if (actionKeywordSelect) {
-          actionKeywordSelect.addEventListener('change', e => {
+          actionKeywordSelect.addEventListener('change', (e) => {
             actionKeyword = e.target.value;
             currentPage = 1;
             renderTable();
@@ -3560,9 +4090,13 @@ function showAuditLogs() {
         }
 
         if (startDateInput) {
-          startDateInput.addEventListener('change', e => {
+          startDateInput.addEventListener('change', (e) => {
             startDate = e.target.value;
-            if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+            if (
+              startDate &&
+              endDate &&
+              new Date(startDate) > new Date(endDate)
+            ) {
               alert('Start date cannot be after end date.');
               startDate = '';
               startDateInput.value = '';
@@ -3574,9 +4108,13 @@ function showAuditLogs() {
         }
 
         if (endDateInput) {
-          endDateInput.addEventListener('change', e => {
+          endDateInput.addEventListener('change', (e) => {
             endDate = e.target.value;
-            if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+            if (
+              startDate &&
+              endDate &&
+              new Date(startDate) > new Date(endDate)
+            ) {
               alert('End date cannot be before start date.');
               endDate = '';
               endDateInput.value = '';
@@ -3588,7 +4126,7 @@ function showAuditLogs() {
         }
 
         if (recordsPerPageSelect) {
-          recordsPerPageSelect.addEventListener('change', e => {
+          recordsPerPageSelect.addEventListener('change', (e) => {
             recordsPerPage = parseInt(e.target.value, 10);
             currentPage = 1;
             renderTable();
@@ -3606,7 +4144,7 @@ function showAuditLogs() {
           });
         }
       })
-      .catch(error => {
+      .catch((error) => {
         console.error('Error fetching audit logs:', error);
         auditLogsSection.innerHTML = `
           <div class="card">
@@ -3621,11 +4159,200 @@ function showAuditLogs() {
   }
 
   // Define global function for pagination
-  window.changePage = function(page) {
+  window.changePage = function (page) {
     currentPage = page;
     renderTable();
   };
 
   // Initial render
   renderTable();
+}
+
+function showTrainingPrograms() {
+  const contentArea = document.getElementById('content-area');
+  if (!contentArea) {
+    console.error('Content area not found');
+    return;
+  }
+
+  const sections = [
+    'main-content',
+    'reports-analytics',
+    'create-user-form',
+    'update-remove-user-section',
+    'profile-update-form',
+    'Department_content',
+    'department-management-section',
+    'attendance-records',
+    'leave-requests',
+    'department-metrics',
+    'training-programs',
+    'training-assignments',
+  ];
+  sections.forEach((sectionId) => {
+    const section = document.getElementById(sectionId);
+    if (section) section.style.display = 'none';
+  });
+
+  const trainingSection = document.getElementById('training-programs');
+  if (!trainingSection) {
+    console.error('Training programs section not found');
+    return;
+  }
+  trainingSection.style.display = 'block';
+  contentArea.style.display = 'block';
+
+  fetchTrainingData();
+}
+
+function fetchTrainingData() {
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=fetch_trainings',
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        window.trainings = data.trainings || [];
+        renderTrainingTable(data.trainings);
+      } else {
+        showError(
+          data.error || 'Failed to fetch training data',
+          'training-programs'
+        );
+      }
+    })
+    .catch((error) => {
+      showError('Network error: ' + error.message, 'training-programs');
+    });
+}
+
+function renderTrainingTable(trainings) {
+  const tbody = document.getElementById('training-table-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+  trainings.forEach((training) => {
+    const duration = training.duration_days
+      ? `${training.duration_days} days`
+      : 'N/A';
+    const row = document.createElement('tr');
+    row.innerHTML = `
+          <td>${escapeHTML(training.training_name)}</td>
+          <td>${escapeHTML(training.department_name || 'N/A')}</td>
+          <td>${escapeHTML(training.training_date)}</td>
+          <td>${escapeHTML(training.end_date || 'N/A')}</td>
+          <td>${escapeHTML(duration)}</td>
+          <td>${escapeHTML(training.certificate)}</td>
+      `;
+    tbody.appendChild(row);
+  });
+
+  addTableSorting('training-table');
+}
+
+function showTrainingAssignments() {
+  const contentArea = document.getElementById('content-area');
+  if (!contentArea) {
+    console.error('Content area not found');
+    return;
+  }
+
+  const sections = [
+    'main-content',
+    'reports-analytics',
+    'create-user-form',
+    'update-remove-user-section',
+    'profile-update-form',
+    'Department_content',
+    'department-management-section',
+    'attendance-records',
+    'leave-requests',
+    'department-metrics',
+    'training-programs',
+    'training-assignments',
+  ];
+  sections.forEach((sectionId) => {
+    const section = document.getElementById(sectionId);
+    if (section) section.style.display = 'none';
+  });
+
+  const assignmentsSection = document.getElementById('training-assignments');
+  if (!assignmentsSection) {
+    console.error('Training assignments section not found');
+    return;
+  }
+  assignmentsSection.style.display = 'block';
+  contentArea.style.display = 'block';
+
+  fetchTrainingAssignments();
+
+  const fetchBtn = document.getElementById('fetch-training-assignments-btn');
+  if (fetchBtn) {
+    const newFetchBtn = fetchBtn.cloneNode(true);
+    fetchBtn.parentNode.replaceChild(newFetchBtn, fetchBtn);
+    newFetchBtn.addEventListener('click', fetchTrainingAssignments);
+  }
+}
+
+function fetchTrainingAssignments() {
+  const trainingId = document.getElementById(
+    'training-assignments-filter'
+  ).value;
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `action=fetch_employee_trainings${
+      trainingId ? `&training_id=${trainingId}` : ''
+    }`,
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        window.employeeTrainings = data.employee_trainings || [];
+        renderTrainingAssignmentsTable(
+          data.employee_trainings,
+          window.trainings || []
+        );
+      } else {
+        showError(
+          data.error || 'Failed to fetch training assignments',
+          'training-assignments'
+        );
+      }
+    })
+    .catch((error) => {
+      showError('Network error: ' + error.message, 'training-assignments');
+    });
+}
+
+function renderTrainingAssignmentsTable(employeeTrainings, trainings) {
+  const tbody = document.getElementById('training-assignments-table-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = '';
+  employeeTrainings.forEach((training) => {
+    const trainingInfo =
+      trainings.find((t) => t.training_id == training.training_id) || {};
+    const certificateName =
+      training.completion_status === 'completed' &&
+      trainingInfo.certificate === 'Yes'
+        ? trainingInfo.training_name
+        : 'N/A';
+    const row = document.createElement('tr');
+    row.innerHTML = `
+          <td>${escapeHTML(trainingInfo.training_name || 'N/A')}</td>
+          <td>${escapeHTML(training.employee_name || 'N/A')}</td>
+          <td>${escapeHTML(training.enrollment_date)}</td>
+          <td><span class="status-badge status-${
+            training.completion_status
+          }">${escapeHTML(training.completion_status)}</span></td>
+          <td>${training.score ? escapeHTML(training.score) : 'N/A'}</td>
+          <td>${escapeHTML(certificateName)}</td>
+      `;
+    tbody.appendChild(row);
+  });
+
+  addTableSorting('training-assignments-table');
 }

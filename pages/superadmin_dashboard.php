@@ -9,9 +9,10 @@ try {
     $stmt = $con->query("
         SELECT 
             e.employee_id, e.user_id, u.first_name, u.last_name, u.email, u.role, 
-            e.department_id, e.emp_hire_date, e.salary, e.emp_status,e.manager_id,e.is_manager
+            e.department_id, e.emp_hire_date, e.emp_status, e.manager_id, e.is_manager
         FROM Employees e
-        JOIN Users u ON e.user_id = u.user_id where u.role!='Super Admin' and  e.emp_status != 'Inactive' 
+        JOIN Users u ON e.user_id = u.user_id 
+        WHERE u.role != 'SuperAdmin' AND e.emp_status != 'Inactive'
     ");
     $employeesadmin = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -113,8 +114,7 @@ function fetchData($con, $sections = ['all']) {
         $data['project_assignments'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-    // Fetch training certificates for all employees
-    if ($shouldFetch('employee_trainings')) {
+    if ($shouldFetch('training_certificates')) {
         $stmt = $con->prepare("
             SELECT et.employee_training_id, et.employee_id, et.training_id, et.enrollment_date,
                    et.completion_status, et.score, t.training_name, t.certificate, t.training_date
@@ -125,13 +125,38 @@ function fetchData($con, $sections = ['all']) {
             WHERE et.completion_status = 'completed'
         ");
         $stmt->execute();
+        $data['training_certificates'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    if ($shouldFetch('trainings')) {
+        $stmt = $con->prepare("
+            SELECT t.training_id, t.training_name, t.department_id, t.training_date, t.certificate,
+                   t.end_date, d.department_name,
+                   DATEDIFF(t.end_date, t.training_date) AS duration_days
+            FROM Training t
+            LEFT JOIN Department d ON t.department_id = d.department_id
+        ");
+        $stmt->execute();
+        $data['trainings'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    if ($shouldFetch('employee_trainings')) {
+        $stmt = $con->prepare("
+            SELECT et.employee_training_id, et.employee_id, et.training_id, et.enrollment_date,
+                   et.completion_status, et.score, t.training_name, t.certificate,
+                   CONCAT(u.first_name, ' ', u.last_name) AS employee_name
+            FROM Employee_Training et
+            JOIN Training t ON et.training_id = t.training_id
+            JOIN Employees e ON et.employee_id = e.employee_id
+            JOIN Users u ON e.user_id = u.user_id
+        ");
+        $stmt->execute();
         $data['employee_trainings'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     return $data;
 }
 
-// Handle AJAX requests
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     header('Content-Type: application/json');
     $response = ['success' => false];
@@ -139,7 +164,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     try {
         if ($_POST['action'] === 'refresh_data') {
             $sections = isset($_POST['section']) && $_POST['section'] === 'reports'
-                ? ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'employee_trainings']
+                ? ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'employee_trainings', 'training_certificates']
                 : ['all'];
             $data = fetchData($con, $sections);
             $response['success'] = true;
@@ -357,6 +382,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $stmt->execute();
             $response['tasks'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $response['success'] = true;
+        } elseif ($_POST['action'] === 'fetch_trainings') {
+            $data = fetchData($con, ['trainings']);
+            $response['success'] = true;
+            $response['trainings'] = $data['trainings'] ?? [];
+        } elseif ($_POST['action'] === 'fetch_employee_trainings') {
+            $training_id = filter_input(INPUT_POST, 'training_id', FILTER_VALIDATE_INT);
+            $query = "
+                SELECT et.employee_training_id, et.employee_id, et.training_id, et.enrollment_date,
+                       et.completion_status, et.score, t.training_name, t.certificate,
+                       CONCAT(u.first_name, ' ', u.last_name) AS employee_name
+                FROM Employee_Training et
+                JOIN Training t ON et.training_id = t.training_id
+                JOIN Employees e ON et.employee_id = e.employee_id
+                JOIN Users u ON e.user_id = u.user_id
+            ";
+            $params = [];
+            if ($training_id) {
+                $query .= " WHERE et.training_id = ?";
+                $params[] = $training_id;
+            }
+            $stmt = $con->prepare($query);
+            $stmt->execute($params);
+            $response['employee_trainings'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $response['success'] = true;
         }
     } catch (PDOException $e) {
         $response['error'] = "Database error: " . $e->getMessage();
@@ -366,14 +415,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     exit();
 }
 
-// Initial data fetch for reports
-$data = fetchData($con, ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'employee_trainings']);
+$data = fetchData($con, ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'employee_trainings', 'trainings', 'training_certificates']);
 $employees = $data['employees'] ?? [];
 $feedback = $data['feedback'] ?? [];
 $report_avg_ratings = $data['report_avg_ratings'] ?? [];
 $report_feedback_types = $data['report_feedback_types'] ?? [];
 $project_assignments = $data['project_assignments'] ?? [];
 $employee_trainings = $data['employee_trainings'] ?? [];
+$trainings = $data['trainings'] ?? [];
+$training_certificates = $data['training_certificates'] ?? [];
 ?>
 
 <!DOCTYPE html>
@@ -394,7 +444,7 @@ $employee_trainings = $data['employee_trainings'] ?? [];
         .alert-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-        th  th { background-color: #003087; color: #fff; }
+        th { background-color: #003087; color: #fff; }
         .content { padding: 20px; }
         .dropdown { display: none; opacity: 0; transition: opacity 0.2s; }
         .dropdown.show { display: block; opacity: 1; }
@@ -413,12 +463,16 @@ $employee_trainings = $data['employee_trainings'] ?? [];
             padding: 5px 10px;
             border-radius: 12px;
             font-weight: bold;
-            color: white;
+            color: black;
             font-size: 12px;
+            background-color: #ccc; /* Fallback background color for unknown statuses */
         }
         .status-pending { background-color: #ff9800; }
         .status-approved { background-color: #4caf50; }
         .status-rejected { background-color: #f44336; }
+        .status-enrolled { background-color: #2196f3; }
+        .status-in_progress { background-color: #ff9800; }
+        .status-completed { background-color: #4caf50; }
         .back-btn {
             padding: 8px 15px;
             background-color: #003087;
@@ -440,6 +494,19 @@ $employee_trainings = $data['employee_trainings'] ?? [];
             font-size: 0.9em;
             color: #999999;
         }
+        th {
+            cursor: pointer;
+        }
+        th:hover i.fas {
+            color: #fff;
+        }
+        .fas.fa-sort-up, .fas.fa-sort-down {
+            color: #fff;
+        }
+        .status-enrolled, .status-in_progress, .status-completed {
+            min-width: 80px; /* Ensure badge is visible even if text is short */
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -452,11 +519,11 @@ $employee_trainings = $data['employee_trainings'] ?? [];
             <p>You are in the Super Admin dashboard. Select an option from the menu on the left to get started.</p>
         </div>
         <div id="create-user-form" style="display: none;"></div>
-        <div id="update-remove-user-section" style="display: none;" ></div>
-        <div id="profile-update-form" style="display: none;" ></div>
-        <div id="Department_content" style="display: none;" ></div>
+        <div id="update-remove-user-section" style="display: none;"></div>
+        <div id="profile-update-form" style="display: none;"></div>
+        <div id="Department_content" style="display: none;"></div>
         <div id="department-management-section" style="display: none;"></div>
-<div id="audit-logs-section" style="display: none;"></div>
+        <div id="audit-logs-section" style="display: none;"></div>
 
         <div id="reports-analytics" style="display: none;" class="card">
             <h2>Reports and Analytics</h2>
@@ -634,6 +701,54 @@ $employee_trainings = $data['employee_trainings'] ?? [];
             </table>
             <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
         </div>
+        <div id="training-programs" style="display: none;" class="card">
+            <h2>Training Programs</h2>
+            <table id="training-table">
+                <thead>
+                    <tr>
+                        <th>Training Name <i class="fas fa-sort"></i></th>
+                        <th>Department <i class="fas fa-sort"></i></th>
+                        <th>Start Date <i class="fas fa-sort"></i></th>
+                        <th>End Date <i class="fas fa-sort"></i></th>
+                        <th>Duration (Days) <i class="fas fa-sort"></i></th>
+                        <th>Certificate <i class="fas fa-sort"></i></th>
+                    </tr>
+                </thead>
+                <tbody id="training-table-body"></tbody>
+            </table>
+            <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
+        </div>
+        <div id="training-assignments" style="display: none;" class="card">
+            <h2>Training Assignments</h2>
+            <div class="form-group">
+                <label for="training-assignments-filter">Filter by Training:</label>
+                <select id="training-assignments-filter">
+                    <option value="">All Trainings</option>
+                    <?php foreach ($data['trainings'] ?? [] as $training): ?>
+                        <option value="<?php echo htmlspecialchars($training['training_id']); ?>">
+                            <?php echo htmlspecialchars($training['training_name']); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="form-group button-group">
+                <button type="button" id="fetch-training-assignments-btn">Fetch Assignments</button>
+            </div>
+            <table id="training-assignments-table">
+                <thead>
+                    <tr>
+                        <th>Training Name <i class="fas fa-sort"></i></th>
+                        <th>Employee Name <i class="fas fa-sort"></i></th>
+                        <th>Enrollment Date <i class="fas fa-sort"></i></th>
+                        <th>Status <i class="fas fa-sort"></i></th>
+                        <th>Score <i class="fas fa-sort"></i></th>
+                        <th>Certificate Name</th>
+                    </tr>
+                </thead>
+                <tbody id="training-assignments-table-body"></tbody>
+            </table>
+            <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
+        </div>
         <?php
         if (isset($_SESSION['success'])) {
             echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';
@@ -652,12 +767,13 @@ $employee_trainings = $data['employee_trainings'] ?? [];
     const reportAvgRatings = <?php echo json_encode($report_avg_ratings); ?>;
     const reportFeedbackTypes = <?php echo json_encode($report_feedback_types); ?>;
     const projectAssignments = <?php echo json_encode($project_assignments); ?>;
-    const employeeTrainings = <?php echo json_encode($employee_trainings); ?>;
+    const employeeTrainings = <?php echo json_encode($data['employee_trainings'] ?? []); ?>;
+    const trainings = <?php echo json_encode($data['trainings'] ?? []); ?>;
+    const trainingCertificates = <?php echo json_encode($data['training_certificates'] ?? []); ?>;
     const departments = <?php echo json_encode($departments ?: []); ?>;
     const employeesadmin = <?php echo json_encode($employeesadmin ?: []); ?>;
-let filteredEmployees = [];
-console.log(employeesadmin)
-
+    let filteredEmployees = [];
+    console.log(employeesadmin);
 </script>
 <script src="../assets/js/superadmin_dashboard.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
