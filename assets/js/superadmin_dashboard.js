@@ -444,6 +444,8 @@ function showSection(sectionToShowId) {
     'audit-logs-section',
     'training-programs',
     'training-assignments',
+     'performance-metrics-section'
+
   ];
 
   const mainContent = document.getElementById('content-area');
