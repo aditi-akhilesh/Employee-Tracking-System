@@ -452,6 +452,96 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $response['employee_trainings'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
             $response['success'] = true;
         }
+	elseif (isset($_POST['action']) && $_POST['action'] === 'fetch_performance_metrics') {
+			$out = ['success' => true];
+
+			try {
+				// Top 10 trainings completed (Training Champions)
+				$sql = "
+					SELECT e.employee_id, u.first_name, u.last_name,
+						   SUM(et.completion_status='Completed') AS completed_trainings
+					FROM Employee_Training et
+					JOIN Employees e ON et.employee_id=e.employee_id
+					JOIN Users u ON e.user_id=u.user_id
+					GROUP BY e.employee_id
+					ORDER BY completed_trainings DESC
+					LIMIT 10
+				";
+				$stmt = $con->query($sql);
+				$out['training_champions'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+				// Top 10 attendance rate (present_days/total_days) (Attendance Stars)
+				$sql = "
+					SELECT e.employee_id, u.first_name, u.last_name,
+						   ROUND(
+								SUM(a.status='present')/COUNT(*) , 3
+						   ) AS attendance_rate
+					FROM Attendance a
+					JOIN Employees e ON a.employee_id=e.employee_id
+					JOIN Users u ON e.user_id=u.user_id
+					GROUP BY e.employee_id
+					ORDER BY attendance_rate DESC
+					LIMIT 10
+				";
+				$stmt = $con->query($sql);
+				$out['attendance_stars'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+				header('Content-Type: application/json');
+				echo json_encode($out);
+				exit;
+			} catch (PDOException $e) {
+				$out = ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+				header('Content-Type: application/json');
+				echo json_encode($out);
+				exit;
+			}
+		}
+
+		// Handle fetch_top_performers (for Top Performers with filters)
+		elseif (isset($_POST['action']) && $_POST['action'] === 'fetch_top_performers') {
+			$out = ['success' => true];
+			$filter = $_POST['filter'] ?? 'tasks_completed';
+
+			try {
+				// Base query for joining tables
+				$sql = "
+					SELECT e.employee_id, u.first_name, u.last_name,
+						   SUM(t.status='completed') AS tasks_completed,
+						   CAST(AVG(f.rating) AS DECIMAL(10,2)) AS average_feedback,
+                   				  CAST((SUM(t.status='completed') * 0.6 + AVG(f.rating) * 0.4) AS DECIMAL(10,2)) AS combined_score					
+					FROM Task t
+					RIGHT JOIN Assignment_Task at ON t.task_id = at.task_id
+					RIGHT JOIN Employees e ON at.employee_id = e.employee_id
+					RIGHT JOIN Users u ON e.user_id = u.user_id
+					LEFT JOIN Feedback f ON e.employee_id = f.employee_id
+					GROUP BY e.employee_id
+				";
+
+				// Order by the selected filter
+				if ($filter === 'tasks_completed') {
+					$sql .= " ORDER BY tasks_completed DESC";
+				} elseif ($filter === 'average_feedback') {
+					$sql .= " ORDER BY average_feedback DESC";
+				} elseif ($filter === 'combined_score') {
+					$sql .= " ORDER BY combined_score DESC";
+				}
+
+				$sql .= " LIMIT 10";
+
+				$stmt = $con->query($sql);
+				$out['top_performers'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+				header('Content-Type: application/json');
+				echo json_encode($out);
+				exit;
+			} catch (PDOException $e) {
+				$out = ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
+				header('Content-Type: application/json');
+				echo json_encode($out);
+				exit;
+			}
+		}
+
     } catch (PDOException $e) {
         $response['error'] = "Database error: " . $e->getMessage();
     }
@@ -798,6 +888,62 @@ $training_certificates = $data['training_certificates'] ?? [];
             </table>
             <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
         </div>
+	<div id="performance-metrics-section" style="display: none;">
+  <h2>Performance Metrics</h2>
+  <ul class="perf-tabs">
+    <li class="active" data-target="top-performers-section">Top Performers</li>
+    <li data-target="training-champions-section">Training Champions</li>
+    <li data-target="attendance-stars-section">Attendance Stars</li>
+  </ul>
+
+  <div id="top-performers-section" class="perf-pane" style="display: block;">
+    <h3>Top 10 Performers</h3>
+    <label>Show top by: </label>
+    <select id="top-performers-filter" onchange="updateTopPerformers()">
+      <option value="tasks_completed">Tasks Completed</option>
+      <option value="average_feedback">Average Feedback</option>
+      <option value="combined_score">Combined Score</option>
+    </select>
+    <table id="top-performers-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th id="top-performers-metric">Tasks Completed</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="training-champions-section" class="perf-pane" style="display: none;">
+    <h3>Training Champions</h3>
+    <table id="training-champions-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Completed Trainings</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <div id="attendance-stars-section" class="perf-pane" style="display: none;">
+    <h3>Attendance Stars</h3>
+    <table id="attendance-stars-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Attendance Rate</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
+</div>
+</div>
         <?php
         if (isset($_SESSION['success'])) {
             echo '<div class="alert alert-success" onclick="this.style.display=\'none\'">' . htmlspecialchars($_SESSION['success']) . '</div>';

@@ -755,3 +755,29 @@ table tr:hover {
   padding: 5px;
   margin-right: 10px;
 }
+
+
+.perf-tabs {
+  list-style:none;
+  display:flex;
+  padding:0;
+  margin-bottom:1rem;
+}
+.perf-tabs li {
+  margin-right:1rem;
+  padding:.5rem 1rem;
+  background:#eee;
+  cursor:pointer;
+}
+.perf-tabs li.active {
+  background:#003087;
+  color:white;
+}
+.perf-pane table {
+  width:100%;
+  border-collapse:collapse;
+}
+.perf-pane th, .perf-pane td {
+  border:1px solid #ddd;
+  padding:.5rem;
+}

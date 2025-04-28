@@ -34,6 +34,7 @@
         </li>
         <li><a href="#" onclick="toggleDropdown(event, 'reports-dropdown')"><i class="fas fa-chart-bar"></i> Reports & Analytics</a>
             <ul id="reports-dropdown" class="dropdown" style="display: none;">
+		 <li><a href="#" onclick="showPerformanceMetrics()">Performance Metrics</a></li>
                 <li><a href="#" onclick="showReportsAnalytics()">Generate reports of an employee</a></li>
                 <li><a href="#" onclick="showDepartmentMetrics()">View department-wise performance metrics</a></li>
             </ul>

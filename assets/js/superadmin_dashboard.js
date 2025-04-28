@@ -4520,3 +4520,148 @@ function renderTrainingAssignmentsTable(employeeTrainings, trainings) {
 
   addTableSorting('training-assignments-table');
 }
+
+// Entry point for Performance Metrics
+function showPerformanceMetrics() {
+  if (!showSection('performance-metrics-section')) return;
+
+  // Initialize the Top Performers tab with the default filter
+  updateTopPerformers();
+
+  // Fetch data for Training Champions and Attendance Stars
+  fetchOtherMetrics();
+}
+
+// Function to update Top Performers based on the selected filter
+function updateTopPerformers() {
+  const filter = document.getElementById('top-performers-filter').value;
+  let metricLabel = '';
+
+  // Update the table header based on the selected filter
+  switch (filter) {
+    case 'tasks_completed':
+      metricLabel = 'Tasks Completed';
+      break;
+    case 'average_feedback':
+      metricLabel = 'Average Feedback';
+      break;
+    case 'combined_score':
+      metricLabel = 'Combined Score';
+      break;
+  }
+  const metricHeader = document.getElementById('top-performers-metric');
+  if (metricHeader) {
+    metricHeader.textContent = metricLabel;
+  }
+
+  // Fetch the filtered data
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `action=fetch_top_performers&filter=${filter}`
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.success) return showError(d.error, 'top-performers-section');
+
+    // Populate Top Performers table
+    const tpTbody = document.querySelector('#top-performers-table tbody');
+    if (tpTbody) {
+      tpTbody.innerHTML = '';
+      if (d.top_performers && Array.isArray(d.top_performers)) {
+        d.top_performers.forEach(row => {
+  console.log('Row data:', row); // Log the row to see the data types
+  let metricValue;
+  if (filter === 'tasks_completed') {
+    metricValue = row.tasks_completed;
+  } else if (filter === 'average_feedback') {
+    const avgFeedback = row.average_feedback ? parseFloat(row.average_feedback) : 0;
+    metricValue = avgFeedback ? avgFeedback.toFixed(2) : 'N/A';
+  } else {
+    const combinedScore = row.combined_score ? parseFloat(row.combined_score) : 0;
+    metricValue = combinedScore ? combinedScore.toFixed(2) : 'N/A';
+  }
+  tpTbody.innerHTML += `<tr>
+    <td>${row.first_name} ${row.last_name}</td>
+    <td>${metricValue}</td>
+  </tr>`;
+});      } else {
+        tpTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
+      }
+    }
+  })
+  .catch(err => showError('Network error: ' + err.message, 'top-performers-section'));
+}
+
+// Fetch Training Champions and Attendance Stars
+function fetchOtherMetrics() {
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=fetch_performance_metrics'
+  })
+  .then(r => r.json())
+  .then(d => {
+    if (!d.success) return showError(d.error, 'performance-metrics-section');
+
+    // Training Champions
+    const tcTbody = document.querySelector('#training-champions-table tbody');
+    if (tcTbody) {
+      tcTbody.innerHTML = '';
+      if (d.training_champions && Array.isArray(d.training_champions)) {
+        d.training_champions.forEach(row => {
+          tcTbody.innerHTML += `<tr>
+            <td>${row.first_name} ${row.last_name}</td>
+            <td>${row.completed_trainings}</td>
+          </tr>`;
+        });
+      } else {
+        tcTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
+      }
+    }
+
+    // Attendance Stars
+    const asTbody = document.querySelector('#attendance-stars-table tbody');
+    if (asTbody) {
+      asTbody.innerHTML = '';
+      if (d.attendance_stars && Array.isArray(d.attendance_stars)) {
+        d.attendance_stars.forEach(row => {
+          asTbody.innerHTML += `<tr>
+            <td>${row.first_name} ${row.last_name}</td>
+            <td>${(row.attendance_rate * 100).toFixed(1)}%</td>
+          </tr>`;
+        });
+      } else {
+        asTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
+      }
+    }
+  })
+  .catch(err => showError('Network error: ' + err.message, 'performance-metrics-section'));
+}
+
+// Tab click handler
+document.addEventListener('click', (e) => {
+  if (e.target.matches('.perf-tabs li')) {
+    document.querySelectorAll('.perf-tabs li').forEach(li => li.classList.remove('active'));
+    e.target.classList.add('active');
+    const target = e.target.getAttribute('data-target');
+
+    // Hide all panes
+    document.querySelectorAll('.perf-pane').forEach(sec => sec.style.display = 'none');
+
+    // Show the target pane if it exists
+    const targetElement = document.getElementById(target);
+    if (targetElement) {
+      targetElement.style.display = 'block';
+    } else {
+      console.error(`Element with ID "${target}" not found in the DOM.`);
+      showError(`Tab section "${target}" not found.`, 'performance-metrics-section');
+      return;
+    }
+
+    // If Top Performers tab is clicked, ensure the filter is applied
+    if (target === 'top-performers-section') {
+      updateTopPerformers();
+    }
+  }
+});
