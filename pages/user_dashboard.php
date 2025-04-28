@@ -35,31 +35,52 @@ if (isset($_POST['action'])) {
 
     try {
         if ($_POST['action'] === 'mark_attendance') {
-            $check_in = $_POST['check_in'] ?? null;
-            $check_out = $_POST['check_out'] ?? null;
-            $status = $_POST['status'] ?? 'present';
+    $check_in = $_POST['check_in'] ?? null;
+    $check_out = !empty($_POST['check_out']) ? $_POST['check_out'] : null; // Convert empty string to null
+    $status = $_POST['status'] ?? 'present';
 
-            // Validate inputs
-            if (!$check_in) {
-                $response['error'] = "Check-in time is required.";
-                echo json_encode($response);
-                exit;
-            }
+    // Validate inputs
+    if (!$check_in) {
+        $response['error'] = "Check-in time is required.";
+        echo json_encode($response);
+        exit;
+    }
 
-            // Insert attendance record
-            $stmt = $con->prepare("
-                INSERT INTO Attendance (employee_id, check_in, check_out, status)
-                VALUES (?, ?, ?, ?)
-            ");
-            $success = $stmt->execute([$employee_id, $check_in, $check_out, $status]);
+    // Extract date from check_in for validation
+    $check_in_date = date('Y-m-d', strtotime($check_in));
 
-            if ($success) {
-                $response['success'] = true;
-                $response['message'] = "Attendance marked successfully.";
-            } else {
-                $response['error'] = "Failed to mark attendance.";
-            }
-        } elseif ($_POST['action'] === 'fetch_attendance') {
+    // Check if attendance already exists for this employee on the same date
+    $stmt = $con->prepare("
+        SELECT COUNT(*) 
+        FROM Attendance 
+        WHERE employee_id = ? 
+        AND DATE(check_in) = ?
+    ");
+    $stmt->execute([$employee_id, $check_in_date]);
+    $existing_records = $stmt->fetchColumn();
+
+    if ($existing_records > 0) {
+        $response['error'] = "Attendance has already been marked for this date.";
+        echo json_encode($response);
+        exit;
+    }
+
+    // Insert attendance record
+    $stmt = $con->prepare("
+        INSERT INTO Attendance (employee_id, check_in, check_out, status)
+        VALUES (?, ?, ?, ?)
+    ");
+    $success = $stmt->execute([$employee_id, $check_in, $check_out, $status]);
+
+    if ($success) {
+        $response['success'] = true;
+        $response['message'] = "Attendance marked successfully.";
+    } else {
+        $response['error'] = "Failed to mark attendance.";
+    }
+}
+
+elseif ($_POST['action'] === 'fetch_attendance') {
             $start_date = $_POST['start_date'] ?? '';
             $end_date = $_POST['end_date'] ?? '';
 
