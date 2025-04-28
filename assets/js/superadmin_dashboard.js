@@ -1,5 +1,53 @@
 // superadmin_dashboard.js
 
+// Centralized function to manage section visibility
+function showSection(sectionToShowId) {
+  const sections = [
+    'main-content',
+    'reports-analytics',
+    'create-user-form',
+    'attendance-records',
+    'leave-requests',
+    'department-metrics',
+    'profile-update-form',
+    'Department_content',
+    'update-remove-user-section',
+    'department-management-section',
+    'audit-logs-section',
+    'training-programs',
+    'training-assignments',
+     'performance-metrics-section'
+
+  ];
+
+  const mainContent = document.getElementById('content-area');
+  if (!mainContent) {
+    console.error('content-area not found');
+    return false;
+  }
+
+  // Hide all sections
+  sections.forEach((sectionId) => {
+    const section = document.getElementById(sectionId);
+    if (section) {
+      section.style.display = 'none';
+    }
+  });
+
+  // Show the content-area and the specified section
+  mainContent.style.display = 'block';
+  const sectionToShow = document.getElementById(sectionToShowId);
+  if (sectionToShow) {
+    sectionToShow.style.display = 'block';
+  } else {
+    console.error(`${sectionToShowId} not found`);
+    return false;
+  }
+
+  return true;
+}
+
+
 // Utility function to escape HTML characters to prevent XSS
 function escapeHTML(str) {
   if (typeof str !== 'string') return str || '';
@@ -428,53 +476,6 @@ if (generateReportBtn) {
   });
 }
 
-// Centralized function to manage section visibility
-function showSection(sectionToShowId) {
-  const sections = [
-    'main-content',
-    'reports-analytics',
-    'create-user-form',
-    'attendance-records',
-    'leave-requests',
-    'department-metrics',
-    'profile-update-form',
-    'Department_content',
-    'update-remove-user-section',
-    'department-management-section',
-    'audit-logs-section',
-    'training-programs',
-    'training-assignments',
-     'performance-metrics-section'
-
-  ];
-
-  const mainContent = document.getElementById('content-area');
-  if (!mainContent) {
-    console.error('content-area not found');
-    return false;
-  }
-
-  // Hide all sections
-  sections.forEach((sectionId) => {
-    const section = document.getElementById(sectionId);
-    if (section) {
-      section.style.display = 'none';
-    }
-  });
-
-  // Show the content-area and the specified section
-  mainContent.style.display = 'block';
-  const sectionToShow = document.getElementById(sectionToShowId);
-  if (sectionToShow) {
-    sectionToShow.style.display = 'block';
-  } else {
-    console.error(`${sectionToShowId} not found`);
-    return false;
-  }
-
-  return true;
-}
-
 // Function to show error messages
 function showError(message, containerId = 'content-area') {
   const container = document.getElementById(containerId);
@@ -843,298 +844,377 @@ function showReportsAnalytics() {
   });
 }
 
+// Store attendance records globally to access them for download
+let currentAttendanceRecords = [];
+
 // Show Attendance Records Section
 function showAttendanceRecords() {
-  if (!showSection('attendance-records')) return;
+    if (!showSection('attendance-records')) return;
 
-  const fetchAttendanceBtn = document.getElementById('fetch-attendance-btn');
-  const attendanceTableBody = document.getElementById('attendance-table-body');
-  const employeeSearch = document.getElementById('attendance-employee-search');
-  const startDateInput = document.getElementById('start-date');
-  const endDateInput = document.getElementById('end-date');
+    const fetchAttendanceBtn = document.getElementById('fetch-attendance-btn');
+    const attendanceTableBody = document.getElementById('attendance-table-body');
+    const employeeSearch = document.getElementById('attendance-employee-search');
+    const startDateInput = document.getElementById('start-date');
+    const endDateInput = document.getElementById('end-date');
 
-  if (
-    !fetchAttendanceBtn ||
-    !attendanceTableBody ||
-    !employeeSearch ||
-    !startDateInput ||
-    !endDateInput
-  ) {
-    showError('Required elements not found', 'attendance-records');
-    return;
-  }
+    if (
+        !fetchAttendanceBtn ||
+        !attendanceTableBody ||
+        !employeeSearch ||
+        !startDateInput ||
+        !endDateInput
+    ) {
+        showError('Required elements not found', 'attendance-records');
+        return;
+    }
 
-  // Clear table
-  attendanceTableBody.innerHTML = '';
+    // Clear table
+    attendanceTableBody.innerHTML = '';
 
-  // Remove existing listeners to prevent duplicates
-  const newButton = fetchAttendanceBtn.cloneNode(true);
-  fetchAttendanceBtn.parentNode.replaceChild(newButton, fetchAttendanceBtn);
-  const updatedFetchAttendanceBtn = document.getElementById(
-    'fetch-attendance-btn'
-  );
+    // Remove existing listeners to prevent duplicates
+    const newButton = fetchAttendanceBtn.cloneNode(true);
+    fetchAttendanceBtn.parentNode.replaceChild(newButton, fetchAttendanceBtn);
+    const updatedFetchAttendanceBtn = document.getElementById('fetch-attendance-btn');
 
-  updatedFetchAttendanceBtn.addEventListener('click', function () {
-    const employeeId = employeeSearch.value;
-    const startDate = startDateInput.value;
-    const endDate = endDateInput.value;
+    updatedFetchAttendanceBtn.addEventListener('click', function () {
+        const employeeId = employeeSearch.value;
+        const startDate = startDateInput.value;
+        const endDate = endDateInput.value;
 
-    fetch('superadmin_dashboard.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `action=fetch_attendance&employee_id=${encodeURIComponent(
-        employeeId
-      )}&start_date=${encodeURIComponent(
-        startDate
-      )}&end_date=${encodeURIComponent(endDate)}`,
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.success) {
-          attendanceTableBody.innerHTML = '';
-          if (data.attendance_records.length === 0) {
-            attendanceTableBody.innerHTML = `<tr><td colspan="5">No attendance records found.</td></tr>`;
-          } else {
-            data.attendance_records.forEach((record) => {
-              const row = document.createElement('tr');
-              row.innerHTML = `
-                <td>${record.employee_name}</td>
-                <td>${record.department_name}</td>
-                <td>${record.check_in || 'N/A'}</td>
-                <td>${record.check_out || 'N/A'}</td>
-                <td>${record.status}</td>
-              `;
-              attendanceTableBody.appendChild(row);
-            });
-          }
-        } else {
-          showError(
-            data.error || 'Failed to fetch attendance records',
-            'attendance-records'
-          );
-        }
-      })
-      .catch((error) =>
-        showError('Network error: ' + error.message, 'attendance-records')
-      );
-  });
+        fetch('superadmin_dashboard.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `action=fetch_attendance&employee_id=${encodeURIComponent(
+                employeeId
+            )}&start_date=${encodeURIComponent(
+                startDate
+            )}&end_date=${encodeURIComponent(endDate)}`,
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    // Store the fetched data globally
+                    currentAttendanceRecords = data.attendance_records || [];
 
-  // Add sorting functionality
-  const headers = document.querySelectorAll('#attendance-table th');
-  headers.forEach((header, index) => {
-    header.addEventListener('click', () => {
-      const rows = Array.from(attendanceTableBody.querySelectorAll('tr'));
-      const isAscending = header.classList.contains('sort-asc');
-      headers.forEach((h) => {
-        h.classList.remove('sort-asc', 'sort-desc');
-        const icon = h.querySelector('i.fas');
-        if (icon) icon.className = 'fas fa-sort';
-      });
-
-      header.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
-      const icon = header.querySelector('i.fas');
-      if (icon)
-        icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
-
-      rows.sort((a, b) => {
-        const aText = a.cells[index].textContent.trim();
-        const bText = b.cells[index].textContent.trim();
-        if (index === 2 || index === 3) {
-          // Check In, Check Out (dates)
-          const aDate = aText === 'N/A' ? 0 : new Date(aText).getTime();
-          const bDate = bText === 'N/A' ? 0 : new Date(bText).getTime();
-          return isAscending ? bDate - aDate : aDate - bDate;
-        }
-        return isAscending
-          ? bText.localeCompare(aText)
-          : aText.localeCompare(bText);
-      });
-
-      attendanceTableBody.innerHTML = '';
-      rows.forEach((row) => attendanceTableBody.appendChild(row));
+                    attendanceTableBody.innerHTML = '';
+                    if (currentAttendanceRecords.length === 0) {
+                        attendanceTableBody.innerHTML = `<tr><td colspan="5">No attendance records found.</td></tr>`;
+                    } else {
+                        currentAttendanceRecords.forEach((record) => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${escapeHTML(record.employee_name)}</td>
+                                <td>${escapeHTML(record.department_name)}</td>
+                                <td>${escapeHTML(record.check_in || 'N/A')}</td>
+                                <td>${escapeHTML(record.check_out || 'N/A')}</td>
+                                <td>${escapeHTML(record.status)}</td>
+                            `;
+                            attendanceTableBody.appendChild(row);
+                        });
+                    }
+                } else {
+                    showError(
+                        data.error || 'Failed to fetch attendance records',
+                        'attendance-records'
+                    );
+                }
+            })
+            .catch((error) =>
+                showError('Network error: ' + error.message, 'attendance-records')
+            );
     });
-  });
+
+    // Add sorting functionality
+    const headers = document.querySelectorAll('#attendance-table th');
+    headers.forEach((header, index) => {
+        header.addEventListener('click', () => {
+            const rows = Array.from(attendanceTableBody.querySelectorAll('tr'));
+            const isAscending = header.classList.contains('sort-asc');
+            headers.forEach((h) => {
+                h.classList.remove('sort-asc', 'sort-desc');
+                const icon = h.querySelector('i.fas');
+                if (icon) icon.className = 'fas fa-sort';
+            });
+
+            header.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
+            const icon = header.querySelector('i.fas');
+            if (icon)
+                icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
+
+            rows.sort((a, b) => {
+                const aText = a.cells[index].textContent.trim();
+                const bText = b.cells[index].textContent.trim();
+                if (index === 2 || index === 3) {
+                    // Check In, Check Out (dates)
+                    const aDate = aText === 'N/A' ? 0 : new Date(aText).getTime();
+                    const bDate = bText === 'N/A' ? 0 : new Date(bText).getTime();
+                    return isAscending ? bDate - aDate : aDate - bDate;
+                }
+                return isAscending
+                    ? bText.localeCompare(aText)
+                    : aText.localeCompare(bText);
+            });
+
+            attendanceTableBody.innerHTML = '';
+            rows.forEach((row) => attendanceTableBody.appendChild(row));
+        });
+    });
 }
+
+// Download Attendance Records as Excel
+function downloadAttendanceAsExcel() {
+    if (!currentAttendanceRecords || currentAttendanceRecords.length === 0) {
+        alert('No attendance records available to download. Please fetch records first.');
+        return;
+    }
+
+    // Prepare data for Excel
+    const worksheetData = currentAttendanceRecords.map(record => ({
+        'Employee Name': record.employee_name,
+        'Department': record.department_name,
+        'Check In': record.check_in || 'N/A',
+        'Check Out': record.check_out || 'N/A',
+        'Status': record.status
+    }));
+
+    // Create a workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+
+    // Set column widths (in characters)
+    worksheet['!cols'] = [
+        { wch: 20 }, // Employee Name
+        { wch: 20 }, // Department
+        { wch: 20 }, // Check In
+        { wch: 20 }, // Check Out
+        { wch: 15 }  // Status
+    ];
+
+    // Append the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance_Records');
+
+    // Generate the Excel file and trigger download
+    XLSX.writeFile(workbook, 'Attendance_Records.xlsx');
+}
+
 
 // Show Leave Requests Section
 function showLeaveRequests() {
-  if (!showSection('leave-requests')) return;
+    if (!showSection('leave-requests')) return;
 
-  const fetchLeaveBtn = document.getElementById('fetch-leave-btn');
-  const leaveTableBody = document.getElementById('leave-table-body');
-  const leaveFilter = document.getElementById('leave-filter');
+    const fetchLeaveBtn = document.getElementById('fetch-leave-btn');
+    const leaveTableBody = document.getElementById('leave-table-body');
+    const leaveFilter = document.getElementById('leave-filter');
 
-  if (!fetchLeaveBtn || !leaveTableBody || !leaveFilter) {
-    showError('Required elements not found', 'leave-requests');
-    return;
-  }
+    if (!fetchLeaveBtn || !leaveTableBody || !leaveFilter) {
+        showError('Required elements not found', 'leave-requests');
+        return;
+    }
 
-  // Clear table
-  leaveTableBody.innerHTML = '';
+    // Clear table
+    leaveTableBody.innerHTML = '';
 
-  // Remove existing listeners to prevent duplicates
-  const newButton = fetchLeaveBtn.cloneNode(true);
-  fetchLeaveBtn.parentNode.replaceChild(newButton, fetchLeaveBtn);
-  const updatedFetchLeaveBtn = document.getElementById('fetch-leave-btn');
+    // Remove existing listeners to prevent duplicates
+    const newButton = fetchLeaveBtn.cloneNode(true);
+    fetchLeaveBtn.parentNode.replaceChild(newButton, fetchLeaveBtn);
+    const updatedFetchLeaveBtn = document.getElementById('fetch-leave-btn');
 
-  function fetchLeaves() {
-    const status = leaveFilter.value;
-    fetch('superadmin_dashboard.php', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `action=fetch_leave_applications&leave_filter=${encodeURIComponent(
-        status
-      )}`,
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.success) {
-          leaveTableBody.innerHTML = '';
-          if (data.leave_applications.length === 0) {
-            leaveTableBody.innerHTML = `<tr><td colspan="6">No leave requests found.</td></tr>`;
-          } else {
-            data.leave_applications.forEach((request) => {
-              const row = document.createElement('tr');
-              const statusClass =
-                request.status === 'ispending'
-                  ? 'status-pending'
-                  : request.status === 'approved'
-                  ? 'status-approved'
-                  : 'status-rejected';
-              row.innerHTML = `
-                <td>${request.employee_name}</td>
-                <td>${request.leave_start_date}</td>
-                <td>${request.leave_end_date}</td>
-                <td>${request.leave_reason}</td>
-                <td><span class="status-badge ${statusClass}">${
-                request.status.charAt(0).toUpperCase() + request.status.slice(1)
-              }</span></td>
-                <td>
-                  ${
-                    request.status === 'ispending'
-                      ? `
-                    <form class="action-form approve-form" style="display:inline;">
-                      <input type="hidden" name="request_id" value="${request.request_id}">
-                      <button type="button" class="approve-btn" style="background-color:#4caf50;color:white;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;margin-right:5px;">Approve</button>
-                    </form>
-                    <form class="action-form reject-form" style="display:inline;">
-                      <input type="hidden" name="request_id" value="${request.request_id}">
-                      <button type="button" class="reject-btn" style="background-color:#f44336;color:white;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;">Reject</button>
-                    </form>
-                  `
-                      : request.status === 'approved' ||
-                        request.status === 'rejected'
-                      ? `
-                    <button type="button" class="reconsider-btn" data-request-id="${request.request_id}">Reconsider</button>
-                  `
-                      : ''
-                  }
-                </td>
-              `;
-              leaveTableBody.appendChild(row);
+    function fetchLeaves() {
+        const status = leaveFilter.value;
+        fetch('superadmin_dashboard.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: `action=fetch_leave_applications&leave_filter=${encodeURIComponent(
+                status
+            )}`,
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                if (data.success) {
+                    // Store the fetched data globally
+                    currentLeaveRequests = data.leave_applications || [];
 
-              // Add event listeners for approve/reject buttons
-              if (request.status === 'ispending') {
-                row
-                  .querySelector('.approve-btn')
-                  .addEventListener('click', () =>
-                    updateLeaveStatus(
-                      request.request_id,
-                      'approved',
-                      fetchLeaves
-                    )
-                  );
-                row
-                  .querySelector('.reject-btn')
-                  .addEventListener('click', () =>
-                    updateLeaveStatus(
-                      request.request_id,
-                      'rejected',
-                      fetchLeaves
-                    )
-                  );
-              }
-              if (
-                request.status === 'approved' ||
-                request.status === 'rejected'
-              ) {
-                row
-                  .querySelector('.reconsider-btn')
-                  .addEventListener('click', () =>
-                    reconsiderLeave(request.request_id, fetchLeaves)
-                  );
-              }
-            });
-          }
-        } else {
-          showError(
-            data.error || 'Failed to fetch leave requests',
-            'leave-requests'
-          );
-        }
-      })
-      .catch((error) =>
-        showError('Network error: ' + error.message, 'leave-requests')
-      );
-  }
+                    leaveTableBody.innerHTML = '';
+                    if (currentLeaveRequests.length === 0) {
+                        leaveTableBody.innerHTML = `<tr><td colspan="6">No leave requests found.</td></tr>`;
+                    } else {
+                        currentLeaveRequests.forEach((request) => {
+                            const row = document.createElement('tr');
+                            const statusClass =
+                                request.status === 'ispending'
+                                    ? 'status-pending'
+                                    : request.status === 'approved'
+                                    ? 'status-approved'
+                                    : 'status-rejected';
+                            row.innerHTML = `
+                                <td>${escapeHTML(request.employee_name)}</td>
+                                <td>${escapeHTML(request.leave_start_date)}</td>
+                                <td>${escapeHTML(request.leave_end_date)}</td>
+                                <td>${escapeHTML(request.leave_reason)}</td>
+                                <td><span class="status-badge ${statusClass}">${
+                                    request.status.charAt(0).toUpperCase() + request.status.slice(1)
+                                }</span></td>
+                                <td>
+                                    ${
+                                        request.status === 'ispending'
+                                            ? `
+                                        <form class="action-form approve-form" style="display:inline;">
+                                            <input type="hidden" name="request_id" value="${request.request_id}">
+                                            <button type="button" class="approve-btn" style="background-color:#4caf50;color:white;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;margin-right:5px;">Approve</button>
+                                        </form>
+                                        <form class="action-form reject-form" style="display:inline;">
+                                            <input type="hidden" name="request_id" value="${request.request_id}">
+                                            <button type="button" class="reject-btn" style="background-color:#f44336;color:white;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;">Reject</button>
+                                        </form>
+                                    `
+                                            : request.status === 'approved' ||
+                                            request.status === 'rejected'
+                                            ? `
+                                        <button type="button" class="reconsider-btn" data-request-id="${request.request_id}">Reconsider</button>
+                                    `
+                                            : ''
+                                    }
+                                </td>
+                            `;
+                            leaveTableBody.appendChild(row);
 
-  // Initial fetch
-  fetchLeaves();
+                            // Add event listeners for approve/reject buttons
+                            if (request.status === 'ispending') {
+                                row
+                                    .querySelector('.approve-btn')
+                                    .addEventListener('click', () =>
+                                        updateLeaveStatus(
+                                            request.request_id,
+                                            'approved',
+                                            fetchLeaves
+                                        )
+                                    );
+                                row
+                                    .querySelector('.reject-btn')
+                                    .addEventListener('click', () =>
+                                        updateLeaveStatus(
+                                            request.request_id,
+                                            'rejected',
+                                            fetchLeaves
+                                        )
+                                    );
+                            }
+                            if (
+                                request.status === 'approved' ||
+                                request.status === 'rejected'
+                            ) {
+                                row
+                                    .querySelector('.reconsider-btn')
+                                    .addEventListener('click', () =>
+                                        reconsiderLeave(request.request_id, fetchLeaves)
+                                    );
+                            }
+                        });
+                    }
+                } else {
+                    showError(
+                        data.error || 'Failed to fetch leave requests',
+                        'leave-requests'
+                    );
+                }
+            })
+            .catch((error) =>
+                showError('Network error: ' + error.message, 'leave-requests')
+            );
+    }
 
-  // Fetch on button click
-  updatedFetchLeaveBtn.addEventListener('click', fetchLeaves);
+    // Initial fetch
+    fetchLeaves();
 
-  // Fetch on filter change
-  leaveFilter.addEventListener('change', fetchLeaves);
+    // Fetch on button click
+    updatedFetchLeaveBtn.addEventListener('click', fetchLeaves);
+
+    // Fetch on filter change
+    leaveFilter.addEventListener('change', fetchLeaves);
+}
+
+// Download Leave Requests as Excel
+function downloadLeaveRequestsAsExcel() {
+    if (!currentLeaveRequests || currentLeaveRequests.length === 0) {
+        alert('No leave requests available to download. Please fetch records first.');
+        return;
+    }
+
+    // Prepare data for Excel (excluding the Actions column)
+    const worksheetData = currentLeaveRequests.map(request => ({
+        'Employee Name': request.employee_name,
+        'Start Date': request.leave_start_date,
+        'End Date': request.leave_end_date,
+        'Reason': request.leave_reason,
+        'Status': request.status.charAt(0).toUpperCase() + request.status.slice(1)
+    }));
+
+    // Create a workbook and worksheet
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+
+    // Set column widths (in characters)
+    worksheet['!cols'] = [
+        { wch: 20 }, // Employee Name
+        { wch: 15 }, // Start Date
+        { wch: 15 }, // End Date
+        { wch: 30 }, // Reason
+        { wch: 15 }  // Status
+    ];
+
+    // Append the worksheet to the workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, 'Leave_Requests');
+
+    // Generate the Excel file and trigger download
+    XLSX.writeFile(workbook, 'Leave_Requests.xlsx');
 }
 
 // Function to update leave status
 function updateLeaveStatus(requestId, status, callback) {
-  fetch('superadmin_dashboard.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `action=update_leave_status&request_id=${encodeURIComponent(
-      requestId
-    )}&status=${encodeURIComponent(status)}`,
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        showSuccess(data.message, 'leave-requests');
-        if (callback) callback();
-      } else {
-        showError(
-          data.error || 'Failed to update leave status',
-          'leave-requests'
-        );
-      }
+    fetch('superadmin_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `action=update_leave_status&request_id=${encodeURIComponent(
+            requestId
+        )}&status=${encodeURIComponent(status)}`,
     })
-    .catch((error) =>
-      showError('Network error: ' + error.message, 'leave-requests')
-    );
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                showSuccess(data.message, 'leave-requests');
+                if (callback) callback();
+            } else {
+                showError(
+                    data.error || 'Failed to update leave status',
+                    'leave-requests'
+                );
+            }
+        })
+        .catch((error) =>
+            showError('Network error: ' + error.message, 'leave-requests')
+        );
 }
 
 // Function to reconsider leave
 function reconsiderLeave(requestId, callback) {
-  fetch('superadmin_dashboard.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `action=reconsider_leave&request_id=${encodeURIComponent(requestId)}`,
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        showSuccess(data.message, 'leave-requests');
-        if (callback) callback();
-      } else {
-        showError(data.error || 'Failed to reconsider leave', 'leave-requests');
-      }
+    fetch('superadmin_dashboard.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `action=reconsider_leave&request_id=${encodeURIComponent(requestId)}`,
     })
-    .catch((error) =>
-      showError('Network error: ' + error.message, 'leave-requests')
-    );
+        .then((response) => response.json())
+        .then((data) => {
+            if (data.success) {
+                showSuccess(data.message, 'leave-requests');
+                if (callback) callback();
+            } else {
+                showError(data.error || 'Failed to reconsider leave', 'leave-requests');
+            }
+        })
+        .catch((error) =>
+            showError('Network error: ' + error.message, 'leave-requests')
+        );
 }
-
 // Show Department-wise Performance Metrics Section
 function showDepartmentMetrics() {
   if (!showSection('department-metrics')) return;

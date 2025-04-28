@@ -787,6 +787,10 @@ $training_certificates = $data['training_certificates'] ?? [];
                 <tbody id="attendance-table-body"></tbody>
             </table>
             <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
+            <button button type="button" id="downloadExcelBtn" style="padding: 8px 12px; margin-left: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;" 
+                    onmouseover="this.style.backgroundColor='#218838'" 
+                    onmouseout="this.style.backgroundColor='#28a745'"
+onclick="downloadAttendanceAsExcel()">Download as Excel</button>
         </div>
         <div id="leave-requests" style="display: none;" class="card">
             <h2>Leave Requests</h2>
@@ -815,6 +819,9 @@ $training_certificates = $data['training_certificates'] ?? [];
                 <tbody id="leave-table-body"></tbody>
             </table>
             <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
+            <button button type="button" id="downloadExcelBtn" style="padding: 8px 12px; margin-left: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;" 
+                    onmouseover="this.style.backgroundColor='#218838'" 
+                    onmouseout="this.style.backgroundColor='#28a745'" onclick="downloadLeaveRequestsAsExcel()">Download as Excel</button>
         </div>
         <div id="department-metrics" style="display: none;" class="card">
             <h2>Department-wise Performance Metrics</h2>
@@ -852,10 +859,9 @@ $training_certificates = $data['training_certificates'] ?? [];
                 <tbody id="training-table-body"></tbody>
             </table>
             <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
-<button button type="button" id="downloadExcelBtn" style="padding: 8px 12px; margin-left: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;" 
+            <button button type="button" id="downloadExcelBtn" style="padding: 8px 12px; margin-left: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;" 
                     onmouseover="this.style.backgroundColor='#218838'" 
-                    onmouseout="this.style.backgroundColor='#28a745'"
- onclick="downloadTrainingProgramsAsExcel()" >Download Trainging data</button>
+                    onmouseout="this.style.backgroundColor='#28a745'" onclick="downloadTrainingProgramsAsExcel()" >Download Trainging data</button>
         </div>
         <div id="training-assignments" style="display: none;" class="card">
             <h2>Training Assignments</h2>
