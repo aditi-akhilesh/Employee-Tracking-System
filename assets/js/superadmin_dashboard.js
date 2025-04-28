@@ -3355,23 +3355,23 @@ function showEmployeeDistribution() {
   fetch('superadmin_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data&section=project_assignments', // Fixed the body syntax
+    body: 'action=refresh_data&section=project_assignments',
   })
     .then((response) => response.json())
     .then((data) => {
       if (data.success && data.project_assignments) {
-        const employeeDistribution = data.project_assignments.reduce(
+        // Group by project instead of employee
+        const projectDistribution = data.project_assignments.reduce(
           (acc, assignment) => {
-            const employeeKey = `${assignment.employee_id}_${assignment.first_name}_${assignment.last_name}`;
-            if (!acc[employeeKey]) {
-              acc[employeeKey] = {
-                employee_id: assignment.employee_id,
-                employee_name: `${assignment.first_name} ${assignment.last_name}`,
-                projects: [],
+            const projectKey = assignment.project_name;
+            if (!acc[projectKey]) {
+              acc[projectKey] = {
+                project_name: assignment.project_name,
+                employees: [],
               };
             }
-            acc[employeeKey].projects.push({
-              project_name: assignment.project_name,
+            acc[projectKey].employees.push({
+              employee_name: `${assignment.first_name} ${assignment.last_name}`,
               role_in_project: assignment.role_in_project,
             });
             return acc;
@@ -3381,31 +3381,29 @@ function showEmployeeDistribution() {
 
         let html = `
           <div class="card">
-            <h2>Employee Distribution Across Projects</h2>
+            <h2>Employee Distribution</h2>
             <table>
               <thead>
                 <tr>
-                  <th>Employee ID</th>
-                  <th>Employee Name</th>
-                  <th>Assigned Projects</th>
+                  <th>Project Name</th>
+                  <th>Assigned Employees</th>
                 </tr>
               </thead>
               <tbody>
         `;
 
-        const employeeList = Object.values(employeeDistribution);
-        if (employeeList.length === 0) {
-          html += `<tr><td colspan="3">No employees assigned to projects.</td></tr>`;
+        const projectList = Object.values(projectDistribution);
+        if (projectList.length === 0) {
+          html += `<tr><td colspan="2">No projects with assigned employees.</td></tr>`;
         } else {
-          employeeList.forEach((employee) => {
-            const projectList = employee.projects
-              .map((proj) => `${proj.project_name} (${proj.role_in_project})`)
+          projectList.forEach((project) => {
+            const employeeList = project.employees
+              .map((emp) => `${emp.employee_name} (${emp.role_in_project})`)
               .join(', ');
             html += `
               <tr>
-                <td>${employee.employee_id}</td>
-                <td>${employee.employee_name}</td>
-                <td>${projectList}</td>
+                <td>${project.project_name}</td>
+                <td>${employeeList}</td>
               </tr>
             `;
           });
@@ -3427,7 +3425,7 @@ function showEmployeeDistribution() {
         profileUpdateForm.innerHTML = html;
       } else {
         showError(
-          data.error || 'Failed to fetch employee distribution data',
+          data.error || 'Failed to fetch project distribution data',
           'profile-update-form'
         );
       }

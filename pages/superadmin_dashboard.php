@@ -115,16 +115,16 @@ function fetchData($con, $sections = ['all']) {
     }
 
         // Fetch project overview
-        if ($shouldFetch('projects')) {
-            $stmt = $con->prepare("
-                SELECT p.project_id, p.project_name, p.project_status, p.budget, p.actual_cost, 
-                       p.start_date, p.expected_end_date, d.department_name
-                FROM Projects p
-                JOIN Department d ON p.department_id = d.department_id
-            ");
-            $stmt->execute();
-            $data['projects'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        }
+    if ($shouldFetch('projects')) {
+        $stmt = $con->prepare("
+            SELECT p.project_id, p.project_name, p.project_status, p.budget, p.actual_cost, 
+                p.start_date, p.expected_end_date, d.department_name
+            FROM Projects p
+            JOIN Department d ON p.department_id = d.department_id
+        ");
+        $stmt->execute();
+        $data['projects'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
     // Fetch data from Employee_Task_Project_View for Excel download
     if ($shouldFetch('employee_task_project_view')) {
