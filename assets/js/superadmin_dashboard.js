@@ -16,8 +16,8 @@ function showSection(sectionToShowId) {
     'audit-logs-section',
     'training-programs',
     'training-assignments',
-     'performance-metrics-section'
-
+    'project-overview-section',
+    'performance-metrics-section',
   ];
 
   const mainContent = document.getElementById('content-area');
@@ -46,7 +46,6 @@ function showSection(sectionToShowId) {
 
   return true;
 }
-
 
 // Utility function to escape HTML characters to prevent XSS
 function escapeHTML(str) {
@@ -220,114 +219,121 @@ function renderTrainingCertificatesTable() {
 
 // Function to show Training Programs
 function showTrainingPrograms() {
-    const section = document.getElementById('training-programs');
-    const contentArea = document.getElementById('content-area');
-    if (!section || !contentArea) {
-        console.error('Training programs section or content area not found');
+  const section = document.getElementById('training-programs');
+  const contentArea = document.getElementById('content-area');
+  if (!section || !contentArea) {
+    console.error('Training programs section or content area not found');
+    return;
+  }
+
+  contentArea
+    .querySelectorAll('.card, #main-content')
+    .forEach((el) => (el.style.display = 'none'));
+  section.style.display = 'block';
+
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=fetch_trainings',
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (!data.success) {
+        showError(data.error || 'Failed to fetch training programs');
         return;
-    }
-
-    contentArea
-        .querySelectorAll('.card, #main-content')
-        .forEach((el) => (el.style.display = 'none'));
-    section.style.display = 'block';
-
-    fetch('superadmin_dashboard.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=fetch_trainings',
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            if (!data.success) {
-                showError(data.error || 'Failed to fetch training programs');
-                return;
-            }
-            const tbody = document.getElementById('training-table-body');
-            if (!tbody) return;
-            tbody.innerHTML = '';
-            data.trainings.forEach((training) => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
+      }
+      const tbody = document.getElementById('training-table-body');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      data.trainings.forEach((training) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
                     <td>${escapeHTML(training.training_name)}</td>
                     <td>${escapeHTML(training.department_name || 'N/A')}</td>
                     <td>${escapeHTML(training.training_date)}</td>
                     <td>${escapeHTML(training.end_date)}</td>
                     <td>${
-                        training.duration_days !== null ? training.duration_days : 'N/A'
+                      training.duration_days !== null
+                        ? training.duration_days
+                        : 'N/A'
                     }</td>
                     <td>${escapeHTML(training.certificate)}</td>
                 `;
-                tbody.appendChild(row);
-            });
-            addTableSorting('training-table');
-        })
-        .catch((err) =>
-            showError('Error fetching training programs: ' + err.message)
-        );
+        tbody.appendChild(row);
+      });
+      addTableSorting('training-table');
+    })
+    .catch((err) =>
+      showError('Error fetching training programs: ' + err.message)
+    );
 }
 
 function downloadTrainingProgramsAsExcel() {
-    // Fetch detailed data from the view via superadmin_dashboard.php
-    fetch('superadmin_dashboard.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=refresh_data&section=training_programs_view', // Fixed typo: § to &
+  // Fetch detailed data from the view via superadmin_dashboard.php
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=refresh_data&section=training_programs_view', // Fixed typo: ï¿½ to &
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      console.log('Fetched data:', data); // Debugging: Log the response
+      if (
+        !data.success ||
+        !data.training_programs_view ||
+        data.training_programs_view.length === 0
+      ) {
+        alert('No data available to download.');
+        return;
+      }
+
+      // Prepare data for Excel
+      const worksheetData = data.training_programs_view.map((row) => ({
+        'Training ID': row.training_id,
+        'Training Name': row.training_name,
+        Department: row.department_name || 'N/A',
+        'Start Date': row.training_date,
+        'End Date': row.end_date,
+        'Duration (Days)':
+          row.duration_days !== null ? row.duration_days : 'N/A',
+        Certificate: row.certificate,
+        'Employee ID': row.employee_id || 'N/A',
+        'Employee Name': row.employee_name || 'N/A',
+        'Training Status': row.training_status || 'N/A',
+        Score: row.score !== null ? row.score : 'N/A',
+        'Enrollment Date': row.enrollment_date || 'N/A',
+      }));
+
+      // Create a worksheet
+      const workbook = XLSX.utils.book_new();
+      const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+
+      // Set column widths (in characters)
+      worksheet['!cols'] = [
+        { wch: 15 }, // Training ID
+        { wch: 30 }, // Training Name
+        { wch: 25 }, // Department
+        { wch: 15 }, // Start Date
+        { wch: 15 }, // End Date
+        { wch: 15 }, // Duration (Days)
+        { wch: 25 }, // Certificate
+        { wch: 15 }, // Employee ID
+        { wch: 25 }, // Employee Name
+        { wch: 20 }, // Training Status
+        { wch: 10 }, // Score
+        { wch: 15 }, // Enrollment Date
+      ];
+
+      // Append the worksheet to the workbook
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Training_Programs');
+
+      // Generate the Excel file and trigger download
+      XLSX.writeFile(workbook, 'Training_Programs_Detailed.xlsx');
     })
-        .then((response) => response.json())
-        .then((data) => {
-            console.log('Fetched data:', data); // Debugging: Log the response
-            if (!data.success || !data.training_programs_view || data.training_programs_view.length === 0) {
-                alert('No data available to download.');
-                return;
-            }
-
-            // Prepare data for Excel
-            const worksheetData = data.training_programs_view.map(row => ({
-                'Training ID': row.training_id,
-                'Training Name': row.training_name,
-                'Department': row.department_name || 'N/A',
-                'Start Date': row.training_date,
-                'End Date': row.end_date,
-                'Duration (Days)': row.duration_days !== null ? row.duration_days : 'N/A',
-                'Certificate': row.certificate,
-                'Employee ID': row.employee_id || 'N/A',
-                'Employee Name': row.employee_name || 'N/A',
-                'Training Status': row.training_status || 'N/A',
-                'Score': row.score !== null ? row.score : 'N/A',
-                'Enrollment Date': row.enrollment_date || 'N/A'
-            }));
-
-            // Create a worksheet
-            const workbook = XLSX.utils.book_new();
-            const worksheet = XLSX.utils.json_to_sheet(worksheetData);
-
-            // Set column widths (in characters)
-            worksheet['!cols'] = [
-                { wch: 15 }, // Training ID
-                { wch: 30 }, // Training Name
-                { wch: 25 }, // Department
-                { wch: 15 }, // Start Date
-                { wch: 15 }, // End Date
-                { wch: 15 }, // Duration (Days)
-                { wch: 25 }, // Certificate
-                { wch: 15 }, // Employee ID
-                { wch: 25 }, // Employee Name
-                { wch: 20 }, // Training Status
-                { wch: 10 }, // Score
-                { wch: 15 }  // Enrollment Date
-            ];
-
-            // Append the worksheet to the workbook
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'Training_Programs');
-
-            // Generate the Excel file and trigger download
-            XLSX.writeFile(workbook, 'Training_Programs_Detailed.xlsx');
-        })
-        .catch((error) => {
-            console.error('Error fetching data for download:', error);
-            alert('Failed to fetch data for download: ' + error.message);
-        });
+    .catch((error) => {
+      console.error('Error fetching data for download:', error);
+      alert('Failed to fetch data for download: ' + error.message);
+    });
 }
 
 // Function to show Training Assignments
@@ -849,215 +855,220 @@ let currentAttendanceRecords = [];
 
 // Show Attendance Records Section
 function showAttendanceRecords() {
-    if (!showSection('attendance-records')) return;
+  if (!showSection('attendance-records')) return;
 
-    const fetchAttendanceBtn = document.getElementById('fetch-attendance-btn');
-    const attendanceTableBody = document.getElementById('attendance-table-body');
-    const employeeSearch = document.getElementById('attendance-employee-search');
-    const startDateInput = document.getElementById('start-date');
-    const endDateInput = document.getElementById('end-date');
+  const fetchAttendanceBtn = document.getElementById('fetch-attendance-btn');
+  const attendanceTableBody = document.getElementById('attendance-table-body');
+  const employeeSearch = document.getElementById('attendance-employee-search');
+  const startDateInput = document.getElementById('start-date');
+  const endDateInput = document.getElementById('end-date');
 
-    if (
-        !fetchAttendanceBtn ||
-        !attendanceTableBody ||
-        !employeeSearch ||
-        !startDateInput ||
-        !endDateInput
-    ) {
-        showError('Required elements not found', 'attendance-records');
-        return;
-    }
+  if (
+    !fetchAttendanceBtn ||
+    !attendanceTableBody ||
+    !employeeSearch ||
+    !startDateInput ||
+    !endDateInput
+  ) {
+    showError('Required elements not found', 'attendance-records');
+    return;
+  }
 
-    // Clear table
-    attendanceTableBody.innerHTML = '';
+  // Clear table
+  attendanceTableBody.innerHTML = '';
 
-    // Remove existing listeners to prevent duplicates
-    const newButton = fetchAttendanceBtn.cloneNode(true);
-    fetchAttendanceBtn.parentNode.replaceChild(newButton, fetchAttendanceBtn);
-    const updatedFetchAttendanceBtn = document.getElementById('fetch-attendance-btn');
+  // Remove existing listeners to prevent duplicates
+  const newButton = fetchAttendanceBtn.cloneNode(true);
+  fetchAttendanceBtn.parentNode.replaceChild(newButton, fetchAttendanceBtn);
+  const updatedFetchAttendanceBtn = document.getElementById(
+    'fetch-attendance-btn'
+  );
 
-    updatedFetchAttendanceBtn.addEventListener('click', function () {
-        const employeeId = employeeSearch.value;
-        const startDate = startDateInput.value;
-        const endDate = endDateInput.value;
+  updatedFetchAttendanceBtn.addEventListener('click', function () {
+    const employeeId = employeeSearch.value;
+    const startDate = startDateInput.value;
+    const endDate = endDateInput.value;
 
-        fetch('superadmin_dashboard.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `action=fetch_attendance&employee_id=${encodeURIComponent(
-                employeeId
-            )}&start_date=${encodeURIComponent(
-                startDate
-            )}&end_date=${encodeURIComponent(endDate)}`,
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.success) {
-                    // Store the fetched data globally
-                    currentAttendanceRecords = data.attendance_records || [];
+    fetch('superadmin_dashboard.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `action=fetch_attendance&employee_id=${encodeURIComponent(
+        employeeId
+      )}&start_date=${encodeURIComponent(
+        startDate
+      )}&end_date=${encodeURIComponent(endDate)}`,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          // Store the fetched data globally
+          currentAttendanceRecords = data.attendance_records || [];
 
-                    attendanceTableBody.innerHTML = '';
-                    if (currentAttendanceRecords.length === 0) {
-                        attendanceTableBody.innerHTML = `<tr><td colspan="5">No attendance records found.</td></tr>`;
-                    } else {
-                        currentAttendanceRecords.forEach((record) => {
-                            const row = document.createElement('tr');
-                            row.innerHTML = `
+          attendanceTableBody.innerHTML = '';
+          if (currentAttendanceRecords.length === 0) {
+            attendanceTableBody.innerHTML = `<tr><td colspan="5">No attendance records found.</td></tr>`;
+          } else {
+            currentAttendanceRecords.forEach((record) => {
+              const row = document.createElement('tr');
+              row.innerHTML = `
                                 <td>${escapeHTML(record.employee_name)}</td>
                                 <td>${escapeHTML(record.department_name)}</td>
                                 <td>${escapeHTML(record.check_in || 'N/A')}</td>
-                                <td>${escapeHTML(record.check_out || 'N/A')}</td>
+                                <td>${escapeHTML(
+                                  record.check_out || 'N/A'
+                                )}</td>
                                 <td>${escapeHTML(record.status)}</td>
                             `;
-                            attendanceTableBody.appendChild(row);
-                        });
-                    }
-                } else {
-                    showError(
-                        data.error || 'Failed to fetch attendance records',
-                        'attendance-records'
-                    );
-                }
-            })
-            .catch((error) =>
-                showError('Network error: ' + error.message, 'attendance-records')
-            );
-    });
-
-    // Add sorting functionality
-    const headers = document.querySelectorAll('#attendance-table th');
-    headers.forEach((header, index) => {
-        header.addEventListener('click', () => {
-            const rows = Array.from(attendanceTableBody.querySelectorAll('tr'));
-            const isAscending = header.classList.contains('sort-asc');
-            headers.forEach((h) => {
-                h.classList.remove('sort-asc', 'sort-desc');
-                const icon = h.querySelector('i.fas');
-                if (icon) icon.className = 'fas fa-sort';
+              attendanceTableBody.appendChild(row);
             });
+          }
+        } else {
+          showError(
+            data.error || 'Failed to fetch attendance records',
+            'attendance-records'
+          );
+        }
+      })
+      .catch((error) =>
+        showError('Network error: ' + error.message, 'attendance-records')
+      );
+  });
 
-            header.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
-            const icon = header.querySelector('i.fas');
-            if (icon)
-                icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
+  // Add sorting functionality
+  const headers = document.querySelectorAll('#attendance-table th');
+  headers.forEach((header, index) => {
+    header.addEventListener('click', () => {
+      const rows = Array.from(attendanceTableBody.querySelectorAll('tr'));
+      const isAscending = header.classList.contains('sort-asc');
+      headers.forEach((h) => {
+        h.classList.remove('sort-asc', 'sort-desc');
+        const icon = h.querySelector('i.fas');
+        if (icon) icon.className = 'fas fa-sort';
+      });
 
-            rows.sort((a, b) => {
-                const aText = a.cells[index].textContent.trim();
-                const bText = b.cells[index].textContent.trim();
-                if (index === 2 || index === 3) {
-                    // Check In, Check Out (dates)
-                    const aDate = aText === 'N/A' ? 0 : new Date(aText).getTime();
-                    const bDate = bText === 'N/A' ? 0 : new Date(bText).getTime();
-                    return isAscending ? bDate - aDate : aDate - bDate;
-                }
-                return isAscending
-                    ? bText.localeCompare(aText)
-                    : aText.localeCompare(bText);
-            });
+      header.classList.add(isAscending ? 'sort-desc' : 'sort-asc');
+      const icon = header.querySelector('i.fas');
+      if (icon)
+        icon.className = isAscending ? 'fas fa-sort-down' : 'fas fa-sort-up';
 
-            attendanceTableBody.innerHTML = '';
-            rows.forEach((row) => attendanceTableBody.appendChild(row));
-        });
+      rows.sort((a, b) => {
+        const aText = a.cells[index].textContent.trim();
+        const bText = b.cells[index].textContent.trim();
+        if (index === 2 || index === 3) {
+          // Check In, Check Out (dates)
+          const aDate = aText === 'N/A' ? 0 : new Date(aText).getTime();
+          const bDate = bText === 'N/A' ? 0 : new Date(bText).getTime();
+          return isAscending ? bDate - aDate : aDate - bDate;
+        }
+        return isAscending
+          ? bText.localeCompare(aText)
+          : aText.localeCompare(bText);
+      });
+
+      attendanceTableBody.innerHTML = '';
+      rows.forEach((row) => attendanceTableBody.appendChild(row));
     });
+  });
 }
 
 // Download Attendance Records as Excel
 function downloadAttendanceAsExcel() {
-    if (!currentAttendanceRecords || currentAttendanceRecords.length === 0) {
-        alert('No attendance records available to download. Please fetch records first.');
-        return;
-    }
+  if (!currentAttendanceRecords || currentAttendanceRecords.length === 0) {
+    alert(
+      'No attendance records available to download. Please fetch records first.'
+    );
+    return;
+  }
 
-    // Prepare data for Excel
-    const worksheetData = currentAttendanceRecords.map(record => ({
-        'Employee Name': record.employee_name,
-        'Department': record.department_name,
-        'Check In': record.check_in || 'N/A',
-        'Check Out': record.check_out || 'N/A',
-        'Status': record.status
-    }));
+  // Prepare data for Excel
+  const worksheetData = currentAttendanceRecords.map((record) => ({
+    'Employee Name': record.employee_name,
+    Department: record.department_name,
+    'Check In': record.check_in || 'N/A',
+    'Check Out': record.check_out || 'N/A',
+    Status: record.status,
+  }));
 
-    // Create a workbook and worksheet
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+  // Create a workbook and worksheet
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.json_to_sheet(worksheetData);
 
-    // Set column widths (in characters)
-    worksheet['!cols'] = [
-        { wch: 20 }, // Employee Name
-        { wch: 20 }, // Department
-        { wch: 20 }, // Check In
-        { wch: 20 }, // Check Out
-        { wch: 15 }  // Status
-    ];
+  // Set column widths (in characters)
+  worksheet['!cols'] = [
+    { wch: 20 }, // Employee Name
+    { wch: 20 }, // Department
+    { wch: 20 }, // Check In
+    { wch: 20 }, // Check Out
+    { wch: 15 }, // Status
+  ];
 
-    // Append the worksheet to the workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance_Records');
+  // Append the worksheet to the workbook
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Attendance_Records');
 
-    // Generate the Excel file and trigger download
-    XLSX.writeFile(workbook, 'Attendance_Records.xlsx');
+  // Generate the Excel file and trigger download
+  XLSX.writeFile(workbook, 'Attendance_Records.xlsx');
 }
-
 
 // Show Leave Requests Section
 function showLeaveRequests() {
-    if (!showSection('leave-requests')) return;
+  if (!showSection('leave-requests')) return;
 
-    const fetchLeaveBtn = document.getElementById('fetch-leave-btn');
-    const leaveTableBody = document.getElementById('leave-table-body');
-    const leaveFilter = document.getElementById('leave-filter');
+  const fetchLeaveBtn = document.getElementById('fetch-leave-btn');
+  const leaveTableBody = document.getElementById('leave-table-body');
+  const leaveFilter = document.getElementById('leave-filter');
 
-    if (!fetchLeaveBtn || !leaveTableBody || !leaveFilter) {
-        showError('Required elements not found', 'leave-requests');
-        return;
-    }
+  if (!fetchLeaveBtn || !leaveTableBody || !leaveFilter) {
+    showError('Required elements not found', 'leave-requests');
+    return;
+  }
 
-    // Clear table
-    leaveTableBody.innerHTML = '';
+  // Clear table
+  leaveTableBody.innerHTML = '';
 
-    // Remove existing listeners to prevent duplicates
-    const newButton = fetchLeaveBtn.cloneNode(true);
-    fetchLeaveBtn.parentNode.replaceChild(newButton, fetchLeaveBtn);
-    const updatedFetchLeaveBtn = document.getElementById('fetch-leave-btn');
+  // Remove existing listeners to prevent duplicates
+  const newButton = fetchLeaveBtn.cloneNode(true);
+  fetchLeaveBtn.parentNode.replaceChild(newButton, fetchLeaveBtn);
+  const updatedFetchLeaveBtn = document.getElementById('fetch-leave-btn');
 
-    function fetchLeaves() {
-        const status = leaveFilter.value;
-        fetch('superadmin_dashboard.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: `action=fetch_leave_applications&leave_filter=${encodeURIComponent(
-                status
-            )}`,
-        })
-            .then((response) => response.json())
-            .then((data) => {
-                if (data.success) {
-                    // Store the fetched data globally
-                    currentLeaveRequests = data.leave_applications || [];
+  function fetchLeaves() {
+    const status = leaveFilter.value;
+    fetch('superadmin_dashboard.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `action=fetch_leave_applications&leave_filter=${encodeURIComponent(
+        status
+      )}`,
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        if (data.success) {
+          // Store the fetched data globally
+          currentLeaveRequests = data.leave_applications || [];
 
-                    leaveTableBody.innerHTML = '';
-                    if (currentLeaveRequests.length === 0) {
-                        leaveTableBody.innerHTML = `<tr><td colspan="6">No leave requests found.</td></tr>`;
-                    } else {
-                        currentLeaveRequests.forEach((request) => {
-                            const row = document.createElement('tr');
-                            const statusClass =
-                                request.status === 'ispending'
-                                    ? 'status-pending'
-                                    : request.status === 'approved'
-                                    ? 'status-approved'
-                                    : 'status-rejected';
-                            row.innerHTML = `
+          leaveTableBody.innerHTML = '';
+          if (currentLeaveRequests.length === 0) {
+            leaveTableBody.innerHTML = `<tr><td colspan="6">No leave requests found.</td></tr>`;
+          } else {
+            currentLeaveRequests.forEach((request) => {
+              const row = document.createElement('tr');
+              const statusClass =
+                request.status === 'ispending'
+                  ? 'status-pending'
+                  : request.status === 'approved'
+                  ? 'status-approved'
+                  : 'status-rejected';
+              row.innerHTML = `
                                 <td>${escapeHTML(request.employee_name)}</td>
                                 <td>${escapeHTML(request.leave_start_date)}</td>
                                 <td>${escapeHTML(request.leave_end_date)}</td>
                                 <td>${escapeHTML(request.leave_reason)}</td>
                                 <td><span class="status-badge ${statusClass}">${
-                                    request.status.charAt(0).toUpperCase() + request.status.slice(1)
-                                }</span></td>
+                request.status.charAt(0).toUpperCase() + request.status.slice(1)
+              }</span></td>
                                 <td>
                                     ${
-                                        request.status === 'ispending'
-                                            ? `
+                                      request.status === 'ispending'
+                                        ? `
                                         <form class="action-form approve-form" style="display:inline;">
                                             <input type="hidden" name="request_id" value="${request.request_id}">
                                             <button type="button" class="approve-btn" style="background-color:#4caf50;color:white;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;margin-right:5px;">Approve</button>
@@ -1067,153 +1078,155 @@ function showLeaveRequests() {
                                             <button type="button" class="reject-btn" style="background-color:#f44336;color:white;padding:5px 10px;border:none;border-radius:3px;cursor:pointer;">Reject</button>
                                         </form>
                                     `
-                                            : request.status === 'approved' ||
-                                            request.status === 'rejected'
-                                            ? `
+                                        : request.status === 'approved' ||
+                                          request.status === 'rejected'
+                                        ? `
                                         <button type="button" class="reconsider-btn" data-request-id="${request.request_id}">Reconsider</button>
                                     `
-                                            : ''
+                                        : ''
                                     }
                                 </td>
                             `;
-                            leaveTableBody.appendChild(row);
+              leaveTableBody.appendChild(row);
 
-                            // Add event listeners for approve/reject buttons
-                            if (request.status === 'ispending') {
-                                row
-                                    .querySelector('.approve-btn')
-                                    .addEventListener('click', () =>
-                                        updateLeaveStatus(
-                                            request.request_id,
-                                            'approved',
-                                            fetchLeaves
-                                        )
-                                    );
-                                row
-                                    .querySelector('.reject-btn')
-                                    .addEventListener('click', () =>
-                                        updateLeaveStatus(
-                                            request.request_id,
-                                            'rejected',
-                                            fetchLeaves
-                                        )
-                                    );
-                            }
-                            if (
-                                request.status === 'approved' ||
-                                request.status === 'rejected'
-                            ) {
-                                row
-                                    .querySelector('.reconsider-btn')
-                                    .addEventListener('click', () =>
-                                        reconsiderLeave(request.request_id, fetchLeaves)
-                                    );
-                            }
-                        });
-                    }
-                } else {
-                    showError(
-                        data.error || 'Failed to fetch leave requests',
-                        'leave-requests'
-                    );
-                }
-            })
-            .catch((error) =>
-                showError('Network error: ' + error.message, 'leave-requests')
-            );
-    }
+              // Add event listeners for approve/reject buttons
+              if (request.status === 'ispending') {
+                row
+                  .querySelector('.approve-btn')
+                  .addEventListener('click', () =>
+                    updateLeaveStatus(
+                      request.request_id,
+                      'approved',
+                      fetchLeaves
+                    )
+                  );
+                row
+                  .querySelector('.reject-btn')
+                  .addEventListener('click', () =>
+                    updateLeaveStatus(
+                      request.request_id,
+                      'rejected',
+                      fetchLeaves
+                    )
+                  );
+              }
+              if (
+                request.status === 'approved' ||
+                request.status === 'rejected'
+              ) {
+                row
+                  .querySelector('.reconsider-btn')
+                  .addEventListener('click', () =>
+                    reconsiderLeave(request.request_id, fetchLeaves)
+                  );
+              }
+            });
+          }
+        } else {
+          showError(
+            data.error || 'Failed to fetch leave requests',
+            'leave-requests'
+          );
+        }
+      })
+      .catch((error) =>
+        showError('Network error: ' + error.message, 'leave-requests')
+      );
+  }
 
-    // Initial fetch
-    fetchLeaves();
+  // Initial fetch
+  fetchLeaves();
 
-    // Fetch on button click
-    updatedFetchLeaveBtn.addEventListener('click', fetchLeaves);
+  // Fetch on button click
+  updatedFetchLeaveBtn.addEventListener('click', fetchLeaves);
 
-    // Fetch on filter change
-    leaveFilter.addEventListener('change', fetchLeaves);
+  // Fetch on filter change
+  leaveFilter.addEventListener('change', fetchLeaves);
 }
 
 // Download Leave Requests as Excel
 function downloadLeaveRequestsAsExcel() {
-    if (!currentLeaveRequests || currentLeaveRequests.length === 0) {
-        alert('No leave requests available to download. Please fetch records first.');
-        return;
-    }
+  if (!currentLeaveRequests || currentLeaveRequests.length === 0) {
+    alert(
+      'No leave requests available to download. Please fetch records first.'
+    );
+    return;
+  }
 
-    // Prepare data for Excel (excluding the Actions column)
-    const worksheetData = currentLeaveRequests.map(request => ({
-        'Employee Name': request.employee_name,
-        'Start Date': request.leave_start_date,
-        'End Date': request.leave_end_date,
-        'Reason': request.leave_reason,
-        'Status': request.status.charAt(0).toUpperCase() + request.status.slice(1)
-    }));
+  // Prepare data for Excel (excluding the Actions column)
+  const worksheetData = currentLeaveRequests.map((request) => ({
+    'Employee Name': request.employee_name,
+    'Start Date': request.leave_start_date,
+    'End Date': request.leave_end_date,
+    Reason: request.leave_reason,
+    Status: request.status.charAt(0).toUpperCase() + request.status.slice(1),
+  }));
 
-    // Create a workbook and worksheet
-    const workbook = XLSX.utils.book_new();
-    const worksheet = XLSX.utils.json_to_sheet(worksheetData);
+  // Create a workbook and worksheet
+  const workbook = XLSX.utils.book_new();
+  const worksheet = XLSX.utils.json_to_sheet(worksheetData);
 
-    // Set column widths (in characters)
-    worksheet['!cols'] = [
-        { wch: 20 }, // Employee Name
-        { wch: 15 }, // Start Date
-        { wch: 15 }, // End Date
-        { wch: 30 }, // Reason
-        { wch: 15 }  // Status
-    ];
+  // Set column widths (in characters)
+  worksheet['!cols'] = [
+    { wch: 20 }, // Employee Name
+    { wch: 15 }, // Start Date
+    { wch: 15 }, // End Date
+    { wch: 30 }, // Reason
+    { wch: 15 }, // Status
+  ];
 
-    // Append the worksheet to the workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Leave_Requests');
+  // Append the worksheet to the workbook
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Leave_Requests');
 
-    // Generate the Excel file and trigger download
-    XLSX.writeFile(workbook, 'Leave_Requests.xlsx');
+  // Generate the Excel file and trigger download
+  XLSX.writeFile(workbook, 'Leave_Requests.xlsx');
 }
 
 // Function to update leave status
 function updateLeaveStatus(requestId, status, callback) {
-    fetch('superadmin_dashboard.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `action=update_leave_status&request_id=${encodeURIComponent(
-            requestId
-        )}&status=${encodeURIComponent(status)}`,
-    })
-        .then((response) => response.json())
-        .then((data) => {
-            if (data.success) {
-                showSuccess(data.message, 'leave-requests');
-                if (callback) callback();
-            } else {
-                showError(
-                    data.error || 'Failed to update leave status',
-                    'leave-requests'
-                );
-            }
-        })
-        .catch((error) =>
-            showError('Network error: ' + error.message, 'leave-requests')
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `action=update_leave_status&request_id=${encodeURIComponent(
+      requestId
+    )}&status=${encodeURIComponent(status)}`,
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        showSuccess(data.message, 'leave-requests');
+        if (callback) callback();
+      } else {
+        showError(
+          data.error || 'Failed to update leave status',
+          'leave-requests'
         );
+      }
+    })
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'leave-requests')
+    );
 }
 
 // Function to reconsider leave
 function reconsiderLeave(requestId, callback) {
-    fetch('superadmin_dashboard.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: `action=reconsider_leave&request_id=${encodeURIComponent(requestId)}`,
+  fetch('superadmin_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: `action=reconsider_leave&request_id=${encodeURIComponent(requestId)}`,
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.success) {
+        showSuccess(data.message, 'leave-requests');
+        if (callback) callback();
+      } else {
+        showError(data.error || 'Failed to reconsider leave', 'leave-requests');
+      }
     })
-        .then((response) => response.json())
-        .then((data) => {
-            if (data.success) {
-                showSuccess(data.message, 'leave-requests');
-                if (callback) callback();
-            } else {
-                showError(data.error || 'Failed to reconsider leave', 'leave-requests');
-            }
-        })
-        .catch((error) =>
-            showError('Network error: ' + error.message, 'leave-requests')
-        );
+    .catch((error) =>
+      showError('Network error: ' + error.message, 'leave-requests')
+    );
 }
 // Show Department-wise Performance Metrics Section
 function showDepartmentMetrics() {
@@ -1814,10 +1827,18 @@ function showDepartment() {
     departments.forEach((dept) => {
       html += `
                 <tr>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_id}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_name}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${dept.department_description || 'No description'}</td>
-                    <td style="border: 1px solid #ddd; padding: 8px;">${dept.employee_count}</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${
+                      dept.department_id
+                    }</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${
+                      dept.department_name
+                    }</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${
+                      dept.department_description || 'No description'
+                    }</td>
+                    <td style="border: 1px solid #ddd; padding: 8px;">${
+                      dept.employee_count
+                    }</td>
                 </tr>
             `;
     });
@@ -1848,9 +1869,13 @@ function showDepartment() {
 function downloadAsExcel() {
   // Get the table element
   const table = document.getElementById('departmentTable');
-  
+
   // Check if table exists and has data
-  if (!table || table.querySelector('tbody').children.length === 0 || table.querySelector('td').textContent === 'No departments found.') {
+  if (
+    !table ||
+    table.querySelector('tbody').children.length === 0 ||
+    table.querySelector('td').textContent === 'No departments found.'
+  ) {
     alert('No data available to download.');
     return;
   }
@@ -1858,10 +1883,10 @@ function downloadAsExcel() {
   // Convert the table to a worksheet
   const workbook = XLSX.utils.book_new();
   const worksheet = XLSX.utils.table_to_sheet(table);
-  
+
   // Append the worksheet to the workbook
   XLSX.utils.book_append_sheet(workbook, worksheet, 'Departments');
-  
+
   // Generate the Excel file and trigger download
   XLSX.writeFile(workbook, 'Department_Information.xlsx');
 }
@@ -3271,92 +3296,50 @@ function showUpdateDepartmentForm(departmentId) {
   }
 }
 
-// Function to show Project Status tracking
+// Show Project Overview
 function trackProjectStatus() {
-  if (!showSection('profile-update-form')) return;
+  if (!showSection('project-overview-section')) return;
+  document.getElementById('project-overview-section').style.display = 'block';
+  renderProjectOverview();
 
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  if (!profileUpdateForm) {
-    showError('Profile update form section not found.', 'content-area');
-    return;
-  }
+  // Add filter event listener
+  document.getElementById('project-status-filter').onchange = () =>
+    renderProjectOverview();
+}
 
-  // Fetch project data via AJAX
-  fetch('superadmin_dashboard.php', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=refresh_data&section=project_assignments',
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success && data.project_assignments) {
-        const projects = data.project_assignments.reduce((acc, assignment) => {
-          if (!acc[assignment.project_id]) {
-            acc[assignment.project_id] = {
-              project_id: assignment.project_id,
-              project_name: assignment.project_name,
-              employees: [],
-            };
-          }
-          acc[assignment.project_id].employees.push({
-            employee_name: `${assignment.first_name} ${assignment.last_name}`,
-            role_in_project: assignment.role_in_project,
-          });
-          return acc;
-        }, {});
+function renderProjectOverview() {
+  const projectTable = document.getElementById('project-overview-table');
+  const statusFilter = document.getElementById('project-status-filter').value;
+  const currentDate = new Date();
 
-        let html = `
-          <div class="card">
-            <h2>Track Project Status</h2>
-            <table>
-              <thead>
-                <tr>
-                  <th>Project ID</th>
-                  <th>Project Name</th>
-                  <th>Assigned Employees</th>
-                </tr>
-              </thead>
-              <tbody>
-        `;
+  let overdueCount = 0;
+  const filteredProjects = projects.filter(
+    (project) => !statusFilter || project.project_status === statusFilter
+  );
 
-        const projectList = Object.values(projects);
-        if (projectList.length === 0) {
-          html += `<tr><td colspan="3">No active projects found.</td></tr>`;
-        } else {
-          projectList.forEach((project) => {
-            const employeeList = project.employees
-              .map((emp) => `${emp.employee_name} (${emp.role_in_project})`)
-              .join(', ');
-            html += `
-              <tr>
-                <td>${project.project_id}</td>
-                <td>${project.project_name}</td>
-                <td>${employeeList || 'No employees assigned'}</td>
-              </tr>
-            `;
-          });
-        }
+  projectTable.innerHTML = '';
+  filteredProjects.forEach((project) => {
+    const expectedEndDate = new Date(project.expected_end_date);
+    const isOverdue =
+      expectedEndDate < currentDate && project.project_status !== 'Completed';
+    if (isOverdue) overdueCount++;
 
-        html += `
-              </tbody>
-            </table>
-            <div class="form-group button-group">
-              <button type="button" onclick="showWelcomeMessage()">Back</button>
-            </div>
-          </div>
-        `;
+    const rowStyle = isOverdue ? 'style="background-color: #ffcccc;"' : '';
+    projectTable.innerHTML += `
+          <tr ${rowStyle}>
+              <td>${project.project_name}</td>
+              <td>${project.project_status}</td>
+              <td>${project.start_date}</td>
+              <td>${project.expected_end_date}</td>
+              <td>${project.department_name}</td>
+          </tr>
+      `;
+  });
 
-        profileUpdateForm.innerHTML = html;
-      } else {
-        showError(
-          data.error || 'Failed to fetch project data',
-          'profile-update-form'
-        );
-      }
-    })
-    .catch((error) =>
-      showError('Network error: ' + error.message, 'profile-update-form')
-    );
+  // Update summary
+  document.getElementById('total-projects').textContent =
+    filteredProjects.length;
+  document.getElementById('overdue-projects').textContent = overdueCount;
 }
 
 function showEmployeeDistribution() {
@@ -3463,13 +3446,17 @@ function downloadEmployeeDistributionAsExcel() {
   })
     .then((response) => response.json())
     .then((data) => {
-      if (!data.success || !data.employee_task_project_view || data.employee_task_project_view.length === 0) {
+      if (
+        !data.success ||
+        !data.employee_task_project_view ||
+        data.employee_task_project_view.length === 0
+      ) {
         alert('No data available to download.');
         return;
       }
 
       // Prepare data for Excel
-      const worksheetData = data.employee_task_project_view.map(row => ({
+      const worksheetData = data.employee_task_project_view.map((row) => ({
         'Employee ID': row.employee_id,
         'Employee Name': row.employee_name,
         'Project ID': row.project_id,
@@ -3479,7 +3466,7 @@ function downloadEmployeeDistributionAsExcel() {
         'Task ID': row.task_id || 'N/A',
         'Task Description': row.task_description || 'N/A',
         'Task Status': row.task_status || 'N/A',
-        'Due Date': row.due_date || 'N/A'
+        'Due Date': row.due_date || 'N/A',
       }));
 
       // Create a worksheet
@@ -3497,11 +3484,15 @@ function downloadEmployeeDistributionAsExcel() {
         { wch: 15 }, // Task ID
         { wch: 40 }, // Task Description
         { wch: 20 }, // Task Status
-        { wch: 15 }  // Due Date
+        { wch: 15 }, // Due Date
       ];
 
       // Append the worksheet to the workbook
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Employee_Distribution');
+      XLSX.utils.book_append_sheet(
+        workbook,
+        worksheet,
+        'Employee_Distribution'
+      );
 
       // Generate the Excel file and trigger download
       XLSX.writeFile(workbook, 'Employee_Distribution_Detailed.xlsx');
@@ -4640,39 +4631,46 @@ function updateTopPerformers() {
   fetch('superadmin_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: `action=fetch_top_performers&filter=${filter}`
+    body: `action=fetch_top_performers&filter=${filter}`,
   })
-  .then(r => r.json())
-  .then(d => {
-    if (!d.success) return showError(d.error, 'top-performers-section');
+    .then((r) => r.json())
+    .then((d) => {
+      if (!d.success) return showError(d.error, 'top-performers-section');
 
-    // Populate Top Performers table
-    const tpTbody = document.querySelector('#top-performers-table tbody');
-    if (tpTbody) {
-      tpTbody.innerHTML = '';
-      if (d.top_performers && Array.isArray(d.top_performers)) {
-        d.top_performers.forEach(row => {
-  console.log('Row data:', row); // Log the row to see the data types
-  let metricValue;
-  if (filter === 'tasks_completed') {
-    metricValue = row.tasks_completed;
-  } else if (filter === 'average_feedback') {
-    const avgFeedback = row.average_feedback ? parseFloat(row.average_feedback) : 0;
-    metricValue = avgFeedback ? avgFeedback.toFixed(2) : 'N/A';
-  } else {
-    const combinedScore = row.combined_score ? parseFloat(row.combined_score) : 0;
-    metricValue = combinedScore ? combinedScore.toFixed(2) : 'N/A';
-  }
-  tpTbody.innerHTML += `<tr>
+      // Populate Top Performers table
+      const tpTbody = document.querySelector('#top-performers-table tbody');
+      if (tpTbody) {
+        tpTbody.innerHTML = '';
+        if (d.top_performers && Array.isArray(d.top_performers)) {
+          d.top_performers.forEach((row) => {
+            console.log('Row data:', row); // Log the row to see the data types
+            let metricValue;
+            if (filter === 'tasks_completed') {
+              metricValue = row.tasks_completed;
+            } else if (filter === 'average_feedback') {
+              const avgFeedback = row.average_feedback
+                ? parseFloat(row.average_feedback)
+                : 0;
+              metricValue = avgFeedback ? avgFeedback.toFixed(2) : 'N/A';
+            } else {
+              const combinedScore = row.combined_score
+                ? parseFloat(row.combined_score)
+                : 0;
+              metricValue = combinedScore ? combinedScore.toFixed(2) : 'N/A';
+            }
+            tpTbody.innerHTML += `<tr>
     <td>${row.first_name} ${row.last_name}</td>
     <td>${metricValue}</td>
   </tr>`;
-});      } else {
-        tpTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
+          });
+        } else {
+          tpTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
+        }
       }
-    }
-  })
-  .catch(err => showError('Network error: ' + err.message, 'top-performers-section'));
+    })
+    .catch((err) =>
+      showError('Network error: ' + err.message, 'top-performers-section')
+    );
 }
 
 // Fetch Training Champions and Attendance Stars
@@ -4680,56 +4678,62 @@ function fetchOtherMetrics() {
   fetch('superadmin_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=fetch_performance_metrics'
+    body: 'action=fetch_performance_metrics',
   })
-  .then(r => r.json())
-  .then(d => {
-    if (!d.success) return showError(d.error, 'performance-metrics-section');
+    .then((r) => r.json())
+    .then((d) => {
+      if (!d.success) return showError(d.error, 'performance-metrics-section');
 
-    // Training Champions
-    const tcTbody = document.querySelector('#training-champions-table tbody');
-    if (tcTbody) {
-      tcTbody.innerHTML = '';
-      if (d.training_champions && Array.isArray(d.training_champions)) {
-        d.training_champions.forEach(row => {
-          tcTbody.innerHTML += `<tr>
+      // Training Champions
+      const tcTbody = document.querySelector('#training-champions-table tbody');
+      if (tcTbody) {
+        tcTbody.innerHTML = '';
+        if (d.training_champions && Array.isArray(d.training_champions)) {
+          d.training_champions.forEach((row) => {
+            tcTbody.innerHTML += `<tr>
             <td>${row.first_name} ${row.last_name}</td>
             <td>${row.completed_trainings}</td>
           </tr>`;
-        });
-      } else {
-        tcTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
+          });
+        } else {
+          tcTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
+        }
       }
-    }
 
-    // Attendance Stars
-    const asTbody = document.querySelector('#attendance-stars-table tbody');
-    if (asTbody) {
-      asTbody.innerHTML = '';
-      if (d.attendance_stars && Array.isArray(d.attendance_stars)) {
-        d.attendance_stars.forEach(row => {
-          asTbody.innerHTML += `<tr>
+      // Attendance Stars
+      const asTbody = document.querySelector('#attendance-stars-table tbody');
+      if (asTbody) {
+        asTbody.innerHTML = '';
+        if (d.attendance_stars && Array.isArray(d.attendance_stars)) {
+          d.attendance_stars.forEach((row) => {
+            asTbody.innerHTML += `<tr>
             <td>${row.first_name} ${row.last_name}</td>
             <td>${(row.attendance_rate * 100).toFixed(1)}%</td>
           </tr>`;
-        });
-      } else {
-        asTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
+          });
+        } else {
+          asTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
+        }
       }
-    }
-  })
-  .catch(err => showError('Network error: ' + err.message, 'performance-metrics-section'));
+    })
+    .catch((err) =>
+      showError('Network error: ' + err.message, 'performance-metrics-section')
+    );
 }
 
 // Tab click handler
 document.addEventListener('click', (e) => {
   if (e.target.matches('.perf-tabs li')) {
-    document.querySelectorAll('.perf-tabs li').forEach(li => li.classList.remove('active'));
+    document
+      .querySelectorAll('.perf-tabs li')
+      .forEach((li) => li.classList.remove('active'));
     e.target.classList.add('active');
     const target = e.target.getAttribute('data-target');
 
     // Hide all panes
-    document.querySelectorAll('.perf-pane').forEach(sec => sec.style.display = 'none');
+    document
+      .querySelectorAll('.perf-pane')
+      .forEach((sec) => (sec.style.display = 'none'));
 
     // Show the target pane if it exists
     const targetElement = document.getElementById(target);
@@ -4737,7 +4741,10 @@ document.addEventListener('click', (e) => {
       targetElement.style.display = 'block';
     } else {
       console.error(`Element with ID "${target}" not found in the DOM.`);
-      showError(`Tab section "${target}" not found.`, 'performance-metrics-section');
+      showError(
+        `Tab section "${target}" not found.`,
+        'performance-metrics-section'
+      );
       return;
     }
 

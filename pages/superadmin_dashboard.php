@@ -113,7 +113,20 @@ function fetchData($con, $sections = ['all']) {
         $stmt->execute();
         $data['project_assignments'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
-// Fetch data from Employee_Task_Project_View for Excel download
+
+        // Fetch project overview
+        if ($shouldFetch('projects')) {
+            $stmt = $con->prepare("
+                SELECT p.project_id, p.project_name, p.project_status, p.budget, p.actual_cost, 
+                       p.start_date, p.expected_end_date, d.department_name
+                FROM Projects p
+                JOIN Department d ON p.department_id = d.department_id
+            ");
+            $stmt->execute();
+            $data['projects'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+    // Fetch data from Employee_Task_Project_View for Excel download
     if ($shouldFetch('employee_task_project_view')) {
         $stmt = $con->prepare("
             SELECT 
@@ -136,7 +149,7 @@ function fetchData($con, $sections = ['all']) {
         $data['employee_task_project_view'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
-// Fetch data from Training_Programs_View for Excel download
+    // Fetch data from Training_Programs_View for Excel download
     if ($shouldFetch('training_programs_view')) {
         $stmt = $con->prepare("
             SELECT 
@@ -209,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     try {
         if ($_POST['action'] === 'refresh_data') {
             $sections = isset($_POST['section']) && $_POST['section'] === 'reports'
-                ? ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'employee_trainings', 'training_certificates']
+                ? ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'projects', 'employee_trainings', 'training_certificates']
                 : ['all'];
             $data = fetchData($con, $sections);
             $response['success'] = true;
@@ -550,12 +563,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
     exit();
 }
 
-$data = fetchData($con, ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'employee_trainings', 'trainings', 'training_certificates']);
+$data = fetchData($con, ['employees', 'feedback', 'report_avg_ratings', 'report_feedback_types', 'project_assignments', 'projects', 'employee_trainings', 'trainings', 'training_certificates']);
 $employees = $data['employees'] ?? [];
 $feedback = $data['feedback'] ?? [];
 $report_avg_ratings = $data['report_avg_ratings'] ?? [];
 $report_feedback_types = $data['report_feedback_types'] ?? [];
 $project_assignments = $data['project_assignments'] ?? [];
+$projects = $data['projects'] ?? [];
 $employee_trainings = $data['employee_trainings'] ?? [];
 $trainings = $data['trainings'] ?? [];
 $training_certificates = $data['training_certificates'] ?? [];
@@ -894,6 +908,36 @@ onclick="downloadAttendanceAsExcel()">Download as Excel</button>
             </table>
             <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
         </div>
+        <div id="project-overview-section" class="report-section" style="display: none;">
+                <h3>Track Project Status</h3>
+                <div class="report-filter">
+                    <div class="form-group">
+                        <label for="project-status-filter">Filter by Status:</label>
+                        <select id="project-status-filter">
+                            <option value="">All</option>
+                            <option value="Not Started">Not Started</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="project-overview-summary" class="report-summary">
+                    <p>Total Projects: <span id="total-projects">0</span></p>
+                    <p>Overdue Projects: <span id="overdue-projects">0</span></p>
+                </div>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Project Name</th>
+                            <th>Status</th>
+                            <th>Start Date</th>
+                            <th>Expected End Date</th>
+                            <th>Department</th>
+                        </tr>
+                    </thead>
+                    <tbody id="project-overview-table"></tbody>
+                </table>
+            </div>
 	<div id="performance-metrics-section" style="display: none;">
   <h2>Performance Metrics</h2>
   <ul class="perf-tabs">
@@ -968,6 +1012,7 @@ onclick="downloadAttendanceAsExcel()">Download as Excel</button>
     const reportAvgRatings = <?php echo json_encode($report_avg_ratings); ?>;
     const reportFeedbackTypes = <?php echo json_encode($report_feedback_types); ?>;
     const projectAssignments = <?php echo json_encode($project_assignments); ?>;
+    const projects = <?php echo json_encode($projects); ?>;
     const employeeTrainings = <?php echo json_encode($data['employee_trainings'] ?? []); ?>;
     const trainings = <?php echo json_encode($data['trainings'] ?? []); ?>;
     const trainingCertificates = <?php echo json_encode($data['training_certificates'] ?? []); ?>;
