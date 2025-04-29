@@ -1423,7 +1423,11 @@ function updateExitInterview(selectedInterviewId = null) {
         deleteButtons.forEach((button) => {
           button.addEventListener('click', function () {
             const interviewId = this.getAttribute('data-interview-id');
-            if (confirm('Are you sure you want to delete this exit interview request?')) {
+            if (
+              confirm(
+                'Are you sure you want to delete this exit interview request?'
+              )
+            ) {
               fetch('../pages/features/delete_exit_interview.php', {
                 method: 'POST',
                 headers: {
@@ -1482,7 +1486,8 @@ document.querySelectorAll('.sidebar-menu a').forEach((link) => {
       window[action]();
     }
   });
-});function showDepartment() {
+});
+function showDepartment() {
   console.log('showDepartmentInfo called');
   if (!showSection('Department_content')) return;
 
@@ -1815,6 +1820,7 @@ function editSubtask(taskId) {
 
   document.getElementById('task_id').value = task.task_id;
   projectSelect.value = task.project_id;
+  projectSelect.disabled = true;
   document.getElementById('task_description').value = task.task_description;
   document.getElementById('due_date').value = task.due_date;
   document.getElementById('task_status').value = task.status;
