@@ -609,75 +609,75 @@ $training_certificates = $data['training_certificates'] ?? [];
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <style>
-    .alert { padding: 10px; margin: 10px 0; border-radius: 5px; cursor: pointer; }
-    .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .alert-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    .table-wrapper {
-        max-width: 100%;
-        overflow-x: auto;
-        margin-top: 20px;
-    }
-    table {
-        width: 100%;
-        border-collapse: collapse;
-        min-width: 1000px; /* Ensures the table doesn't shrink too much */
-    }
-    th, td {
-        padding: 8px 12px;
-        border: 1px solid #ddd;
-        text-align: left;
-        white-space: nowrap; /* Prevents text wrapping */
-    }
-    th {
-        background-color: #003087;
-        color: #fff;
-    }
-    .content { padding: 20px; }
-    .dropdown { display: none; opacity: 0; transition: opacity 0.2s; }
-    .dropdown.show { display: block; opacity: 1; }
-    .reconsider-btn {
-        padding: 5px 10px;
-        background-color: #ff9800;
-        color: white;
-        border: none;
-        border-radius: 3px;
-        cursor: pointer;
-    }
-    .reconsider-btn:hover { background-color: #e68900; }
-    .action-form { display: inline; }
-    .status-badge {
-        display: inline-block;
-        padding: 5px 10px;
-        border-radius: 12px;
-        font-weight: bold;
-        color: white;
-        font-size: 12px;
-    }
-    .status-pending { background-color: #ff9800; }
-    .status-approved { background-color: #4caf50; }
-    .status-rejected { background-color: #f44336; }
-    .back-btn {
-        padding: 8px 15px;
-        background-color: #003087;
-        color: white;
-        border: none;
-        border-radius: 3px;
-        cursor: pointer;
-        margin-top: 10px;
-    }
-    .back-btn:hover { background-color: #002766; }
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 5px; }
-    .form-group input, .form-group select { width: 100%; padding: 8px; box-sizing: border-box; }
-    .button-group { text-align: right; }
-    .button-group button { padding: 10px 20px; margin-left: 10px; }
-    th i.fas {
-        margin-left: 5px;
-        vertical-align: middle;
-        font-size: 0.9em;
-        color: #999999;
-    }
-</style>
+        .alert { padding: 10px; margin: 10px 0; border-radius: 5px; cursor: pointer; }
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+        th { background-color: #003087; color: #fff; }
+        .content { padding: 20px; }
+        .dropdown { display: none; opacity: 0; transition: opacity 0.2s; }
+        .dropdown.show { display: block; opacity: 1; }
+        .reconsider-btn {
+            padding: 5px 10px;
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        .reconsider-btn:hover { background-color: #e68900; }
+        .action-form { display: inline; }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 12px;
+            font-weight: bold;
+            color: black;
+            font-size: 12px;
+            background-color: #ccc; /* Fallback background color for unknown statuses */
+        }
+        .status-pending { background-color: #ff9800; }
+        .status-approved { background-color: #4caf50; }
+        .status-rejected { background-color: #f44336; }
+        .status-enrolled { background-color: #2196f3; }
+        .status-in_progress { background-color: #ff9800; }
+        .status-completed { background-color: #4caf50; }
+        .back-btn {
+            padding: 8px 15px;
+            background-color: #003087;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .back-btn:hover { background-color: #002766; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; }
+        .form-group input, .form-group select { width: 100%; padding: 8px; box-sizing: border-box; }
+        .button-group { text-align: right; }
+        .button-group button { padding: 10px 20px; margin-left: 10px; }
+        th i.fas {
+            margin-left: 5px;
+            vertical-align: middle;
+            font-size: 0.9em;
+            color: #999999;
+        }
+        th {
+            cursor: pointer;
+        }
+        th:hover i.fas {
+            color: #fff;
+        }
+        .fas.fa-sort-up, .fas.fa-sort-down {
+            color: #fff;
+        }
+        .status-enrolled, .status-in_progress, .status-completed {
+            min-width: 80px; /* Ensure badge is visible even if text is short */
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
 <?php include '../includes/header.php'; ?>
@@ -859,27 +859,25 @@ onclick="downloadAttendanceAsExcel()">Download as Excel</button>
                     onmouseout="this.style.backgroundColor='#28a745'" onclick="downloadLeaveRequestsAsExcel()">Download as Excel</button>
         </div>
         <div id="department-metrics" style="display: none;" class="card">
-    <h2>Department-wise Performance Metrics</h2>
-    <div class="table-wrapper">
-        <table id="department-metrics-table">
-            <thead>
-                <tr>
-                    <th>Department Name <i class="fas fa-sort"></i></th>
-                    <th>Employee Count <i class="fas fa-sort"></i></th>
-                    <th>Projects Completed <i class="fas fa-sort"></i></th>
-                    <th>Projects In Progress <i class="fas fa-sort"></i></th>
-                    <th>Projects Assigned <i class="fas fa-sort"></i></th>
-                    <th>Tasks Completed <i class="fas fa-sort"></i></th>
-                    <th>Trainings Conducted <i class="fas fa-sort"></i></th>
-                    <th>Avg Feedback Rating <i class="fas fa-sort"></i></th>
-                    <th>Total Leaves Taken <i class="fas fa-sort"></i></th>
-                </tr>
-            </thead>
-            <tbody id="department-metrics-table-body"></tbody>
-        </table>
-    </div>
-    <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
-</div>
+            <h2>Department-wise Performance Metrics</h2>
+            <table id="department-metrics-table">
+                <thead>
+                    <tr>
+                        <th>Department Name <i class="fas fa-sort"></i></th>
+                        <th>Employee Count <i class="fas fa-sort"></i></th>
+                        <th>Projects Completed <i class="fas fa-sort"></i></th>
+                        <th>Projects In Progress <i class="fas fa-sort"></i></th>
+                        <th>Projects Assigned <i class="fas fa-sort"></i></th>
+                        <th>Tasks Completed <i class="fas fa-sort"></i></th>
+                        <th>Trainings Conducted <i class="fas fa-sort"></i></th>
+                        <th>Avg Feedback Rating <i class="fas fa-sort"></i></th>
+                        <th>Total Leaves Taken <i class="fas fa-sort"></i></th>
+                    </tr>
+                </thead>
+                <tbody id="department-metrics-table-body"></tbody>
+            </table>
+            <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
+        </div>
         <div id="training-programs" style="display: none;" class="card">
             <h2>Training Programs</h2>
             <table id="training-table">
