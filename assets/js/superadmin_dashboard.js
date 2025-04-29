@@ -4671,52 +4671,52 @@ function updateTopPerformers() {
     );
 }
 
-// Fetch Training Champions and Attendance Stars
 function fetchOtherMetrics() {
+  const monthFilter = document.getElementById('attendance-month-filter');
+  const selectedMonth = monthFilter ? monthFilter.value : '2025-04'; // Fallback to default month
   fetch('superadmin_dashboard.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: 'action=fetch_performance_metrics',
+    body: `action=fetch_performance_metrics&month=${selectedMonth}`
   })
-    .then((r) => r.json())
-    .then((d) => {
-      if (!d.success) return showError(d.error, 'performance-metrics-section');
+  .then(r => r.json())
+  .then(d => {
+    console.log('fetchOtherMetrics response:', d); // Debug log
+    if (!d.success) return showError(d.error, 'performance-metrics-section');
 
-      // Training Champions
-      const tcTbody = document.querySelector('#training-champions-table tbody');
-      if (tcTbody) {
-        tcTbody.innerHTML = '';
-        if (d.training_champions && Array.isArray(d.training_champions)) {
-          d.training_champions.forEach((row) => {
-            tcTbody.innerHTML += `<tr>
+    // Training Champions
+    const tcTbody = document.querySelector('#training-champions-table tbody');
+    if (tcTbody) {
+      tcTbody.innerHTML = '';
+      if (d.training_champions && Array.isArray(d.training_champions)) {
+        d.training_champions.forEach(row => {
+          tcTbody.innerHTML += `<tr>
             <td>${row.first_name} ${row.last_name}</td>
             <td>${row.completed_trainings}</td>
           </tr>`;
-          });
-        } else {
-          tcTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
-        }
+        });
+      } else {
+        tcTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
       }
+    }
 
-      // Attendance Stars
-      const asTbody = document.querySelector('#attendance-stars-table tbody');
-      if (asTbody) {
-        asTbody.innerHTML = '';
-        if (d.attendance_stars && Array.isArray(d.attendance_stars)) {
-          d.attendance_stars.forEach((row) => {
-            asTbody.innerHTML += `<tr>
+    // Attendance Stars
+    const asTbody = document.querySelector('#attendance-stars-table tbody');
+    if (asTbody) {
+      asTbody.innerHTML = '';
+      if (d.attendance_stars && Array.isArray(d.attendance_stars)) {
+        d.attendance_stars.forEach(row => {
+          asTbody.innerHTML += `<tr>
             <td>${row.first_name} ${row.last_name}</td>
             <td>${(row.attendance_rate * 100).toFixed(1)}%</td>
           </tr>`;
-          });
-        } else {
-          asTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
-        }
+        });
+      } else {
+        asTbody.innerHTML = '<tr><td colspan="2">No data available</td></tr>';
       }
-    })
-    .catch((err) =>
-      showError('Network error: ' + err.message, 'performance-metrics-section')
-    );
+    }
+  })
+  .catch(err => showError('Network error: ' + err.message, 'performance-metrics-section'));
 }
 
 // Tab click handler

@@ -466,49 +466,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
             $response['success'] = true;
         }
 	elseif (isset($_POST['action']) && $_POST['action'] === 'fetch_performance_metrics') {
-			$out = ['success' => true];
+    $out = ['success' => true];
 
-			try {
-				// Top 10 trainings completed (Training Champions)
-				$sql = "
-					SELECT e.employee_id, u.first_name, u.last_name,
-						   SUM(et.completion_status='Completed') AS completed_trainings
-					FROM Employee_Training et
-					JOIN Employees e ON et.employee_id=e.employee_id
-					JOIN Users u ON e.user_id=u.user_id
-					GROUP BY e.employee_id
-					ORDER BY completed_trainings DESC
-					LIMIT 10
-				";
-				$stmt = $con->query($sql);
-				$out['training_champions'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    try {
+        // Get the month parameter (expected format: YYYY-MM)
+        $month = isset($_POST['month']) ? $_POST['month'] : date('Y-m'); // Default to current month if not provided
+        if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
+            throw new Exception('Invalid month format. Expected YYYY-MM.');
+        }
 
-				// Top 10 attendance rate (present_days/total_days) (Attendance Stars)
-				$sql = "
-					SELECT e.employee_id, u.first_name, u.last_name,
-						   ROUND(
-								SUM(a.status='present')/COUNT(*) , 3
-						   ) AS attendance_rate
-					FROM Attendance a
-					JOIN Employees e ON a.employee_id=e.employee_id
-					JOIN Users u ON e.user_id=u.user_id
-					GROUP BY e.employee_id
-					ORDER BY attendance_rate DESC
-					LIMIT 10
-				";
-				$stmt = $con->query($sql);
-				$out['attendance_stars'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        // Top 10 trainings completed (Training Champions) - no month filter
+        $sql = "
+            SELECT e.employee_id, u.first_name, u.last_name,
+                   SUM(et.completion_status='Completed') AS completed_trainings
+            FROM Employee_Training et
+            JOIN Employees e ON et.employee_id=e.employee_id
+            JOIN Users u ON e.user_id=u.user_id
+            GROUP BY e.employee_id
+            ORDER BY completed_trainings DESC
+            LIMIT 10
+        ";
+        $stmt = $con->query($sql);
+        $out['training_champions'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-				header('Content-Type: application/json');
-				echo json_encode($out);
-				exit;
-			} catch (PDOException $e) {
-				$out = ['success' => false, 'error' => 'Database error: ' . $e->getMessage()];
-				header('Content-Type: application/json');
-				echo json_encode($out);
-				exit;
-			}
-		}
+        // Calculate total days in the specified month
+        $yearMonth = explode('-', $month);
+        $year = (int)$yearMonth[0];
+        $monthNum = (int)$yearMonth[1];
+        $totalDays = cal_days_in_month(CAL_GREGORIAN, $monthNum, $year); // Total days in the month
+
+        // Top 10 attendance rate for the specified month (Attendance Stars)
+        $sql = "
+            SELECT e.employee_id, u.first_name, u.last_name,
+                   COALESCE(
+                       ROUND(
+                           SUM(CASE WHEN a.status = 'present' THEN 1 ELSE 0 END) / :totalDays, 3
+                       ), 0
+                   ) AS attendance_rate
+            FROM Employees e
+            LEFT JOIN Attendance a 
+                ON e.employee_id = a.employee_id 
+                AND DATE_FORMAT(a.check_in, '%Y-%m') = :month
+            JOIN Users u ON e.user_id = u.user_id
+            GROUP BY e.employee_id, u.first_name, u.last_name
+            ORDER BY attendance_rate DESC
+            LIMIT 10
+        ";
+
+        $stmt = $con->prepare($sql);
+        $stmt->execute([
+            ':totalDays' => $totalDays,
+            ':month' => $month
+        ]);
+        $out['attendance_stars'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        header('Content-Type: application/json');
+        echo json_encode($out);
+        exit;
+    } catch (Exception $e) {
+        $out = ['success' => false, 'error' => 'Error: ' . $e->getMessage()];
+        header('Content-Type: application/json');
+        echo json_encode($out);
+        exit;
+    }
+}
 
 		// Handle fetch_top_performers (for Top Performers with filters)
 		elseif (isset($_POST['action']) && $_POST['action'] === 'fetch_top_performers') {
@@ -979,18 +1000,25 @@ onclick="downloadAttendanceAsExcel()">Download as Excel</button>
     </table>
   </div>
 
-  <div id="attendance-stars-section" class="perf-pane" style="display: none;">
-    <h3>Attendance Stars</h3>
-    <table id="attendance-stars-table">
-      <thead>
-        <tr>
-          <th>Name</th>
-          <th>Attendance Rate</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+<div id="attendance-stars-section" class="perf-pane" style="display: none;">
+  <h3>Attendance Stars</h3>
+  <label>Select Month: </label>
+  <select id="attendance-month-filter" onchange="fetchOtherMetrics()">
+    <option value="2025-04">April 2025</option>
+    <option value="2025-03">March 2025</option>
+    <option value="2025-02">February 2025</option>
+    <!-- Add more months as needed -->
+  </select>
+  <table id="attendance-stars-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Attendance Rate</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
 
   <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
 </div>
