@@ -35,64 +35,114 @@ if (isset($_POST['action'])) {
 
     try {
         if ($_POST['action'] === 'mark_attendance') {
-    $check_in = $_POST['check_in'] ?? null;
-    $check_out = !empty($_POST['check_out']) ? $_POST['check_out'] : null; // Convert empty string to null
-    $status = $_POST['status'] ?? 'present';
+            $check_in = $_POST['check_in'] ?? null;
+            $check_out = !empty($_POST['check_out']) ? $_POST['check_out'] : null;
+            $status = $_POST['status'] ?? 'present';
 
-    // Validate inputs
-    if (!$check_in) {
-        $response['error'] = "Check-in time is required.";
-        echo json_encode($response);
-        exit;
-    }
+            if (!$check_in) {
+                $response['error'] = "Check-in time is required.";
+                echo json_encode($response);
+                exit;
+            }
 
-    // Validate check-out time if provided
-    if ($check_out) {
-        $check_in_time = strtotime($check_in);
-        $check_out_time = strtotime($check_out);
+            if ($check_out) {
+                $check_in_time = strtotime($check_in);
+                $check_out_time = strtotime($check_out);
 
-        if ($check_out_time < $check_in_time) {
-            $response['error'] = "Check-out time cannot be earlier than check-in time.";
-            echo json_encode($response);
-            exit;
-        }
-    }
+                if ($check_out_time < $check_in_time) {
+                    $response['error'] = "Check-out time cannot be earlier than check-in time.";
+                    echo json_encode($response);
+                    exit;
+                }
+            }
 
-    // Extract date from check_in for validation
-    $check_in_date = date('Y-m-d', strtotime($check_in));
+            $check_in_date = date('Y-m-d', strtotime($check_in));
 
-    // Check if attendance already exists for this employee on the same date
-    $stmt = $con->prepare("
-        SELECT COUNT(*) 
-        FROM Attendance 
-        WHERE employee_id = ? 
-        AND DATE(check_in) = ?
-    ");
-    $stmt->execute([$employee_id, $check_in_date]);
-    $existing_records = $stmt->fetchColumn();
+            $stmt = $con->prepare("
+                SELECT COUNT(*) 
+                FROM Attendance 
+                WHERE employee_id = ? 
+                AND DATE(check_in) = ?
+            ");
+            $stmt->execute([$employee_id, $check_in_date]);
+            $existing_records = $stmt->fetchColumn();
 
-    if ($existing_records > 0) {
-        $response['error'] = "Attendance has already been marked for this date.";
-        echo json_encode($response);
-        exit;
-    }
+            if ($existing_records > 0) {
+                $response['error'] = "Attendance has already been marked for this date.";
+                echo json_encode($response);
+                exit;
+            }
 
-    // Insert attendance record
-    $stmt = $con->prepare("
-        INSERT INTO Attendance (employee_id, check_in, check_out, status)
-        VALUES (?, ?, ?, ?)
-    ");
-    $success = $stmt->execute([$employee_id, $check_in, $check_out, $status]);
+            $stmt = $con->prepare("
+                INSERT INTO Attendance (employee_id, check_in, check_out, status)
+                VALUES (?, ?, ?, ?)
+            ");
+            $success = $stmt->execute([$employee_id, $check_in, $check_out, $status]);
 
-    if ($success) {
-        $response['success'] = true;
-        $response['message'] = "Attendance marked successfully.";
-    } else {
-        $response['error'] = "Failed to mark attendance.";
-    }
-}
+            if ($success) {
+                $response['success'] = true;
+                $response['message'] = "Attendance marked successfully.";
+            } else {
+                $response['error'] = "Failed to mark attendance.";
+            }
+        } elseif ($_POST['action'] === 'update_attendance') {
+            $attendance_id = $_POST['attendance_id'] ?? null;
+            $check_in = $_POST['check_in'] ?? null;
+            $check_out = !empty($_POST['check_out']) ? $_POST['check_out'] : null;
+            $status = $_POST['status'] ?? 'present';
 
-elseif ($_POST['action'] === 'fetch_attendance') {
+            if (!$attendance_id || !$check_in) {
+                $response['error'] = "Attendance ID and check-in time are required.";
+                echo json_encode($response);
+                exit;
+            }
+
+            if ($check_out) {
+                $check_in_time = strtotime($check_in);
+                $check_out_time = strtotime($check_out);
+
+                if ($check_out_time < $check_in_time) {
+                    $response['error'] = "Check-out time cannot be earlier than check-in time.";
+                    echo json_encode($response);
+                    exit;
+                }
+            }
+
+            $stmt = $con->prepare("
+                UPDATE Attendance 
+                SET check_in = ?, check_out = ?, status = ?
+                WHERE attendance_id = ? AND employee_id = ?
+            ");
+            $success = $stmt->execute([$check_in, $check_out, $status, $attendance_id, $employee_id]);
+
+            if ($success) {
+                $response['success'] = true;
+                $response['message'] = "Attendance updated successfully.";
+            } else {
+                $response['error'] = "Failed to update attendance.";
+            }
+        } elseif ($_POST['action'] === 'delete_attendance') {
+            $attendance_id = $_POST['attendance_id'] ?? null;
+
+            if (!$attendance_id) {
+                $response['error'] = "Attendance ID is required.";
+                echo json_encode($response);
+                exit;
+            }
+
+            $stmt = $con->prepare("
+                DELETE FROM Attendance 
+                WHERE attendance_id = ? AND employee_id = ?
+            ");
+            $success = $stmt->execute([$attendance_id, $employee_id]);
+
+            if ($success) {
+                $response['success'] = true;
+                $response['message'] = "Attendance deleted successfully.";
+            } else {
+                $response['error'] = "Failed to delete attendance.";
+            }
+        } elseif ($_POST['action'] === 'fetch_attendance') {
             $start_date = $_POST['start_date'] ?? '';
             $end_date = $_POST['end_date'] ?? '';
 
@@ -168,7 +218,6 @@ elseif ($_POST['action'] === 'fetch_attendance') {
                 $params[] = $project_id;
             }
 
-            // Validate sort_by to prevent SQL injection
             $valid_sort_columns = ['due_date', 'project_name'];
             $sort_by = in_array($sort_by, $valid_sort_columns) ? $sort_by : 'due_date';
             $sort_order = strtoupper($sort_order) === 'DESC' ? 'DESC' : 'ASC';
@@ -187,7 +236,6 @@ elseif ($_POST['action'] === 'fetch_attendance') {
                 exit;
             }
 
-            // Validate status
             $valid_statuses = ['not_started', 'in_progress', 'completed', 'blocked'];
             if (!in_array($new_status, $valid_statuses)) {
                 $response['error'] = "Invalid status value.";
@@ -210,7 +258,6 @@ elseif ($_POST['action'] === 'fetch_attendance') {
                 $response['error'] = "Failed to update task status.";
             }
         } elseif ($_POST['action'] === 'fetch_performance_metrics') {
-            // Total tasks assigned
             $total_tasks_query = "
                 SELECT COUNT(*) AS total_tasks
                 FROM Assignment_Task at
@@ -219,7 +266,6 @@ elseif ($_POST['action'] === 'fetch_attendance') {
             $total_tasks_result = fetchData($con, $total_tasks_query, [$employee_id], "Failed to fetch total tasks");
             $total_tasks = $total_tasks_result[0]['total_tasks'] ?? 0;
 
-            // Completed tasks
             $completed_tasks_query = "
                 SELECT COUNT(*) AS completed_tasks
                 FROM Assignment_Task at
@@ -229,7 +275,6 @@ elseif ($_POST['action'] === 'fetch_attendance') {
             $completed_tasks_result = fetchData($con, $completed_tasks_query, [$employee_id], "Failed to fetch completed tasks");
             $completed_tasks = $completed_tasks_result[0]['completed_tasks'] ?? 0;
 
-            // On-time completion rate
             $on_time_tasks_query = "
                 SELECT COUNT(*) AS on_time_tasks
                 FROM Assignment_Task at
@@ -305,7 +350,6 @@ elseif ($_POST['action'] === 'fetch_attendance') {
                 exit;
             }
 
-            // Check if the employee is already enrolled
             $stmt = $con->prepare("
                 SELECT COUNT(*) 
                 FROM Employee_Training 
@@ -320,7 +364,6 @@ elseif ($_POST['action'] === 'fetch_attendance') {
                 exit;
             }
 
-            // Check if the training belongs to the employee's department
             $stmt = $con->prepare("
                 SELECT t.department_id 
                 FROM Training t 
@@ -343,7 +386,6 @@ elseif ($_POST['action'] === 'fetch_attendance') {
                 exit;
             }
 
-            // Enroll the employee
             $stmt = $con->prepare("
                 INSERT INTO Employee_Training (employee_id, training_id, enrollment_date, completion_status)
                 VALUES (?, ?, CURDATE(), 'Not Started')
@@ -665,15 +707,16 @@ elseif ($_POST['action'] === 'fetch_attendance') {
                 <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
             </div>
             <table>
-                <thead>
-                    <tr>
-                        <th>Check-In</th>
-                        <th>Check-Out</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody id="attendance-history-table"></tbody>
-            </table>
+    <thead>
+        <tr>
+            <th>Check-In</th>
+            <th>Check-Out</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody id="attendance-history-table"></tbody>
+</table>
         </div>
 
         <!-- Update Training Status Section -->
