@@ -519,6 +519,40 @@ if (isset($_POST['action'])) {
             } else {
                 $response['error'] = "Failed to update training.";
             }
+        } elseif ($_POST['action'] === 'drop_training') {
+            error_log("drop_training action called, employee_training_id: " . ($_POST['employee_training_id'] ?? 'none'));
+            $employee_training_id = $_POST['employee_training_id'] ?? null;
+            if (!$employee_training_id) {
+                $response['error'] = "Employee training ID is required.";
+                echo json_encode($response);
+                exit;
+            }
+        
+            // Verify the enrollment belongs to the logged-in employee
+            $query = "SELECT employee_id FROM Employee_Training WHERE employee_training_id = ?";
+            $result = fetchData($con, $query, [$employee_training_id], "Failed to verify training enrollment");
+        
+            if (empty($result) || $result[0]['employee_id'] != $employee_id) {
+                $response['error'] = "Unauthorized: You can only drop your own training enrollments.";
+                echo json_encode($response);
+                exit;
+            }
+        
+            // Delete the enrollment
+            $stmt = $con->prepare("
+                DELETE FROM Employee_Training 
+                WHERE employee_training_id = ? AND employee_id = ?
+            ");
+            $success = $stmt->execute([$employee_training_id, $employee_id]);
+        
+            if ($success) {
+                $response['success'] = true;
+                $response['message'] = "Successfully dropped the training program.";
+            } else {
+                $response['error'] = "Failed to drop the training program.";
+            }
+            echo json_encode($response);
+            exit;
         }
     } catch (PDOException $e) {
         $response['error'] = "Database error: " . $e->getMessage();

@@ -333,8 +333,14 @@ function fetchAttendanceHistory() {
             <td>${record.check_out || 'N/A'}</td>
             <td>${record.status}</td>
             <td style="display: flex; gap: 5px;">
-              <button class="update-btn" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;" data-attendance-id="${record.attendance_id}" data-check-in="${record.check_in}" data-check-out="${record.check_out}" data-status="${record.status}">Update</button>
-              <button class="delete-btn" style="background-color: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;" data-attendance-id="${record.attendance_id}">Delete</button>
+              <button class="update-btn" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;" data-attendance-id="${
+                record.attendance_id
+              }" data-check-in="${record.check_in}" data-check-out="${
+            record.check_out
+          }" data-status="${record.status}">Update</button>
+              <button class="delete-btn" style="background-color: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;" data-attendance-id="${
+                record.attendance_id
+              }">Delete</button>
             </td>
           `;
           tableBody.appendChild(row);
@@ -413,7 +419,9 @@ function showUpdateAttendanceForm(attendanceId, checkIn, checkOut, status) {
         <div class="form-group">
           <label for="status">Status:</label>
           <select id="status" name="status">
-            <option value="present" ${status === 'Present' ? 'selected' : ''}>Present</option>
+            <option value="present" ${
+              status === 'Present' ? 'selected' : ''
+            }>Present</option>
           </select>
         </div>
         <div class="form-group">
@@ -443,7 +451,9 @@ function ensureCheckInValue(input) {
     const hours = String(now.getHours()).padStart(2, '0');
     const minutes = String(now.getMinutes()).padStart(2, '0');
     input.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-    alert('Check-in time is required. It has been set to the current date and time. Please adjust if needed.');
+    alert(
+      'Check-in time is required. It has been set to the current date and time. Please adjust if needed.'
+    );
   }
 }
 
@@ -467,14 +477,18 @@ function handleUpdateAttendanceSubmit(event) {
 
   // Validate check-in time
   if (!checkIn || checkIn.trim() === '') {
-    alert('Error: Check-in time is required. Please select a valid date and time.');
+    alert(
+      'Error: Check-in time is required. Please select a valid date and time.'
+    );
     return;
   }
 
   // Validate the format of checkIn (should be YYYY-MM-DDThh:mm)
   const checkInFormatRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
   if (!checkInFormatRegex.test(checkIn)) {
-    alert('Error: Check-in time format is invalid. Expected format: YYYY-MM-DDThh:mm (e.g., 2025-03-11T08:00).');
+    alert(
+      'Error: Check-in time format is invalid. Expected format: YYYY-MM-DDThh:mm (e.g., 2025-03-11T08:00).'
+    );
     return;
   }
 
@@ -484,13 +498,19 @@ function handleUpdateAttendanceSubmit(event) {
     // datetime-local input gives format: YYYY-MM-DDThh:mm (e.g., 2025-03-11T08:00)
     const [datePart, timePart] = dateTime.split('T');
     if (!datePart || !timePart) {
-      console.error('Invalid date format in formatDateTimeForBackend:', dateTime);
+      console.error(
+        'Invalid date format in formatDateTimeForBackend:',
+        dateTime
+      );
       return null;
     }
     const [year, month, day] = datePart.split('-');
     const [hours, minutes] = timePart.split(':');
     if (!year || !month || !day || !hours || !minutes) {
-      console.error('Missing date/time components in formatDateTimeForBackend:', { year, month, day, hours, minutes });
+      console.error(
+        'Missing date/time components in formatDateTimeForBackend:',
+        { year, month, day, hours, minutes }
+      );
       return null;
     }
     return `${year}-${month}-${day} ${hours}:${minutes}:00`;
@@ -500,7 +520,9 @@ function handleUpdateAttendanceSubmit(event) {
   const formattedCheckOut = formatDateTimeForBackend(checkOut);
 
   if (!formattedCheckIn) {
-    alert('Error: Invalid check-in time format. Please ensure the date and time are correctly set (e.g., 2025-03-11 08:00).');
+    alert(
+      'Error: Invalid check-in time format. Please ensure the date and time are correctly set (e.g., 2025-03-11 08:00).'
+    );
     return;
   }
 
@@ -2055,7 +2077,6 @@ function fetchEnrolledTrainings() {
       ) {
         data.enrolled_trainings.forEach((training) => {
           const row = document.createElement('tr');
-          // Disable the score input if status is not "Completed"
           const isScoreDisabled =
             training.completion_status !== 'Completed' ? 'disabled' : '';
           row.innerHTML = `
@@ -2090,9 +2111,12 @@ function fetchEnrolledTrainings() {
           }, this.value)" placeholder="Enter score (0-100)" ${isScoreDisabled}>
                     </td>
                     <td>
-                        <button onclick="updateTraining(${
-                          training.employee_training_id
-                        })">Update</button>
+                      <button style="margin-bottom: 2px;" onclick="updateTraining(${
+                        training.employee_training_id
+                      })">Update</button>
+                      <button style="margin-top: 2px;" onclick="dropTraining(${
+                        training.employee_training_id
+                      })">Drop</button>
                     </td>
                 `;
           tableBody.appendChild(row);
@@ -2110,6 +2134,48 @@ function fetchEnrolledTrainings() {
       console.error('Error fetching enrolled trainings:', error);
       tableBody.innerHTML =
         '<tr><td colspan="5">Error fetching enrolled trainings.</td></tr>';
+    });
+}
+
+// Drop a training program
+function dropTraining(employeeTrainingId) {
+  console.log(
+    'dropTraining called with employeeTrainingId:',
+    employeeTrainingId
+  );
+  if (!confirm('Are you sure you want to drop this training program?')) {
+    return;
+  }
+
+  fetch('../pages/user_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'drop_training',
+      employee_training_id: employeeTrainingId,
+    }),
+  })
+    .then((response) => {
+      console.log('dropTraining response received:', response);
+      // Log the raw text response before parsing to catch JSON issues
+      return response.text().then((text) => {
+        console.log('Raw response text:', text);
+        return JSON.parse(text);
+      });
+    })
+    .then((data) => {
+      console.log('dropTraining data:', data);
+      if (data.success) {
+        alert(data.message);
+        fetchEnrolledTrainings(); // Refresh the table
+        fetchAvailableTrainings(); // Refresh available trainings in case the dropped training reappears
+      } else {
+        alert('Error: ' + (data.error || 'Failed to drop training program'));
+      }
+    })
+    .catch((error) => {
+      console.error('Error dropping training:', error);
+      alert('An error occurred while dropping the training program.');
     });
 }
 
