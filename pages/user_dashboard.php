@@ -248,20 +248,32 @@ elseif ($_POST['action'] === 'fetch_attendance') {
             error_log("Fetched departments: " . json_encode($departments));
             $response['departments'] = $departments;
             $response['success'] = true;
+        } elseif ($_POST['action'] === 'fetch_employee_department') {
+            $department_id = $_POST['employee_department_id'] ?? '';
+            $query = "SELECT department_id, department_name FROM Department WHERE department_id = ?";
+            $department = fetchData($con, $query, [$department_id], "Failed to fetch employee department");
+            $response['success'] = true;
+            $response['department'] = $department[0] ?? null;
+            echo json_encode($response);
+            exit;
         } elseif ($_POST['action'] === 'fetch_available_trainings') {
             error_log("fetch_available_trainings action called, department_id: " . ($_POST['department_id'] ?? 'none'));
             $department_id = $_POST['department_id'] ?? '';
             $query = "
-                SELECT t.training_id, t.training_name, t.training_date, t.end_date, t.certificate, t.department_id
-                FROM Training t
-                WHERE t.training_id NOT IN (
-                    SELECT et.training_id 
-                    FROM Employee_Training et 
-                    WHERE et.employee_id = ?
-                )
-                AND t.department_id NOT IN (SELECT department_id FROM Department WHERE department_name = 'Head')
+            SELECT t.training_id, t.training_name, t.training_date, t.end_date, t.certificate, t.department_id
+            FROM Training t
+            WHERE t.training_id NOT IN (
+                SELECT et.training_id 
+                FROM Employee_Training et 
+                WHERE et.employee_id = ?
+            )
+            AND t.department_id = (
+                SELECT e.department_id 
+                FROM Employees e 
+                WHERE e.employee_id = ?
+            )
             ";
-            $params = [$employee_id];
+            $params = [$employee_id, $employee_id];
 
             if ($department_id) {
                 $query .= " AND t.department_id = ?";

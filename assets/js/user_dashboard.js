@@ -1,4 +1,3 @@
-
 // user_dashboard.js
 function showSection(sectionId) {
   const sections = [
@@ -12,23 +11,21 @@ function showSection(sectionId) {
     'hr-contact-section',
     'profile-update-form',
     'salary-details-section',
-    'feedback-section',               
-    'submit-exit-interview-section',  
-    'exit-interview-details-section',  
+    'feedback-section',
+    'submit-exit-interview-section',
+    'exit-interview-details-section',
     'salary-details-section',
     'enroll-training-section',
     'update-training-status-section',
-    'update-address-section'
-
+    'update-address-section',
   ];
-  sections.forEach(id => {
+  sections.forEach((id) => {
     const section = document.getElementById(id);
     if (section) {
       section.style.display = id === sectionId ? 'block' : 'none';
     }
   });
 }
-
 
 // Show welcome message (default view)
 function showWelcomeMessage() {
@@ -435,9 +432,8 @@ document.addEventListener('DOMContentLoaded', function () {
   window.showSalaryDetails = showSalaryDetails;
   window.showEnrollTraining = showEnrollTraining;
   window.showUpdateTrainingStatus = showUpdateTrainingStatus;
-window.updateaddress = updateaddress;
+  window.updateaddress = updateaddress;
   console.log('Global functions assigned to window object');
-
 
   // Add hover effects for sidebar items (matching manager dashboard)
   const sidebarLinks = document.querySelectorAll('.sidebar ul li a');
@@ -465,10 +461,10 @@ function showProfileForm() {
   showSection('profile-update-form');
 
   fetch('../pages/features/fetch_user_details.php')
-    .then(response => {
+    .then((response) => {
       console.log('Response Status:', response.status);
       console.log('Response Headers:', response.headers.get('Content-Type'));
-      return response.text().then(text => {
+      return response.text().then((text) => {
         //console.log('Raw response:', text);
         try {
           const data = JSON.parse(text);
@@ -511,51 +507,71 @@ function showProfileForm() {
             <div class="form-row">
               <div class="form-group">
                 <label for="employee_id">Employee ID:</label>
-                <input type="text" id="employee_id" name="employee_id" value="${data.employee_id}" readonly>
+                <input type="text" id="employee_id" name="employee_id" value="${
+                  data.employee_id
+                }" readonly>
               </div>
               <div class="form-group">
                 <label for="department_id">Department ID:</label>
-                <input type="text" id="department_id" name="department_id" value="${data.department_id || ''}" readonly>
+                <input type="text" id="department_id" name="department_id" value="${
+                  data.department_id || ''
+                }" readonly>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="manager_id">Manager ID:</label>
-                <input type="text" id="manager_id" name="manager_id" value="${data.manager_id || ''}" readonly>
+                <input type="text" id="manager_id" name="manager_id" value="${
+                  data.manager_id || ''
+                }" readonly>
               </div>
               <div class="form-group">
                 <label for="first_name">First Name:</label>
-                <input type="text" id="first_name" name="first_name" value="${data.first_name}" readonly>
+                <input type="text" id="first_name" name="first_name" value="${
+                  data.first_name
+                }" readonly>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="middle_name">Middle Name:</label>
-                <input type="text" id="middle_name" name="middle_name" value="${data.middle_name || ''}" readonly>
+                <input type="text" id="middle_name" name="middle_name" value="${
+                  data.middle_name || ''
+                }" readonly>
               </div>
               <div class="form-group">
                 <label for="last_name">Last Name:</label>
-                <input type="text" id="last_name" name="last_name" value="${data.last_name}" readonly>
+                <input type="text" id="last_name" name="last_name" value="${
+                  data.last_name
+                }" readonly>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="email">Email:</label>
-                <input type="email" id="email" name="email" value="${data.email || ''}" readonly>
+                <input type="email" id="email" name="email" value="${
+                  data.email || ''
+                }" readonly>
               </div>
               <div class="form-group">
                 <label for="phone_number">Phone Number:</label>
-                <input type="tel" id="phone_number" name="phone_number" value="${data.phone_number || ''}" readonly>
+                <input type="tel" id="phone_number" name="phone_number" value="${
+                  data.phone_number || ''
+                }" readonly>
               </div>
             </div>
             <div class="form-row">
               <div class="form-group">
                 <label for="dob">Date of Birth:</label>
-                <input type="date" id="dob" name="dob" value="${data.dob || ''}" readonly>
+                <input type="date" id="dob" name="dob" value="${
+                  data.dob || ''
+                }" readonly>
               </div>
               <div class="form-group">
                 <label for="emp_hire_date">Hire Date:</label>
-                <input type="date" id="emp_hire_date" name="emp_hire_date" value="${data.emp_hire_date || ''}" readonly>
+                <input type="date" id="emp_hire_date" name="emp_hire_date" value="${
+                  data.emp_hire_date || ''
+                }" readonly>
               </div>
             </div>
             <div class="form-group">
@@ -563,14 +579,24 @@ function showProfileForm() {
               <div id="emergency_contacts">
                 ${
                   data.emergency_contacts && data.emergency_contacts.length > 0
-                    ? data.emergency_contacts.map((contact, index) => `
+                    ? data.emergency_contacts
+                        .map(
+                          (contact, index) => `
                         <div class="emergency-contact" data-index="${index}">
                           <p><strong>Contact ${index + 1}:</strong></p>
-                          <p>Name: <span class="contact-name">${contact.contact_name || ''}</span></p>
-                          <p>Phone: <span class="contact-phone">${contact.contact_phone || ''}</span></p>
-                          <p>Relationship: <span class="contact-relationship">${contact.relationship || ''}</span></p>
+                          <p>Name: <span class="contact-name">${
+                            contact.contact_name || ''
+                          }</span></p>
+                          <p>Phone: <span class="contact-phone">${
+                            contact.contact_phone || ''
+                          }</span></p>
+                          <p>Relationship: <span class="contact-relationship">${
+                            contact.relationship || ''
+                          }</span></p>
                         </div>
-                      `).join('')
+                      `
+                        )
+                        .join('')
                     : '<p>No emergency contacts available.</p>'
                 }
               </div>
@@ -587,36 +613,47 @@ function showProfileForm() {
       const form = document.getElementById('profileForm');
 
       if (editProfileBtn && form) {
-        editProfileBtn.addEventListener('click', function() {
-          form.querySelectorAll('input, textarea').forEach(field => {
+        editProfileBtn.addEventListener('click', function () {
+          form.querySelectorAll('input, textarea').forEach((field) => {
             if (['email', 'phone_number', 'dob'].includes(field.id)) {
               field.removeAttribute('readonly');
             }
           });
 
-          const emergencyContactsDiv = document.getElementById('emergency_contacts');
+          const emergencyContactsDiv =
+            document.getElementById('emergency_contacts');
           emergencyContactsDiv.innerHTML = `
             <div id="emergency_contacts_list">
               ${
                 data.emergency_contacts && data.emergency_contacts.length > 0
-                  ? data.emergency_contacts.map((contact, index) => `
+                  ? data.emergency_contacts
+                      .map(
+                        (contact, index) => `
                       <div class="emergency-contact" data-index="${index}">
                         <p><strong>Contact ${index + 1}:</strong></p>
                         <div class="form-group">
                           <label for="contact_name_${index}">Name:</label>
-                          <input type="text" id="contact_name_${index}" name="emergency_contacts[${index}][contact_name]" value="${contact.contact_name || ''}">
+                          <input type="text" id="contact_name_${index}" name="emergency_contacts[${index}][contact_name]" value="${
+                          contact.contact_name || ''
+                        }">
                         </div>
                         <div class="form-group">
                           <label for="contact_phone_${index}">Phone:</label>
-                          <input type="tel" id="contact_phone_${index}" name="emergency_contacts[${index}][contact_phone]" value="${contact.contact_phone || ''}" pattern="[0-9]{10}" placeholder="1234567890">
+                          <input type="tel" id="contact_phone_${index}" name="emergency_contacts[${index}][contact_phone]" value="${
+                          contact.contact_phone || ''
+                        }" pattern="[0-9]{10}" placeholder="1234567890">
                         </div>
                         <div class="form-group">
                           <label for="relationship_${index}">Relationship:</label>
-                          <input type="text" id="relationship_${index}" name="emergency_contacts[${index}][relationship]" value="${contact.relationship || ''}">
+                          <input type="text" id="relationship_${index}" name="emergency_contacts[${index}][relationship]" value="${
+                          contact.relationship || ''
+                        }">
                         </div>
                         <button type="button" class="remove-contact-btn" data-index="${index}">Remove Contact</button>
                       </div>
-                    `).join('')
+                    `
+                      )
+                      .join('')
                   : '<p>No emergency contacts available.</p>'
               }
             </div>
@@ -625,9 +662,12 @@ function showProfileForm() {
 
           const addContactBtn = document.getElementById('add_contact_btn');
           if (addContactBtn) {
-            addContactBtn.addEventListener('click', function() {
-              const contactList = document.getElementById('emergency_contacts_list');
-              const index = document.querySelectorAll('.emergency-contact').length;
+            addContactBtn.addEventListener('click', function () {
+              const contactList = document.getElementById(
+                'emergency_contacts_list'
+              );
+              const index =
+                document.querySelectorAll('.emergency-contact').length;
               const newContactHTML = `
                 <div class="emergency-contact" data-index="${index}">
                   <p><strong>Contact ${index + 1}:</strong></p>
@@ -652,10 +692,12 @@ function showProfileForm() {
           }
 
           function addRemoveContactListeners() {
-            document.querySelectorAll('.remove-contact-btn').forEach(btn => {
-              btn.addEventListener('click', function() {
+            document.querySelectorAll('.remove-contact-btn').forEach((btn) => {
+              btn.addEventListener('click', function () {
                 const index = this.getAttribute('data-index');
-                document.querySelector(`.emergency-contact[data-index="${index}"]`).remove();
+                document
+                  .querySelector(`.emergency-contact[data-index="${index}"]`)
+                  .remove();
               });
             });
           }
@@ -668,20 +710,20 @@ function showProfileForm() {
 
           const cancelEditBtn = document.getElementById('cancelEditBtn');
           if (cancelEditBtn) {
-            cancelEditBtn.addEventListener('click', function() {
+            cancelEditBtn.addEventListener('click', function () {
               showProfileForm();
             });
           }
         });
 
-        form.addEventListener('submit', function(event) {
+        form.addEventListener('submit', function (event) {
           event.preventDefault();
 
           // Validate DOB (must be 18 years or older)
           const dobInput = document.getElementById('dob');
 
           if (!dobInput) {
-            console.error('DOB input element not found',dobInput);
+            console.error('DOB input element not found', dobInput);
             alert('Error: Date of Birth field is missing.');
             return;
           }
@@ -708,13 +750,20 @@ function showProfileForm() {
           }
 
           // Validate emergency contacts
-          const emergencyContacts = document.querySelectorAll('.emergency-contact');
+          const emergencyContacts =
+            document.querySelectorAll('.emergency-contact');
           for (let i = 0; i < emergencyContacts.length; i++) {
             const contact = emergencyContacts[i];
             const index = contact.getAttribute('data-index');
-            const contactName = document.getElementById(`contact_name_${index}`).value.trim();
-            const contactPhone = document.getElementById(`contact_phone_${index}`).value.trim();
-            const relationship = document.getElementById(`relationship_${index}`).value.trim();
+            const contactName = document
+              .getElementById(`contact_name_${index}`)
+              .value.trim();
+            const contactPhone = document
+              .getElementById(`contact_phone_${index}`)
+              .value.trim();
+            const relationship = document
+              .getElementById(`relationship_${index}`)
+              .value.trim();
 
             if (!contactName || !contactPhone || !relationship) {
               alert(`All fields are required for Emergency Contact ${i + 1}.`);
@@ -722,7 +771,11 @@ function showProfileForm() {
             }
 
             if (!/^[0-9]{10}$/.test(contactPhone)) {
-              alert(`Phone number for Emergency Contact ${i + 1} must be exactly 10 digits.`);
+              alert(
+                `Phone number for Emergency Contact ${
+                  i + 1
+                } must be exactly 10 digits.`
+              );
               return;
             }
           }
@@ -733,20 +786,20 @@ function showProfileForm() {
             method: 'POST',
             body: formData,
           })
-          .then(response => response.json())
-          .then(result => {
-            if (result.success) {
-              alert(result.message);
-              showProfileForm();
-            } else {
-              alert(result.error || 'Failed to update profile');
-            }
-          })
-          .catch(error => alert('Network error: ' + error.message));
+            .then((response) => response.json())
+            .then((result) => {
+              if (result.success) {
+                alert(result.message);
+                showProfileForm();
+              } else {
+                alert(result.error || 'Failed to update profile');
+              }
+            })
+            .catch((error) => alert('Network error: ' + error.message));
         });
       }
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('Fetch error:', error);
       profileUpdateForm.innerHTML = `
         <div class="card">
@@ -759,7 +812,6 @@ function showProfileForm() {
       `;
     });
 }
-
 
 function showUpdatePasswordForm() {
   console.log('showUpdatePasswordForm called');
@@ -846,19 +898,23 @@ function showUpdatePasswordForm() {
       }
 
       // Validation 2: Strong password rules
-      const passwordRegex = /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{12,}$/;
+      const passwordRegex =
+        /^(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[!@#$%^&*])[A-Za-z\d!@#$%^&*]{12,}$/;
       if (!passwordRegex.test(newPassword)) {
         if (errorDiv) {
-          errorDiv.innerHTML = 'Password must be at least 12 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*).';
+          errorDiv.innerHTML =
+            'Password must be at least 12 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (!@#$%^&*).';
         }
         return;
       }
 
       // Validation 3: Check for repetitive patterns
-      const repetitivePatternRegex = /(.)\1{3,}|(?:0123|1234|2345|3456|4567|5678|6789|7890)/;
+      const repetitivePatternRegex =
+        /(.)\1{3,}|(?:0123|1234|2345|3456|4567|5678|6789|7890)/;
       if (repetitivePatternRegex.test(newPassword)) {
         if (errorDiv) {
-          errorDiv.innerHTML = 'Password contains repetitive or predictable patterns (e.g., "aaaa" or "1234"). Please use a more complex password.';
+          errorDiv.innerHTML =
+            'Password contains repetitive or predictable patterns (e.g., "aaaa" or "1234"). Please use a more complex password.';
         }
         return;
       }
@@ -866,9 +922,10 @@ function showUpdatePasswordForm() {
       // Validation 4: Check for common words
       const commonWords = ['password', 'admin', 'user', '123456', 'qwerty'];
       const lowerCasePassword = newPassword.toLowerCase();
-      if (commonWords.some(word => lowerCasePassword.includes(word))) {
+      if (commonWords.some((word) => lowerCasePassword.includes(word))) {
         if (errorDiv) {
-          errorDiv.innerHTML = 'Password contains a common word or phrase (e.g., "password", "admin"). Please use a more unique password.';
+          errorDiv.innerHTML =
+            'Password contains a common word or phrase (e.g., "password", "admin"). Please use a more unique password.';
         }
         return;
       }
@@ -881,8 +938,8 @@ function showUpdatePasswordForm() {
         method: 'POST',
         body: formData,
       })
-        .then(response => response.json())
-        .then(result => {
+        .then((response) => response.json())
+        .then((result) => {
           if (result.success) {
             profileUpdateForm.innerHTML = `
               <div class="card">
@@ -904,7 +961,7 @@ function showUpdatePasswordForm() {
             }
           }
         })
-        .catch(error => {
+        .catch((error) => {
           if (errorDiv) {
             errorDiv.innerHTML = `Network error: ${error.message}`;
           }
@@ -955,7 +1012,12 @@ function fetchSalaryDetails() {
         const departmentId = data.salary_details.department_id || 'N/A';
 
         const salaryValue = parseFloat(salary);
-        const formattedSalary = isNaN(salaryValue) ? 'N/A' : `$${salaryValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        const formattedSalary = isNaN(salaryValue)
+          ? 'N/A'
+          : `$${salaryValue.toLocaleString('en-US', {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })}`;
 
         salarySection.innerHTML = `
           <div class="card">
@@ -982,7 +1044,9 @@ function fetchSalaryDetails() {
         salarySection.innerHTML = `
           <div class="card">
             <h2>Salary Details</h2>
-            <p style="color: #ff0000;">${data.error || 'No salary details found.'}</p>
+            <p style="color: #ff0000;">${
+              data.error || 'No salary details found.'
+            }</p>
             <div class="form-group button-group">
               <button type="button" onclick="showWelcomeMessage()">Back</button>
             </div>
@@ -1029,14 +1093,14 @@ function fetchFeedback() {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      action: 'fetch_feedback'
-    })
+      action: 'fetch_feedback',
+    }),
   })
-    .then(response => {
+    .then((response) => {
       if (!response.ok) throw new Error('Network response was not ok');
       return response.json();
     })
-    .then(data => {
+    .then((data) => {
       if (data.success && data.feedback && data.feedback.length > 0) {
         feedbackSection.innerHTML = `
             <h2>My Feedback</h2>
@@ -1051,7 +1115,9 @@ function fetchFeedback() {
                 </tr>
               </thead>
               <tbody>
-                ${data.feedback.map(f => `
+                ${data.feedback
+                  .map(
+                    (f) => `
                   <tr>
                     <td>${f.reviewer_id}</td>
                     <td>${f.rating}</td>
@@ -1059,7 +1125,9 @@ function fetchFeedback() {
                     <td>${f.feedback_text}</td>
                     <td>${f.date_submitted}</td>
                   </tr>
-                `).join('')}
+                `
+                  )
+                  .join('')}
               </tbody>
             </table>
             <div class="form-group button-group">
@@ -1078,7 +1146,7 @@ function fetchFeedback() {
         `;
       }
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('Error fetching feedback:', error);
       feedbackSection.innerHTML = `
         <div class="card">
@@ -1094,7 +1162,9 @@ function fetchFeedback() {
 
 function showSubmitExitInterviewForm() {
   showSection('submit-exit-interview-section');
-  const exitInterviewSection = document.getElementById('submit-exit-interview-section');
+  const exitInterviewSection = document.getElementById(
+    'submit-exit-interview-section'
+  );
   if (!exitInterviewSection) {
     console.error('Submit exit interview section not found');
     return;
@@ -1105,15 +1175,18 @@ function showSubmitExitInterviewForm() {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      action: 'fetch_exit_interview'
-    })
+      action: 'fetch_exit_interview',
+    }),
   })
-    .then(response => {
+    .then((response) => {
       if (!response.ok) throw new Error('Network response was not ok');
       return response.json();
     })
-    .then(data => {
-      if (data.error === 'You don\'t have any exit interview to submit. Contact your manager for any queries.') {
+    .then((data) => {
+      if (
+        data.error ===
+        "You don't have any exit interview to submit. Contact your manager for any queries."
+      ) {
         // No exit interview record exists, show message
         exitInterviewSection.innerHTML = `
             <h2>Submit Exit Interview Details</h2>
@@ -1150,35 +1223,71 @@ function showSubmitExitInterviewForm() {
                 <label for="resignation_type">Resignation Type:</label>
                 <select id="resignation_type" name="resignation_type" required>
                   <option value="">Select Resignation Type</option>
-                  <option value="Voluntary" ${existingData.resignation_type === 'Voluntary' ? 'selected' : ''}>Voluntary</option>
-                  <option value="Involuntary" ${existingData.resignation_type === 'Involuntary' ? 'selected' : ''}>Involuntary</option>
+                  <option value="Voluntary" ${
+                    existingData.resignation_type === 'Voluntary'
+                      ? 'selected'
+                      : ''
+                  }>Voluntary</option>
+                  <option value="Involuntary" ${
+                    existingData.resignation_type === 'Involuntary'
+                      ? 'selected'
+                      : ''
+                  }>Involuntary</option>
                 </select>
               </div>
               <div class="form-group">
                 <label for="primary_reason">Primary Reason for Leaving:</label>
-                <textarea id="primary_reason" name="primary_reason" rows="4" placeholder="Enter the primary reason for leaving" required>${existingData.primary_reason || ''}</textarea>
+                <textarea id="primary_reason" name="primary_reason" rows="4" placeholder="Enter the primary reason for leaving" required>${
+                  existingData.primary_reason || ''
+                }</textarea>
               </div>
               <div class="form-group">
                 <label for="overall_satisfaction_rating">Overall Satisfaction Rating (1-5):</label>
                 <select id="overall_satisfaction_rating" name="overall_satisfaction_rating" required>
                   <option value="">Select Rating</option>
-                  <option value="1" ${existingData.overall_satisfaction_rating === '1' ? 'selected' : ''}>1 - Very Dissatisfied</option>
-                  <option value="2" ${existingData.overall_satisfaction_rating === '2' ? 'selected' : ''}>2 - Dissatisfied</option>
-                  <option value="3" ${existingData.overall_satisfaction_rating === '3' ? 'selected' : ''}>3 - Neutral</option>
-                  <option value="4" ${existingData.overall_satisfaction_rating === '4' ? 'selected' : ''}>4 - Satisfied</option>
-                  <option value="5" ${existingData.overall_satisfaction_rating === '5' ? 'selected' : ''}>5 - Very Satisfied</option>
+                  <option value="1" ${
+                    existingData.overall_satisfaction_rating === '1'
+                      ? 'selected'
+                      : ''
+                  }>1 - Very Dissatisfied</option>
+                  <option value="2" ${
+                    existingData.overall_satisfaction_rating === '2'
+                      ? 'selected'
+                      : ''
+                  }>2 - Dissatisfied</option>
+                  <option value="3" ${
+                    existingData.overall_satisfaction_rating === '3'
+                      ? 'selected'
+                      : ''
+                  }>3 - Neutral</option>
+                  <option value="4" ${
+                    existingData.overall_satisfaction_rating === '4'
+                      ? 'selected'
+                      : ''
+                  }>4 - Satisfied</option>
+                  <option value="5" ${
+                    existingData.overall_satisfaction_rating === '5'
+                      ? 'selected'
+                      : ''
+                  }>5 - Very Satisfied</option>
                 </select>
               </div>
               <div class="form-group">
                 <label for="knowledge_transfer_status">Knowledge Transfer Status:</label>
-                <textarea id="knowledge_transfer_status" name="knowledge_transfer_status" rows="4" placeholder="Describe the status of knowledge transfer">${existingData.knowledge_transfer_status || ''}</textarea>
+                <textarea id="knowledge_transfer_status" name="knowledge_transfer_status" rows="4" placeholder="Describe the status of knowledge transfer">${
+                  existingData.knowledge_transfer_status || ''
+                }</textarea>
               </div>
               <div class="form-group">
                 <label for="assets_returned">Assets Returned:</label>
                 <select id="assets_returned" name="assets_returned" required>
                   <option value="">Select Option</option>
-                  <option value="1" ${existingData.assets_returned === '1' ? 'selected' : ''}>Yes</option>
-                  <option value="0" ${existingData.assets_returned === '0' ? 'selected' : ''}>No</option>
+                  <option value="1" ${
+                    existingData.assets_returned === '1' ? 'selected' : ''
+                  }>Yes</option>
+                  <option value="0" ${
+                    existingData.assets_returned === '0' ? 'selected' : ''
+                  }>No</option>
                 </select>
               </div>
               <div class="form-group button-group">
@@ -1190,13 +1299,15 @@ function showSubmitExitInterviewForm() {
         `;
 
         // Add event listener for form submission
-        document.getElementById('exit-interview-form').addEventListener('submit', function(e) {
-          e.preventDefault();
-          submitExitInterview();
-        });
+        document
+          .getElementById('exit-interview-form')
+          .addEventListener('submit', function (e) {
+            e.preventDefault();
+            submitExitInterview();
+          });
       }
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('Error checking exit interview status:', error);
       exitInterviewSection.innerHTML = `
         <div class="card">
@@ -1210,9 +1321,10 @@ function showSubmitExitInterviewForm() {
     });
 }
 
-
 function submitExitInterview() {
-  const exitInterviewSection = document.getElementById('submit-exit-interview-section');
+  const exitInterviewSection = document.getElementById(
+    'submit-exit-interview-section'
+  );
   if (!exitInterviewSection) {
     console.error('Submit exit interview section not found');
     return;
@@ -1220,8 +1332,12 @@ function submitExitInterview() {
 
   const resignationType = document.getElementById('resignation_type').value;
   const primaryReason = document.getElementById('primary_reason').value.trim();
-  const overallSatisfactionRating = document.getElementById('overall_satisfaction_rating').value;
-  const knowledgeTransferStatus = document.getElementById('knowledge_transfer_status').value.trim();
+  const overallSatisfactionRating = document.getElementById(
+    'overall_satisfaction_rating'
+  ).value;
+  const knowledgeTransferStatus = document
+    .getElementById('knowledge_transfer_status')
+    .value.trim();
   const assetsReturned = document.getElementById('assets_returned').value;
 
   // Log the form values for debugging
@@ -1230,7 +1346,7 @@ function submitExitInterview() {
     primary_reason: primaryReason,
     overall_satisfaction_rating: overallSatisfactionRating,
     knowledge_transfer_status: knowledgeTransferStatus,
-    assets_returned: assetsReturned
+    assets_returned: assetsReturned,
   });
 
   // Client-side validation
@@ -1249,7 +1365,8 @@ function submitExitInterview() {
   }
   if (!overallSatisfactionRating) {
     errors.push('Overall Satisfaction Rating is required.');
-    document.getElementById('overall_satisfaction_rating').style.border = '1px solid red';
+    document.getElementById('overall_satisfaction_rating').style.border =
+      '1px solid red';
   } else {
     document.getElementById('overall_satisfaction_rating').style.border = '';
   }
@@ -1285,13 +1402,13 @@ function submitExitInterview() {
 
   fetch('../pages/features/submit_exit_interview.php', {
     method: 'POST',
-    body: formData
+    body: formData,
   })
-    .then(response => {
+    .then((response) => {
       if (!response.ok) throw new Error('Network response was not ok');
       return response.json();
     })
-    .then(data => {
+    .then((data) => {
       console.log('Server Response:', data);
       if (data.success) {
         // Show alert with success message
@@ -1315,7 +1432,9 @@ function submitExitInterview() {
         exitInterviewSection.innerHTML = `
           <div class="card">
             <h2>Submit Exit Interview Details</h2>
-            <p style="color: #ff0000;">${data.error || 'Failed to submit exit interview details.'}</p>
+            <p style="color: #ff0000;">${
+              data.error || 'Failed to submit exit interview details.'
+            }</p>
             <div class="form-group button-group">
               <button type="button" onclick="showWelcomeMessage()">Back</button>
             </div>
@@ -1323,7 +1442,7 @@ function submitExitInterview() {
         `;
       }
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('Error submitting exit interview:', error);
       exitInterviewSection.innerHTML = `
         <div class="card">
@@ -1345,7 +1464,9 @@ function showExitInterviewDetails() {
 
 // Fetch and Display Exit Interview Details
 function fetchExitInterviewDetails() {
-  const exitInterviewDetailsSection = document.getElementById('exit-interview-details-section');
+  const exitInterviewDetailsSection = document.getElementById(
+    'exit-interview-details-section'
+  );
   if (!exitInterviewDetailsSection) {
     console.error('Exit interview details section not found');
     return;
@@ -1362,14 +1483,14 @@ function fetchExitInterviewDetails() {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      action: 'fetch_exit_interview'
-    })
+      action: 'fetch_exit_interview',
+    }),
   })
-    .then(response => {
+    .then((response) => {
       if (!response.ok) throw new Error('Network response was not ok');
       return response.json();
     })
-    .then(data => {
+    .then((data) => {
       if (data.success && data.exit_interview) {
         const ei = data.exit_interview;
         exitInterviewDetailsSection.innerHTML = `
@@ -1377,14 +1498,30 @@ function fetchExitInterviewDetails() {
             <div class="salary-details-container">
               <div class="salary-details-box">
                 <h3>Details</h3>
-                <p><strong>Interview Date:</strong> ${ei.interview_date || 'N/A'}</p>
-                <p><strong>Last Working Date:</strong> ${ei.last_working_date || 'N/A'}</p>
-                <p><strong>Resignation Type:</strong> ${ei.resignation_type || 'N/A'}</p>
-                <p><strong>Primary Reason:</strong> ${ei.primary_reason || 'N/A'}</p>
-                <p><strong>Overall Satisfaction Rating:</strong> ${ei.overall_satisfaction_rating || 'N/A'}</p>
-                <p><strong>Knowledge Transfer Status:</strong> ${ei.knowledge_transfer_status || 'N/A'}</p>
-                <p><strong>Assets Returned:</strong> ${ei.assets_returned == 1 ? 'Yes' : 'No'}</p>
-                <p><strong>Eligible for Rehire:</strong> ${ei.eligible_for_rehire == 1 ? 'Yes' : 'No'}</p>
+                <p><strong>Interview Date:</strong> ${
+                  ei.interview_date || 'N/A'
+                }</p>
+                <p><strong>Last Working Date:</strong> ${
+                  ei.last_working_date || 'N/A'
+                }</p>
+                <p><strong>Resignation Type:</strong> ${
+                  ei.resignation_type || 'N/A'
+                }</p>
+                <p><strong>Primary Reason:</strong> ${
+                  ei.primary_reason || 'N/A'
+                }</p>
+                <p><strong>Overall Satisfaction Rating:</strong> ${
+                  ei.overall_satisfaction_rating || 'N/A'
+                }</p>
+                <p><strong>Knowledge Transfer Status:</strong> ${
+                  ei.knowledge_transfer_status || 'N/A'
+                }</p>
+                <p><strong>Assets Returned:</strong> ${
+                  ei.assets_returned == 1 ? 'Yes' : 'No'
+                }</p>
+                <p><strong>Eligible for Rehire:</strong> ${
+                  ei.eligible_for_rehire == 1 ? 'Yes' : 'No'
+                }</p>
               </div>
             </div>
             <div class="form-group button-group">
@@ -1394,14 +1531,16 @@ function fetchExitInterviewDetails() {
       } else {
         exitInterviewDetailsSection.innerHTML = `
             <h2>Exit Interview Details</h2>
-            <p style="color: #ff0000;">${data.error || 'No exit interview details found.'}</p>
+            <p style="color: #ff0000;">${
+              data.error || 'No exit interview details found.'
+            }</p>
             <div class="form-group button-group">
               <button type="button" onclick="showWelcomeMessage()">Back</button>
             </div>
         `;
       }
     })
-    .catch(error => {
+    .catch((error) => {
       console.error('Error fetching exit interview details:', error);
       exitInterviewDetailsSection.innerHTML = `
           <h2>Exit Interview Details</h2>
@@ -1412,9 +1551,6 @@ function fetchExitInterviewDetails() {
       `;
     });
 }
-
-
-
 
 // Show Salary Details section
 function showSalaryDetails() {
@@ -1473,7 +1609,12 @@ function fetchSalaryDetails() {
               </div>
               <div style="flex: 1; min-width: 250px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
                 <h3 style="font-size: 18px; color: #333; margin-bottom: 10px;">Compensation</h3>
-                <p><strong>Current Salary:</strong> $${parseFloat(salary).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                <p><strong>Current Salary:</strong> $${parseFloat(
+                  salary
+                ).toLocaleString('en-US', {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })}</p>
               </div>
             </div>
             <div class="form-group button-group" style="margin-top: 20px;">
@@ -1485,7 +1626,9 @@ function fetchSalaryDetails() {
         salarySection.innerHTML = `
           <div class="card">
             <h2>Salary Details</h2>
-            <p style="color: #ff0000;">${data.error || 'No salary details found.'}</p>
+            <p style="color: #ff0000;">${
+              data.error || 'No salary details found.'
+            }</p>
             <div class="form-group button-group">
               <button type="button" onclick="showWelcomeMessage()">Back</button>
             </div>
@@ -1507,311 +1650,371 @@ function fetchSalaryDetails() {
     });
 }
 
-
 // Show Enroll in Training Programs section
 function showEnrollTraining() {
-    console.log('showEnrollTraining called');
-    showSection('enroll-training-section');
-    fetchDepartments(); // Fetch departments to populate the filter
-    fetchAvailableTrainings();
+  console.log('showEnrollTraining called');
+  showSection('enroll-training-section');
+  fetchDepartments(); // Fetch departments to populate the filter
+  fetchAvailableTrainings();
 }
 
 // Fetch departments for the training filter
 function fetchDepartments() {
-    console.log('fetchDepartments called');
-    const trainingFilter = document.getElementById('training_filter');
-    if (!trainingFilter) {
-        console.error('training_filter element not found');
-        return;
-    }
-    console.log('training_filter element found');
-    fetch('../pages/user_dashboard.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            action: 'fetch_departments'
-        })
+  console.log('fetchDepartments called');
+  const trainingFilter = document.getElementById('training_filter');
+  if (!trainingFilter) {
+    console.error('training_filter element not found');
+    return;
+  }
+  console.log('training_filter element found');
+
+  // Clear the dropdown
+  trainingFilter.innerHTML = '';
+
+  // Since we only want the employee's department, fetch only that department's details
+  fetch('../pages/user_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'fetch_employee_department', // New action to fetch only the employee's department
+      employee_department_id: employeeDepartmentId, // Pass the employee's department ID
+    }),
+  })
+    .then((response) => {
+      console.log('fetchDepartments response received:', response);
+      return response.json();
     })
-    .then(response => {
-        console.log('fetchDepartments response received:', response);
-        return response.json();
+    .then((data) => {
+      console.log('fetchDepartments data:', data);
+      if (data.success && data.department) {
+        // Add only the employee's department to the dropdown
+        const option = document.createElement('option');
+        option.value = data.department.department_id;
+        option.textContent = data.department.department_name;
+        trainingFilter.appendChild(option);
+        trainingFilter.value = data.department.department_id; // Set the value to the employee's department
+        console.log(
+          'Set training_filter to employee department:',
+          data.department.department_id
+        );
+      } else {
+        console.error(
+          'fetchDepartments failed:',
+          data.error || 'No department found'
+        );
+      }
     })
-    .then(data => {
-        console.log('fetchDepartments data:', data);
-        trainingFilter.innerHTML = '<option value="">All Departments</option>';
-        if (data.success && data.departments) {
-            data.departments.forEach(dept => {
-                const option = document.createElement('option');
-                option.value = dept.department_id;
-                option.textContent = dept.department_name;
-                trainingFilter.appendChild(option);
-            });
-            if (employeeDepartmentId) {
-                trainingFilter.value = employeeDepartmentId;
-                console.log('Set training_filter value to employeeDepartmentId:', employeeDepartmentId);
-            }
-        } else {
-            console.error('fetchDepartments failed:', data.error || 'No departments found');
-        }
-    })
-    .catch(error => {
-        console.error('Error fetching departments:', error);
+    .catch((error) => {
+      console.error('Error fetching department:', error);
     });
 }
 
 // Fetch available training programs
 function fetchAvailableTrainings() {
-    console.log('fetchAvailableTrainings called');
-    const tableBody = document.getElementById('available-trainings-table-body');
-    const departmentId = document.getElementById('training_filter').value;
-    if (!tableBody) {
-        console.error('available-trainings-table-body element not found');
-        return;
-    }
-    console.log('Department ID for fetch:', departmentId);
-    fetch('../pages/user_dashboard.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            action: 'fetch_available_trainings',
-            department_id: departmentId
-        })
+  console.log('fetchAvailableTrainings called');
+  const tableBody = document.getElementById('available-trainings-table-body');
+  const departmentId = document.getElementById('training_filter').value;
+  if (!tableBody) {
+    console.error('available-trainings-table-body element not found');
+    return;
+  }
+  console.log('Department ID for fetch:', departmentId);
+  fetch('../pages/user_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'fetch_available_trainings',
+      department_id: departmentId,
+    }),
+  })
+    .then((response) => {
+      console.log('fetchAvailableTrainings response received:', response);
+      return response.json();
     })
-    .then(response => {
-        console.log('fetchAvailableTrainings response received:', response);
-        return response.json();
-    })
-    .then(data => {
-        console.log('fetchAvailableTrainings data:', data);
-        tableBody.innerHTML = '';
-        if (data.success && data.trainings && data.trainings.length > 0) {
-            data.trainings.forEach(training => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
+    .then((data) => {
+      console.log('fetchAvailableTrainings data:', data);
+      tableBody.innerHTML = '';
+      if (data.success && data.trainings && data.trainings.length > 0) {
+        data.trainings.forEach((training) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
                     <td>${training.training_name}</td>
                     <td>${training.training_date}</td>
                     <td>${training.end_date}</td>
                     <td>${training.certificate || 'N/A'}</td>
                     <td>${training.department_id}</td>
                     <td>
-                        <button onclick="enrollInTraining(${training.training_id})">Enroll</button>
+                        <button onclick="enrollInTraining(${
+                          training.training_id
+                        })">Enroll</button>
                     </td>
                 `;
-                tableBody.appendChild(row);
-            });
-        } else {
-            tableBody.innerHTML = '<tr><td colspan="6">No training programs available.</td></tr>';
-            console.log('No trainings available or fetch failed:', data.error || 'Unknown error');
-        }
+          tableBody.appendChild(row);
+        });
+      } else {
+        tableBody.innerHTML =
+          '<tr><td colspan="6">No training programs available.</td></tr>';
+        console.log(
+          'No trainings available or fetch failed:',
+          data.error || 'Unknown error'
+        );
+      }
     })
-    .catch(error => {
-        console.error('Error fetching available trainings:', error);
-        tableBody.innerHTML = '<tr><td colspan="6">Error fetching training programs.</td></tr>';
+    .catch((error) => {
+      console.error('Error fetching available trainings:', error);
+      tableBody.innerHTML =
+        '<tr><td colspan="6">Error fetching training programs.</td></tr>';
     });
 }
 
 // Enroll in a training program
 function enrollInTraining(trainingId) {
-    console.log('enrollInTraining called with trainingId:', trainingId);
-    fetch('../pages/user_dashboard.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            action: 'enroll_training',
-            training_id: trainingId
-        })
+  console.log('enrollInTraining called with trainingId:', trainingId);
+  fetch('../pages/user_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'enroll_training',
+      training_id: trainingId,
+    }),
+  })
+    .then((response) => {
+      console.log('enrollInTraining response received:', response);
+      return response.json();
     })
-    .then(response => {
-        console.log('enrollInTraining response received:', response);
-        return response.json();
+    .then((data) => {
+      console.log('enrollInTraining data:', data);
+      if (data.success) {
+        alert(data.message);
+        fetchAvailableTrainings();
+      } else {
+        alert('Error: ' + (data.error || 'Failed to enroll in training'));
+      }
     })
-    .then(data => {
-        console.log('enrollInTraining data:', data);
-        if (data.success) {
-            alert(data.message);
-            fetchAvailableTrainings();
-        } else {
-            alert('Error: ' + (data.error || 'Failed to enroll in training'));
-        }
-    })
-    .catch(error => {
-        console.error('Error enrolling in training:', error);
-        alert('An error occurred while enrolling in training.');
+    .catch((error) => {
+      console.error('Error enrolling in training:', error);
+      alert('An error occurred while enrolling in training.');
     });
 }
 
 // Show Update Training Status section
 function showUpdateTrainingStatus() {
-    console.log('showUpdateTrainingStatus called');
-    showSection('update-training-status-section');
-    fetchEnrolledTrainings();
+  console.log('showUpdateTrainingStatus called');
+  showSection('update-training-status-section');
+  fetchEnrolledTrainings();
 }
 
 // Fetch enrolled training programs
 function fetchEnrolledTrainings() {
-    console.log('fetchEnrolledTrainings called');
-    const tableBody = document.getElementById('enrolled-trainings-table-body');
-    if (!tableBody) {
-        console.error('enrolled-trainings-table-body element not found');
-        return;
-    }
-    fetch('../pages/user_dashboard.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            action: 'fetch_enrolled_trainings'
-        })
+  console.log('fetchEnrolledTrainings called');
+  const tableBody = document.getElementById('enrolled-trainings-table-body');
+  if (!tableBody) {
+    console.error('enrolled-trainings-table-body element not found');
+    return;
+  }
+  fetch('../pages/user_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'fetch_enrolled_trainings',
+    }),
+  })
+    .then((response) => {
+      console.log('fetchEnrolledTrainings response received:', response);
+      return response.json();
     })
-    .then(response => {
-        console.log('fetchEnrolledTrainings response received:', response);
-        return response.json();
-    })
-    .then(data => {
-        console.log('fetchEnrolledTrainings data:', data);
-        tableBody.innerHTML = '';
-        if (data.success && data.enrolled_trainings && data.enrolled_trainings.length > 0) {
-            data.enrolled_trainings.forEach(training => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
+    .then((data) => {
+      console.log('fetchEnrolledTrainings data:', data);
+      tableBody.innerHTML = '';
+      if (
+        data.success &&
+        data.enrolled_trainings &&
+        data.enrolled_trainings.length > 0
+      ) {
+        data.enrolled_trainings.forEach((training) => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
                     <td>${training.training_name}</td>
                     <td>${training.enrollment_date}</td>
                     <td>
-                        <select onchange="updateTrainingStatus(${training.employee_training_id}, this.value)">
-                            <option value="Not Started" ${training.completion_status === 'Not Started' ? 'selected' : ''}>Not Started</option>
-                            <option value="In Progress" ${training.completion_status === 'In Progress' ? 'selected' : ''}>In Progress</option>
-                            <option value="Completed" ${training.completion_status === 'Completed' ? 'selected' : ''}>Completed</option>
+                        <select onchange="updateTrainingStatus(${
+                          training.employee_training_id
+                        }, this.value)">
+                            <option value="Not Started" ${
+                              training.completion_status === 'Not Started'
+                                ? 'selected'
+                                : ''
+                            }>Not Started</option>
+                            <option value="In Progress" ${
+                              training.completion_status === 'In Progress'
+                                ? 'selected'
+                                : ''
+                            }>In Progress</option>
+                            <option value="Completed" ${
+                              training.completion_status === 'Completed'
+                                ? 'selected'
+                                : ''
+                            }>Completed</option>
                         </select>
                     </td>
                     <td>
-                        <input type="number" value="${training.score || ''}" min="0" max="100" onchange="updateTrainingScore(${training.employee_training_id}, this.value)" placeholder="Enter score (0-100)">
+                        <input type="number" value="${
+                          training.score || ''
+                        }" min="0" max="100" onchange="updateTrainingScore(${
+            training.employee_training_id
+          }, this.value)" placeholder="Enter score (0-100)">
                     </td>
                     <td>
-                        <button onclick="updateTraining(${training.employee_training_id})">Update</button>
+                        <button onclick="updateTraining(${
+                          training.employee_training_id
+                        })">Update</button>
                     </td>
                 `;
-                tableBody.appendChild(row);
-            });
-        } else {
-            tableBody.innerHTML = '<tr><td colspan="5">No enrolled training programs found.</td></tr>';
-            console.log('No enrolled trainings found or fetch failed:', data.error || 'Unknown error');
-        }
+          tableBody.appendChild(row);
+        });
+      } else {
+        tableBody.innerHTML =
+          '<tr><td colspan="5">No enrolled training programs found.</td></tr>';
+        console.log(
+          'No enrolled trainings found or fetch failed:',
+          data.error || 'Unknown error'
+        );
+      }
     })
-    .catch(error => {
-        console.error('Error fetching enrolled trainings:', error);
-        tableBody.innerHTML = '<tr><td colspan="5">Error fetching enrolled trainings.</td></tr>';
+    .catch((error) => {
+      console.error('Error fetching enrolled trainings:', error);
+      tableBody.innerHTML =
+        '<tr><td colspan="5">Error fetching enrolled trainings.</td></tr>';
     });
 }
 
 // Update training status
 function updateTrainingStatus(employeeTrainingId, newStatus) {
-    console.log('updateTrainingStatus called with employeeTrainingId:', employeeTrainingId, 'newStatus:', newStatus);
-    fetch('../pages/user_dashboard.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            action: 'update_training_status',
-            employee_training_id: employeeTrainingId,
-            completion_status: newStatus
-        })
+  console.log(
+    'updateTrainingStatus called with employeeTrainingId:',
+    employeeTrainingId,
+    'newStatus:',
+    newStatus
+  );
+  fetch('../pages/user_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'update_training_status',
+      employee_training_id: employeeTrainingId,
+      completion_status: newStatus,
+    }),
+  })
+    .then((response) => {
+      console.log('updateTrainingStatus response received:', response);
+      return response.json();
     })
-    .then(response => {
-        console.log('updateTrainingStatus response received:', response);
-        return response.json();
+    .then((data) => {
+      console.log('updateTrainingStatus data:', data);
+      if (data.success) {
+        alert(data.message);
+        fetchEnrolledTrainings();
+      } else {
+        alert('Error: ' + (data.error || 'Failed to update training status'));
+      }
     })
-    .then(data => {
-        console.log('updateTrainingStatus data:', data);
-        if (data.success) {
-            alert(data.message);
-            fetchEnrolledTrainings();
-        } else {
-            alert('Error: ' + (data.error || 'Failed to update training status'));
-        }
-    })
-    .catch(error => {
-        console.error('Error updating training status:', error);
-        alert('An error occurred while updating training status.');
+    .catch((error) => {
+      console.error('Error updating training status:', error);
+      alert('An error occurred while updating training status.');
     });
 }
 
 // Update training score
 function updateTrainingScore(employeeTrainingId, newScore) {
-    console.log('updateTrainingScore called with employeeTrainingId:', employeeTrainingId, 'newScore:', newScore);
-    if (newScore < 0 || newScore > 100) {
-        alert('Score must be between 0 and 100.');
-        return;
-    }
-    fetch('../pages/user_dashboard.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            action: 'update_training_score',
-            employee_training_id: employeeTrainingId,
-            score: newScore
-        })
+  console.log(
+    'updateTrainingScore called with employeeTrainingId:',
+    employeeTrainingId,
+    'newScore:',
+    newScore
+  );
+  if (newScore < 0 || newScore > 100) {
+    alert('Score must be between 0 and 100.');
+    return;
+  }
+  fetch('../pages/user_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'update_training_score',
+      employee_training_id: employeeTrainingId,
+      score: newScore,
+    }),
+  })
+    .then((response) => {
+      console.log('updateTrainingScore response received:', response);
+      return response.json();
     })
-    .then(response => {
-        console.log('updateTrainingScore response received:', response);
-        return response.json();
+    .then((data) => {
+      console.log('updateTrainingScore data:', data);
+      if (data.success) {
+        alert(data.message);
+        fetchEnrolledTrainings();
+      } else {
+        alert('Error: ' + (data.error || 'Failed to update training score'));
+      }
     })
-    .then(data => {
-        console.log('updateTrainingScore data:', data);
-        if (data.success) {
-            alert(data.message);
-            fetchEnrolledTrainings();
-        } else {
-            alert('Error: ' + (data.error || 'Failed to update training score'));
-        }
-    })
-    .catch(error => {
-        console.error('Error updating training score:', error);
-        alert('An error occurred while updating training score.');
+    .catch((error) => {
+      console.error('Error updating training score:', error);
+      alert('An error occurred while updating training score.');
     });
 }
 
 // Update both status and score (called when clicking the "Update" button)
 function updateTraining(employeeTrainingId) {
-    console.log('updateTraining called with employeeTrainingId:', employeeTrainingId);
-    const statusSelect = document.querySelector(`select[onchange="updateTrainingStatus(${employeeTrainingId}, this.value)"]`);
-    const scoreInput = document.querySelector(`input[onchange="updateTrainingScore(${employeeTrainingId}, this.value)"]`);
-    const newStatus = statusSelect ? statusSelect.value : null;
-    const newScore = scoreInput ? scoreInput.value : null;
-    console.log('updateTraining - newStatus:', newStatus, 'newScore:', newScore);
+  console.log(
+    'updateTraining called with employeeTrainingId:',
+    employeeTrainingId
+  );
+  const statusSelect = document.querySelector(
+    `select[onchange="updateTrainingStatus(${employeeTrainingId}, this.value)"]`
+  );
+  const scoreInput = document.querySelector(
+    `input[onchange="updateTrainingScore(${employeeTrainingId}, this.value)"]`
+  );
+  const newStatus = statusSelect ? statusSelect.value : null;
+  const newScore = scoreInput ? scoreInput.value : null;
+  console.log('updateTraining - newStatus:', newStatus, 'newScore:', newScore);
 
-    if (!newStatus) {
-        alert('Please select a status.');
-        return;
-    }
-    if (newScore && (newScore < 0 || newScore > 100)) {
-        alert('Score must be between 0 and 100.');
-        return;
-    }
+  if (!newStatus) {
+    alert('Please select a status.');
+    return;
+  }
+  if (newScore && (newScore < 0 || newScore > 100)) {
+    alert('Score must be between 0 and 100.');
+    return;
+  }
 
-    fetch('../pages/user_dashboard.php', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-            action: 'update_training',
-            employee_training_id: employeeTrainingId,
-            completion_status: newStatus,
-            score: newScore || null
-        })
+  fetch('../pages/user_dashboard.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      action: 'update_training',
+      employee_training_id: employeeTrainingId,
+      completion_status: newStatus,
+      score: newScore || null,
+    }),
+  })
+    .then((response) => {
+      console.log('updateTraining response received:', response);
+      return response.json();
     })
-    .then(response => {
-        console.log('updateTraining response received:', response);
-        return response.json();
+    .then((data) => {
+      console.log('updateTraining data:', data);
+      if (data.success) {
+        alert(data.message);
+        fetchEnrolledTrainings();
+      } else {
+        alert('Error: ' + (data.error || 'Failed to update training'));
+      }
     })
-    .then(data => {
-        console.log('updateTraining data:', data);
-        if (data.success) {
-            alert(data.message);
-            fetchEnrolledTrainings();
-        } else {
-            alert('Error: ' + (data.error || 'Failed to update training'));
-        }
-    })
-    .catch(error => {
-        console.error('Error updating training:', error);
-        alert('An error occurred while updating training.');
+    .catch((error) => {
+      console.error('Error updating training:', error);
+      alert('An error occurred while updating training.');
     });
 }
 
@@ -1835,53 +2038,75 @@ function updateaddress() {
   addressSection.innerHTML = '<p>Loading address form...</p>';
 
   // Fetch existing address for the logged-in employee
-  fetch('../pages/features/fetch_employee_address.php?employee_id=' + employeeId, {
-    method: 'GET',
-    headers: { 'Cache-Control': 'no-cache' }
-  })
-  .then(response => {
-    if (!response.ok) throw new Error('Server error: ' + response.status);
-    return response.json();
-  })
-  .then(data => {
-    if (data.success && Array.isArray(data.address) && data.address.length > 0) {
-      employeeAddress = data.address[0];
-      console.log('Employee Address:', employeeAddress); // Debug log
-    }
-    return fetch('../pages/features/fetch_reference_data.php', {
+  fetch(
+    '../pages/features/fetch_employee_address.php?employee_id=' + employeeId,
+    {
       method: 'GET',
-      headers: { 'Cache-Control': 'no-cache' }
-    });
-  })
-  .then(response => {
-    if (!response.ok) throw new Error('Server error: ' + response.status);
-    return response.json();
-  })
-  .then(refData => {
-    const { cities, zips, states } = refData;
+      headers: { 'Cache-Control': 'no-cache' },
+    }
+  )
+    .then((response) => {
+      if (!response.ok) throw new Error('Server error: ' + response.status);
+      return response.json();
+    })
+    .then((data) => {
+      if (
+        data.success &&
+        Array.isArray(data.address) &&
+        data.address.length > 0
+      ) {
+        employeeAddress = data.address[0];
+        console.log('Employee Address:', employeeAddress); // Debug log
+      }
+      return fetch('../pages/features/fetch_reference_data.php', {
+        method: 'GET',
+        headers: { 'Cache-Control': 'no-cache' },
+      });
+    })
+    .then((response) => {
+      if (!response.ok) throw new Error('Server error: ' + response.status);
+      return response.json();
+    })
+    .then((refData) => {
+      const { cities, zips, states } = refData;
 
-    addressSection.innerHTML = `
+      addressSection.innerHTML = `
         <h2>Update My Address</h2>
         <form id="updateAddressForm" method="POST">
-          <input type="hidden" name="action" value="${employeeAddress ? 'update' : 'insert'}">
+          <input type="hidden" name="action" value="${
+            employeeAddress ? 'update' : 'insert'
+          }">
           <input type="hidden" name="employee_id" value="${employeeId}">
           <div class="form-group">
             <label for="street_name">Street Name:</label>
-            <input type="text" id="street_name" name="street_name" value="${employeeAddress?.street_name || ''}" required>
+            <input type="text" id="street_name" name="street_name" value="${
+              employeeAddress?.street_name || ''
+            }" required>
           </div>
           <div class="form-group">
             <label for="apt">Apartment/Suite:</label>
-            <input type="text" id="apt" name="apt" value="${employeeAddress?.Apt || ''}">
+            <input type="text" id="apt" name="apt" value="${
+              employeeAddress?.Apt || ''
+            }">
           </div>
           <div class="form-group">
             <label for="country">Country:</label>
-            <input type="text" id="country" name="country" value="${employeeAddress?.Country || 'USA'}" required>
+            <input type="text" id="country" name="country" value="${
+              employeeAddress?.Country || 'USA'
+            }" required>
           </div>
           <div class="form-group">
             <label for="city_id">City:</label>
             <select id="city_id" name="city_id" required onchange="updateCityStateZipOptions(${employeeId}, this.value, 'city')">
               <option value="">Select a city or add new</option>
-              ${cities.map(city => `<option value="${city.city_id}" ${employeeAddress?.city_id == city.city_id ? 'selected' : ''}>${city.city_name}</option>`).join('')}
+              ${cities
+                .map(
+                  (city) =>
+                    `<option value="${city.city_id}" ${
+                      employeeAddress?.city_id == city.city_id ? 'selected' : ''
+                    }>${city.city_name}</option>`
+                )
+                .join('')}
               <option value="new">Add New City</option>
             </select>
             <input type="text" id="new_city" name="new_city" style="display:none;" placeholder="Enter new city name">
@@ -1890,7 +2115,14 @@ function updateaddress() {
             <label for="zip_id">Zip Code:</label>
             <select id="zip_id" name="zip_id" required onchange="updateCityStateZipOptions(${employeeId}, this.value, 'zip')">
               <option value="">Select a zip code or add new</option>
-              ${zips.map(zip => `<option value="${zip.zip_id}" ${employeeAddress?.zip_id == zip.zip_id ? 'selected' : ''}>${zip.zip_code}</option>`).join('')}
+              ${zips
+                .map(
+                  (zip) =>
+                    `<option value="${zip.zip_id}" ${
+                      employeeAddress?.zip_id == zip.zip_id ? 'selected' : ''
+                    }>${zip.zip_code}</option>`
+                )
+                .join('')}
               <option value="new">Add New Zip</option>
             </select>
             <input type="text" id="new_zip" name="new_zip" style="display:none;" placeholder="Enter new zip code (5 digits)">
@@ -1899,7 +2131,16 @@ function updateaddress() {
             <label for="state_id">State:</label>
             <select id="state_id" name="state_id" required onchange="updateCityStateZipOptions(${employeeId}, this.value, 'state')">
               <option value="">Select a state or add new</option>
-              ${states.map(state => `<option value="${state.state_id}" ${employeeAddress?.state_id == state.state_id ? 'selected' : ''}>${state.state_name}</option>`).join('')}
+              ${states
+                .map(
+                  (state) =>
+                    `<option value="${state.state_id}" ${
+                      employeeAddress?.state_id == state.state_id
+                        ? 'selected'
+                        : ''
+                    }>${state.state_name}</option>`
+                )
+                .join('')}
               <option value="new">Add New State</option>
             </select>
             <input type="text" id="new_state" name="new_state" style="display:none;" placeholder="Enter new state name">
@@ -1911,51 +2152,68 @@ function updateaddress() {
         </form>
     `;
 
-    const form = document.getElementById('updateAddressForm');
-    if (form) {
-      form.addEventListener('submit', function(event) {
-        event.preventDefault();
-        const formData = new FormData(this);
-        const action = formData.get('action');
+      const form = document.getElementById('updateAddressForm');
+      if (form) {
+        form.addEventListener('submit', function (event) {
+          event.preventDefault();
+          const formData = new FormData(this);
+          const action = formData.get('action');
 
-        fetch('../pages/features/manage_address.php', {
-          method: 'POST',
-          body: formData
-        })
-        .then(response => {
-          if (!response.ok) throw new Error('Server error: ' + response.status);
-          return response.json();
-        })
-        .then(data => {
-          if (data.success) {
-            alert('Address ' + (action === 'update' ? 'updated' : 'saved') + ' successfully!');
-            return fetch('../pages/features/fetch_employee_address.php?employee_id=' + employeeId, {
-              method: 'GET',
-              headers: { 'Cache-Control': 'no-cache' }
-            }).then(res => res.json());
-          } else {
-            throw new Error(data.error || 'Failed to save address.');
-          }
-        })
-        .then(data => {
-          if (data.success && Array.isArray(data.address) && data.address.length > 0) {
-            employeeAddress = data.address[0];
-            updateaddress(); // Re-render with updated data
-          }
-        })
-        .catch(error => {
-          console.error('Error saving address:', error);
-          alert('Error: ' + error.message);
+          fetch('../pages/features/manage_address.php', {
+            method: 'POST',
+            body: formData,
+          })
+            .then((response) => {
+              if (!response.ok)
+                throw new Error('Server error: ' + response.status);
+              return response.json();
+            })
+            .then((data) => {
+              if (data.success) {
+                alert(
+                  'Address ' +
+                    (action === 'update' ? 'updated' : 'saved') +
+                    ' successfully!'
+                );
+                return fetch(
+                  '../pages/features/fetch_employee_address.php?employee_id=' +
+                    employeeId,
+                  {
+                    method: 'GET',
+                    headers: { 'Cache-Control': 'no-cache' },
+                  }
+                ).then((res) => res.json());
+              } else {
+                throw new Error(data.error || 'Failed to save address.');
+              }
+            })
+            .then((data) => {
+              if (
+                data.success &&
+                Array.isArray(data.address) &&
+                data.address.length > 0
+              ) {
+                employeeAddress = data.address[0];
+                updateaddress(); // Re-render with updated data
+              }
+            })
+            .catch((error) => {
+              console.error('Error saving address:', error);
+              alert('Error: ' + error.message);
+            });
         });
-      });
 
-      // Initial call to populate zip options
-      updateCityStateZipOptions(employeeId, employeeAddress?.city_id || '', 'zip');
-    }
-  })
-  .catch(error => {
-    console.error('Error fetching data:', error);
-    addressSection.innerHTML = `
+        // Initial call to populate zip options
+        updateCityStateZipOptions(
+          employeeId,
+          employeeAddress?.city_id || '',
+          'zip'
+        );
+      }
+    })
+    .catch((error) => {
+      console.error('Error fetching data:', error);
+      addressSection.innerHTML = `
       <div class="card">
         <h2>Update My Address</h2>
         <p style="color: #ff0000;">Error loading address form: ${error.message}. Please contact support.</p>
@@ -1964,7 +2222,7 @@ function updateaddress() {
         </div>
       </div>
     `;
-  });
+    });
 }
 function updateCityStateZipOptions(employeeId, value, type) {
   const select = document.getElementById(`${type}_id`);
@@ -1980,27 +2238,28 @@ function updateCityStateZipOptions(employeeId, value, type) {
       // Fetch and update zip options when a valid city is selected
       fetch('../pages/features/fetch_reference_data.php?city_id=' + value, {
         method: 'GET',
-        headers: { 'Cache-Control': 'no-cache' }
+        headers: { 'Cache-Control': 'no-cache' },
       })
-      .then(response => {
-        if (!response.ok) throw new Error('Server error: ' + response.status);
-        return response.json();
-      })
-      .then(data => {
-        const { zips } = data;
-        const zipSelect = document.getElementById('zip_id');
-        zipSelect.innerHTML = '<option value="">Select a zip code or add new</option>';
-        if (zips && zips.length > 0) {
-          zips.forEach(zip => {
-            zipSelect.innerHTML += `<option value="${zip.zip_id}">${zip.zip_code}</option>`;
-          });
-        }
-        zipSelect.innerHTML += '<option value="new">Add New Zip</option>';
-      })
-      .catch(error => {
-        console.error('Error fetching zip options:', error);
-        alert('Error loading zip codes: ' + error.message);
-      });
+        .then((response) => {
+          if (!response.ok) throw new Error('Server error: ' + response.status);
+          return response.json();
+        })
+        .then((data) => {
+          const { zips } = data;
+          const zipSelect = document.getElementById('zip_id');
+          zipSelect.innerHTML =
+            '<option value="">Select a zip code or add new</option>';
+          if (zips && zips.length > 0) {
+            zips.forEach((zip) => {
+              zipSelect.innerHTML += `<option value="${zip.zip_id}">${zip.zip_code}</option>`;
+            });
+          }
+          zipSelect.innerHTML += '<option value="new">Add New Zip</option>';
+        })
+        .catch((error) => {
+          console.error('Error fetching zip options:', error);
+          alert('Error loading zip codes: ' + error.message);
+        });
     }
   }
 }
@@ -2227,7 +2486,9 @@ function fetchLeaveBalance() {
             (b) => b.leave_type_id == leaveTypeId
           );
           if (balance) {
-            options[i].text = `${leaveName} (Remaining: ${balance.remaining_days} days)`;
+            options[
+              i
+            ].text = `${leaveName} (Remaining: ${balance.remaining_days} days)`;
           }
         }
 
@@ -2265,7 +2526,8 @@ function fetchLeaveRequests() {
   const leaveFilter = document.getElementById('leave_filter').value;
   const tableBody = document.getElementById('leave-requests-table');
 
-  tableBody.innerHTML = '<tr><td colspan="4">Loading leave requests...</td></tr>';
+  tableBody.innerHTML =
+    '<tr><td colspan="4">Loading leave requests...</td></tr>';
 
   fetch('../pages/features/leave_request.php', {
     method: 'POST',
@@ -2285,7 +2547,9 @@ function fetchLeaveRequests() {
             <td>${request.leave_name}</td>
             <td>${request.leave_start_date}</td>
             <td>${request.leave_end_date}</td>
-            <td><span class="status-badge status-${request.status.toLowerCase()}">${request.status}</span></td>
+            <td><span class="status-badge status-${request.status.toLowerCase()}">${
+            request.status
+          }</span></td>
           `;
           tableBody.appendChild(row);
         });
