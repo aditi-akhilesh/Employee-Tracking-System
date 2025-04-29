@@ -539,16 +539,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 			try {
 				// Base query for joining tables
 				$sql = "
-					SELECT e.employee_id, u.first_name, u.last_name,
-						   SUM(t.status='completed') AS tasks_completed,
-						   CAST(AVG(f.rating) AS DECIMAL(10,2)) AS average_feedback,
-                   				  CAST((SUM(t.status='completed') * 0.6 + AVG(f.rating) * 0.4) AS DECIMAL(10,2)) AS combined_score					
-					FROM Task t
-					RIGHT JOIN Assignment_Task at ON t.task_id = at.task_id
-					RIGHT JOIN Employees e ON at.employee_id = e.employee_id
-					RIGHT JOIN Users u ON e.user_id = u.user_id
-					LEFT JOIN Feedback f ON e.employee_id = f.employee_id
-					GROUP BY e.employee_id
+					SELECT
+  						e.employee_id,
+  						u.first_name,
+  						u.last_name,
+  						SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) AS tasks_completed,
+  						AVG(f.rating) AS average_feedback,
+  						(SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) * 0.6
+   						+ AVG(f.rating) * 0.4) AS combined_score
+					FROM Employees e
+					LEFT JOIN Users u
+  						ON e.user_id = u.user_id
+					LEFT JOIN Assignment_Task ast
+  						ON ast.employee_id = e.employee_id
+					LEFT JOIN Task t
+  						ON t.task_id = ast.task_id
+					LEFT JOIN Feedback f
+  						ON f.employee_id = e.employee_id
+					GROUP BY e.employee_id;
 				";
 
 				// Order by the selected filter
