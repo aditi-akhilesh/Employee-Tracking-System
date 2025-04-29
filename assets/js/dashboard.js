@@ -1161,129 +1161,151 @@ function showAllEmployees() {
 
 
 function showUpdateRemoveUserForm() {
-  const mainContent = document.getElementById('main-content');
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  if (mainContent && profileUpdateForm) {
+    const mainContent = document.getElementById('main-content');
+    const profileUpdateForm = document.getElementById('profile-update-form');
+    if (!mainContent || !profileUpdateForm) {
+        console.error('main-content or profile-update-form not found');
+        return;
+    }
+
     mainContent.style.display = 'block';
     profileUpdateForm.style.display = 'none';
 
-    // Get the current filter value (if any) before re-rendering
-    const roleFilter = document.getElementById('role-filter');
-    const currentFilter = roleFilter ? roleFilter.value : 'All';
+    // Fetch the latest employee data from the server
+    fetch('../pages/features/fetch_employees.php?ts=' + new Date().getTime(), {
+        method: 'GET',
+        headers: { 'Cache-Control': 'no-cache' },
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then((updatedEmployees) => {
+            // Update the global employees array with the latest data
+            employees.length = 0;
+            updatedEmployees.forEach((emp) => employees.push(emp));
 
-    // Debug: Log the employees array and their roles
-    console.log('Employees array:', employees);
-    console.log(
-      'Roles in employees:',
-      employees.map((emp) => emp.role)
-    );
+            // Get the current filter value (if any) before re-rendering
+            const roleFilter = document.getElementById('role-filter');
+            const currentFilter = roleFilter ? roleFilter.value : 'All';
 
-    // Initial HTML with filter dropdown
-    let html = `
-            <div class="card">
-            <h2>Update or Remove User</h2>
-            <p>Select a role to Filter:</p>
-            <div style="margin-bottom: 20px;">
-                <label for="role-filter">Filter by Role: </label>
-                <select id="role-filter" style="padding: 5px; border-radius: 4px;">
-                    <option value="All" ${
-                      currentFilter === 'All' ? 'selected' : ''
-                    }>All</option>
-                    <option value="User" ${
-                      currentFilter === 'User' ? 'selected' : ''
-                    }>Employee</option>
-                    <option value="Manager" ${
-                      currentFilter === 'Manager' ? 'selected' : ''
-                    }>Manager</option>
-                </select>
+            // Debug: Log the employees array and their roles
+            console.log('Employees array:', employees);
+            console.log(
+                'Roles in employees:',
+                employees.map((emp) => emp.role)
+            );
+
+            // Initial HTML with filter dropdown
+            let html = `
+                <div class="card">
+                <h2>Update or Remove User</h2>
+                <p>Select a role to Filter:</p>
+                <div style="margin-bottom: 20px;">
+                    <label for="role-filter">Filter by Role: </label>
+                    <select id="role-filter" style="padding: 5px; border-radius: 4px;">
+                        <option value="All" ${
+                            currentFilter === 'All' ? 'selected' : ''
+                        }>All</option>
+                        <option value="User" ${
+                            currentFilter === 'User' ? 'selected' : ''
+                        }>Employee</option>
+                        <option value="Manager" ${
+                            currentFilter === 'Manager' ? 'selected' : ''
+                        }>Manager</option>
+                    </select>
+                </div>
+                <table id="employees-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+                    <thead>
+                        <tr style="background-color: #003087; color: #FFFFFF;">
+                            <th style="padding: 10px;">ID</th>
+                            <th style="padding: 10px;">Name</th>
+                            <th style="padding: 10px;">Email</th>
+                            <th style="padding: 10px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="employees-table-body">
+                    </tbody>
+                </table>
+                <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
+                    <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
+                            onmouseover="this.style.backgroundColor='#5a6268'" 
+                            onmouseout="this.style.backgroundColor='#6c757d'"
+                            onclick="showWelcomeMessage()">Back</button>
+                </div>
             </div>
-            <table id="employees-table" style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-                <thead>
-                    <tr style="background-color: #003087; color: #FFFFFF;">
-                        <th style="padding: 10px;">ID</th>
-                        <th style="padding: 10px;">Name</th>
-                        <th style="padding: 10px;">Email</th>
-                        <th style="padding: 10px;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="employees-table-body">
-                </tbody>
-            </table>
-            <div class="form-group button-group" style="margin-top: 20px; text-align: center;">
-                <button type="button" style="padding: 10px 20px; background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;" 
-                        onmouseover="this.style.backgroundColor='#5a6268'" 
-                        onmouseout="this.style.backgroundColor='#6c757d'"
-                        onclick="showWelcomeMessage()">Back</button>
-            </div>
-</div>
-        `;
+            `;
 
-    mainContent.innerHTML = html;
+            mainContent.innerHTML = html;
 
-    // Function to render the table based on the selected filter
-    function renderEmployeesTable(filterRole) {
-      const tableBody = document.getElementById('employees-table-body');
-      if (!tableBody) return;
+            // Function to render the table based on the selected filter
+            function renderEmployeesTable(filterRole) {
+                const tableBody = document.getElementById('employees-table-body');
+                if (!tableBody) return;
 
-      // Normalize roles and filter employees
-      let filteredEmployees = employees.filter((emp) => {
-        const role = emp.role ? emp.role.trim().toLowerCase() : '';
-        return (
-          (role === 'user' || role === 'manager') &&
-          emp.emp_status?.toLowerCase() !== 'inactive'
-        );
-      });
+                // Normalize roles and filter employees
+                let filteredEmployees = employees.filter((emp) => {
+                    const role = emp.role ? emp.role.trim().toLowerCase() : '';
+                    return (
+                        (role === 'user' || role === 'manager') &&
+                        emp.emp_status?.toLowerCase() !== 'inactive'
+                    );
+                });
 
-      if (filterRole === 'User') {
-        filteredEmployees = filteredEmployees.filter(
-          (emp) => emp.role.trim().toLowerCase() === 'user'
-        );
-      } else if (filterRole === 'Manager') {
-        filteredEmployees = filteredEmployees.filter(
-          (emp) => emp.role.trim().toLowerCase() === 'manager'
-        );
-      }
+                if (filterRole === 'User') {
+                    filteredEmployees = filteredEmployees.filter(
+                        (emp) => emp.role.trim().toLowerCase() === 'user'
+                    );
+                } else if (filterRole === 'Manager') {
+                    filteredEmployees = filteredEmployees.filter(
+                        (emp) => emp.role.trim().toLowerCase() === 'manager'
+                    );
+                }
 
-      // Debug: Log the filtered employees
-      console.log('Filtered employees:', filteredEmployees);
+                // Debug: Log the filtered employees
+                console.log('Filtered employees:', filteredEmployees);
 
-      // Clear the table body
-      tableBody.innerHTML = '';
+                // Clear the table body
+                tableBody.innerHTML = '';
 
-      // Populate the table with filtered employees
-      filteredEmployees.forEach((emp) => {
-        const deptName =
-          departments.find((d) => d.department_id == emp.department_id)
-            ?.department_name || 'N/A';
-        tableBody.innerHTML += `
-                    <tr style="border-bottom: 1px solid #ddd;">
-                        <td style="padding: 10px;">${emp.employee_id}</td>
-                        <td style="padding: 10px;">${emp.first_name} ${emp.last_name}</td>
-                        <td style="padding: 10px;">${emp.email}</td>
-                        <td style="padding: 10px;">
-                            <button onclick="showEmployeeUpdateForm(${emp.employee_id})" style="background-color: #007BFF; color: #FFFFFF; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer;">Update</button>
-                            <button onclick="removeEmployee(${emp.employee_id})" style="background-color: #dc3545; color: #FFFFFF; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; margin-left: 5px;">Remove</button>
-                        </td>
-                    </tr>
-                `;
-      });
-    }
+                // Populate the table with filtered employees
+                filteredEmployees.forEach((emp) => {
+                    const deptName =
+                        departments.find((d) => d.department_id == emp.department_id)
+                            ?.department_name || 'N/A';
+                    tableBody.innerHTML += `
+                        <tr style="border-bottom: 1px solid #ddd;">
+                            <td style="padding: 10px;">${emp.employee_id}</td>
+                            <td style="padding: 10px;">${emp.first_name} ${emp.last_name}</td>
+                            <td style="padding: 10px;">${emp.email}</td>
+                            <td style="padding: 10px;">
+                                <button onclick="showEmployeeUpdateForm(${emp.employee_id})" style="background-color: #007BFF; color: #FFFFFF; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer;">Update</button>
+                                <button onclick="removeEmployee(${emp.employee_id})" style="background-color: #dc3545; color: #FFFFFF; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; margin-left: 5px;">Remove</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
 
-    // Initial render with the retained filter
-    renderEmployeesTable(currentFilter);
+            // Initial render with the retained filter
+            renderEmployeesTable(currentFilter);
 
-    // Add event listener to the filter dropdown
-    const newRoleFilter = document.getElementById('role-filter');
-    if (newRoleFilter) {
-      newRoleFilter.addEventListener('change', function () {
-        renderEmployeesTable(this.value);
-      });
-    } else {
-      console.error('Role filter dropdown not found');
-    }
-  } else {
-    console.error('main-content or profile-update-form not found');
-  }
+            // Add event listener to the filter dropdown
+            const newRoleFilter = document.getElementById('role-filter');
+            if (newRoleFilter) {
+                newRoleFilter.addEventListener('change', function () {
+                    renderEmployeesTable(this.value);
+                });
+            } else {
+                console.error('Role filter dropdown not found');
+            }
+        })
+        .catch((error) => {
+            console.error('Error fetching employees:', error);
+            alert('Error fetching employee data: ' + error.message);
+        });
 }
 
 function showEmployeeUpdateForm(employeeId) {

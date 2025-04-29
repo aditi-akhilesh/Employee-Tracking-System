@@ -19,7 +19,7 @@ function fetchData($con, $manager_id, $sections = ['all']) {
             SELECT e.employee_id, e.user_id, e.emp_job_title, e.emp_status, u.first_name, u.last_name, u.email 
             FROM Employees e 
             JOIN Users u ON e.user_id = u.user_id 
-            WHERE e.manager_id = :manager_id AND e.emp_status != 'inactive' AND u.is_active = 1
+            WHERE e.manager_id = :manager_id AND e.emp_status != 'Inactive' AND u.is_active = 1
         ");
         $stmt->execute(['manager_id' => $manager_id]);
         $data['employees'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -34,7 +34,8 @@ function fetchData($con, $manager_id, $sections = ['all']) {
             FROM Feedback f 
             JOIN Employees e ON f.employee_id = e.employee_id 
             JOIN Users u ON e.user_id = u.user_id 
-            WHERE f.reviewer_id = :manager_id
+            WHERE f.reviewer_id = :manager_id and e.emp_status != 'Inactive' AND u.is_active = 1
+
         ");
         $stmt->execute(['manager_id' => $manager_id]);
         $data['feedback'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -47,7 +48,7 @@ function fetchData($con, $manager_id, $sections = ['all']) {
             FROM Feedback f 
             JOIN Employees e ON f.employee_id = e.employee_id 
             JOIN Users u ON e.user_id = u.user_id 
-            WHERE f.reviewer_id = :manager_id
+            WHERE f.reviewer_id = :manager_id and e.emp_status != 'Inactive' AND u.is_active = 1
             GROUP BY e.employee_id, u.first_name, u.last_name
         ");
         $stmt->execute(['manager_id' => $manager_id]);
@@ -60,7 +61,7 @@ function fetchData($con, $manager_id, $sections = ['all']) {
             SELECT f.feedback_type, COUNT(f.feedback_id) as type_count
             FROM Feedback f 
             JOIN Employees e ON f.employee_id = e.employee_id 
-            WHERE f.reviewer_id = :manager_id
+            WHERE f.reviewer_id = :manager_id and e.emp_status != 'Inactive'
             GROUP BY f.feedback_type
         ");
         $stmt->execute(['manager_id' => $manager_id]);
@@ -323,7 +324,7 @@ try {
             d.department_description, 
             COUNT(e.employee_id) AS employee_count
         FROM Department d
-        LEFT JOIN Employees e ON d.department_id = e.department_id
+        LEFT JOIN Employees e ON d.department_id = e.department_id WHERE d.department_id NOT IN ('D00','D02') and e.emp_status != 'Inactive'
         GROUP BY d.department_id, d.department_name, d.department_description
     ");
     $departments = $stmt->fetchAll(PDO::FETCH_ASSOC);

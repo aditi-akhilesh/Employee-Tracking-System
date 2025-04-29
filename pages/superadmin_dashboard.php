@@ -55,7 +55,7 @@ function fetchData($con, $sections = ['all']) {
             SELECT e.employee_id, e.user_id, e.emp_job_title, e.emp_status, u.first_name, u.last_name, u.email 
             FROM Employees e 
             JOIN Users u ON e.user_id = u.user_id 
-            WHERE e.emp_status != 'inactive' AND u.is_active = 1
+            WHERE e.emp_status != 'Inactive' AND u.is_active = 1
         ");
         $stmt->execute();
         $data['employees'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -68,7 +68,7 @@ function fetchData($con, $sections = ['all']) {
                    u.first_name, u.last_name 
             FROM Feedback f 
             JOIN Employees e ON f.employee_id = e.employee_id 
-            JOIN Users u ON e.user_id = u.user_id
+            JOIN Users u ON e.user_id = u.user_id WHERE e.emp_status != 'Inactive' 
         ");
         $stmt->execute();
         $data['feedback'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -80,7 +80,7 @@ function fetchData($con, $sections = ['all']) {
             SELECT e.employee_id, u.first_name, u.last_name, AVG(f.rating) as avg_rating, COUNT(f.feedback_id) as feedback_count
             FROM Feedback f 
             JOIN Employees e ON f.employee_id = e.employee_id 
-            JOIN Users u ON e.user_id = u.user_id 
+            JOIN Users u ON e.user_id = u.user_id  where e.emp_status != 'Inactive' 
             GROUP BY e.employee_id, u.first_name, u.last_name
         ");
         $stmt->execute();
@@ -92,7 +92,7 @@ function fetchData($con, $sections = ['all']) {
         $stmt = $con->prepare("
             SELECT f.feedback_type, COUNT(f.feedback_id) as type_count
             FROM Feedback f 
-            JOIN Employees e ON f.employee_id = e.employee_id 
+            JOIN Employees e ON f.employee_id = e.employee_id  where e.emp_status != 'Inactive' 
             GROUP BY f.feedback_type
         ");
         $stmt->execute();
