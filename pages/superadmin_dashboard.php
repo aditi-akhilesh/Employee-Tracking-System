@@ -859,25 +859,27 @@ onclick="downloadAttendanceAsExcel()">Download as Excel</button>
                     onmouseout="this.style.backgroundColor='#28a745'" onclick="downloadLeaveRequestsAsExcel()">Download as Excel</button>
         </div>
         <div id="department-metrics" style="display: none;" class="card">
-            <h2>Department-wise Performance Metrics</h2>
-            <table id="department-metrics-table">
-                <thead>
-                    <tr>
-                        <th>Department Name <i class="fas fa-sort"></i></th>
-                        <th>Employee Count <i class="fas fa-sort"></i></th>
-                        <th>Projects Completed <i class="fas fa-sort"></i></th>
-                        <th>Projects In Progress <i class="fas fa-sort"></i></th>
-                        <th>Projects Assigned <i class="fas fa-sort"></i></th>
-                        <th>Tasks Completed <i class="fas fa-sort"></i></th>
-                        <th>Trainings Conducted <i class="fas fa-sort"></i></th>
-                        <th>Avg Feedback Rating <i class="fas fa-sort"></i></th>
-                        <th>Total Leaves Taken <i class="fas fa-sort"></i></th>
-                    </tr>
-                </thead>
-                <tbody id="department-metrics-table-body"></tbody>
-            </table>
-            <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
-        </div>
+    <h2>Department-wise Performance Metrics</h2>
+    <div style="overflow-x: auto;">
+        <table id="department-metrics-table" style="min-width: 1000px;">
+            <thead>
+                <tr>
+                    <th>Department Name <i class="fas fa-sort"></i></th>
+                    <th>Employee Count <i class="fas fa-sort"></i></th>
+                    <th>Projects Completed <i class="fas fa-sort"></i></th>
+                    <th>Projects In Progress <i class="fas fa-sort"></i></th>
+                    <th>Projects Assigned <i class="fas fa-sort"></i></th>
+                    <th>Tasks Completed <i class="fas fa-sort"></i></th>
+                    <th>Trainings Conducted <i class="fas fa-sort"></i></th>
+                    <th>Avg Feedback Rating <i class="fas fa-sort"></i></th>
+                    <th>Total Leaves Taken <i class="fas fa-sort"></i></th>
+                </tr>
+            </thead>
+            <tbody id="department-metrics-table-body"></tbody>
+        </table>
+    </div>
+    <button class="back-btn" onclick="showWelcomeMessage()">Back</button>
+</div>
         <div id="training-programs" style="display: none;" class="card">
             <h2>Training Programs</h2>
             <table id="training-table">
