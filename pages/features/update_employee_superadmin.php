@@ -41,21 +41,46 @@ try {
 
     $employee_id = filter_var($_POST['employee_id'] ?? '', FILTER_SANITIZE_NUMBER_INT);
     $first_name = htmlspecialchars(trim($_POST['first_name'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $middle_name = htmlspecialchars(trim($_POST['middle_name'] ?? ''), ENT_QUOTES, 'UTF-8');
     $last_name = htmlspecialchars(trim($_POST['last_name'] ?? ''), ENT_QUOTES, 'UTF-8');
     $email = filter_var($_POST['email'] ?? '', FILTER_SANITIZE_EMAIL);
     $role = htmlspecialchars(trim($_POST['role'] ?? ''), ENT_QUOTES, 'UTF-8');
     $department_id = htmlspecialchars(trim($_POST['department_id'] ?? ''), ENT_QUOTES, 'UTF-8');
     $emp_hire_date = htmlspecialchars(trim($_POST['emp_hire_date'] ?? ''), ENT_QUOTES, 'UTF-8');
+    $dob = htmlspecialchars(trim($_POST['dob'] ?? ''), ENT_QUOTES, 'UTF-8');
     $salary = filter_var($_POST['salary'] ?? '', FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
     $manager_id = isset($_POST['manager_id']) && $_POST['manager_id'] !== '' ? htmlspecialchars(trim($_POST['manager_id']), ENT_QUOTES, 'UTF-8') : '';
     $is_manager = filter_var($_POST['is_manager'] ?? '0', FILTER_SANITIZE_NUMBER_INT);
 
-    if (empty($employee_id) || empty($first_name) || empty($last_name) || empty($email) || empty($role) || empty($emp_hire_date)) {
+    if (empty($employee_id) || empty($first_name) || empty($last_name) || empty($email) || empty($role) || empty($emp_hire_date) || empty($dob)) {
         throw new Exception("Required fields are missing");
     }
 
+    // Validate email format
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        throw new Exception("Invalid email format");
+    }
+
+    // Validate dates
+    $today = date('Y-m-d');
+    if ($emp_hire_date > $today) {
+        throw new Exception("Hire date cannot be in the future");
+    }
+    if ($dob > $today) {
+        throw new Exception("Date of birth cannot be in the future");
+    }
+    $minAgeDate = date('Y-m-d', strtotime('-18 years'));
+    if ($dob > $minAgeDate) {
+        throw new Exception("Employee must be at least 18 years old");
+    }
+
+    // Validate salary
+    if ($salary <= 0) {
+        throw new Exception("Salary must be a positive number");
+    }
+
     // Fetch the employee being updated
-    $stmt = $con->prepare("SELECT e.*, u.first_name, u.last_name, u.email, u.role 
+    $stmt = $con->prepare("SELECT e.*, u.first_name, u.middle_name, u.last_name, u.email, u.role, u.dob 
                            FROM Employees e 
                            JOIN Users u ON e.user_id = u.user_id 
                            WHERE e.employee_id = :employee_id");
@@ -70,11 +95,13 @@ try {
 
     $currentValues = [
         'first_name' => trim((string)$currentEmployee['first_name']),
+        'middle_name' => trim((string)($currentEmployee['middle_name'] ?? '')),
         'last_name' => trim((string)$currentEmployee['last_name']),
         'email' => trim((string)$currentEmployee['email']),
         'role' => trim((string)$currentEmployee['role']),
         'department_id' => trim((string)$currentEmployee['department_id']),
         'emp_hire_date' => trim((string)$currentEmployee['emp_hire_date']),
+        'dob' => trim((string)($currentEmployee['dob'] ?? '')),
         'salary' => number_format((float)$currentEmployee['salary'], 2, '.', ''),
         'manager_id' => $currentEmployee['manager_id'] ? trim((string)$currentEmployee['manager_id']) : '',
         'is_manager' => trim((string)$currentEmployee['is_manager'])
@@ -82,11 +109,13 @@ try {
 
     $submittedValues = [
         'first_name' => trim($first_name),
+        'middle_name' => trim($middle_name),
         'last_name' => trim($last_name),
         'email' => trim($email),
         'role' => trim($role),
         'department_id' => trim($department_id),
         'emp_hire_date' => trim($emp_hire_date),
+        'dob' => trim($dob),
         'salary' => number_format((float)$salary, 2, '.', ''),
         'manager_id' => trim($manager_id),
         'is_manager' => trim((string)$is_manager)
@@ -140,7 +169,9 @@ try {
         $stmtManagerDept->execute([':manager_id' => $manager_id]);
         $manager_department_id = $stmtManagerDept->fetchColumn();
         if ($manager_department_id !== $department_id) {
-            throw new Exception("Department ID does not match the selected manager's department.");
+            safeLog("Department mismatch: Submitted department_id ($department_id) does not match manager's department_id ($manager_department_id). Setting department_id to manager's department.");
+            $department_id = $manager_department_id;
+            $submittedValues['department_id'] = $department_id;
         }
     }
 
@@ -148,13 +179,15 @@ try {
 
     $user_id = $currentEmployee['user_id'];
 
-    $sqlUser = "UPDATE Users SET first_name = :first_name, last_name = :last_name, email = :email, role = :role WHERE user_id = :user_id";
+    $sqlUser = "UPDATE Users SET first_name = :first_name, middle_name = :middle_name, last_name = :last_name, email = :email, role = :role, dob = :dob WHERE user_id = :user_id";
     $stmtUser = $con->prepare($sqlUser);
     $stmtUser->execute([
         ':first_name' => $first_name,
+        ':middle_name' => $middle_name,
         ':last_name' => $last_name,
         ':email' => $email,
         ':role' => $role,
+        ':dob' => $dob,
         ':user_id' => $user_id
     ]);
 

@@ -23,7 +23,7 @@ try {
             task_count,
             leave_count,
             avg_feedback_rating
-        FROM Employee_Details_View
+        FROM Employee_Details_View where role != 'Super Admin'
     ");
     $stmt->execute();
     $employees = $stmt->fetchAll(PDO::FETCH_ASSOC);

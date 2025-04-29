@@ -1331,21 +1331,7 @@ function loadScript(url, callback) {
   document.head.appendChild(script);
 }
 
-// Placeholder for Create User Form
-function showCreateUserForm() {
-  if (!showSection('create-user-form')) return;
 
-  const contentArea = document.getElementById('create-user-form');
-  contentArea.innerHTML = `
-    <div class="card">
-      <h2>Create New User</h2>
-      <p>Functionality to create a new user profile will be implemented here.</p>
-      <div class="form-group button-group">
-        <button type="button" onclick="showWelcomeMessage()">Back</button>
-      </div>
-    </div>
-  `;
-}
 
 // Show welcome message (default view)
 function showWelcomeMessage() {
@@ -1488,7 +1474,7 @@ function showCreateUserForm() {
   const employeeList =
     typeof superAdminEmployees !== 'undefined'
       ? superAdminEmployees
-      : employees;
+      : employeesadmin;
 
   // Get valid department IDs (convert to strings for comparison)
   const validDepartmentIds = departments.map((dept) =>
@@ -1496,7 +1482,7 @@ function showCreateUserForm() {
   );
 
   // Filter employees to get only managers with valid department_id
-  const managers = employeeList.filter(
+  const managers = employeesadmin.filter(
     (emp) =>
       emp.role === 'Manager' &&
       emp.emp_status !== 'Inactive' &&
@@ -2264,211 +2250,595 @@ function exportToExcel() {
 }
 
 function showUpdateRemoveUserForm(event) {
-  if (event) event.preventDefault();
-  console.log('showUpdateRemoveUserForm called');
+    if (event) event.preventDefault();
+    console.log('showUpdateRemoveUserForm called');
 
-  // Use showSection to ensure only update-remove-user-section is visible
-  if (!showSection('update-remove-user-section')) return;
+    // Use showSection to ensure only update-remove-user-section is visible
+    if (!showSection('update-remove-user-section')) return;
 
-  const updateRemoveUserSection = document.getElementById(
-    'update-remove-user-section'
-  );
-  if (!updateRemoveUserSection) {
-    console.error('update-remove-user-section not found');
-    showError('Update/Remove User section not found.', 'content-area');
+    const updateRemoveUserSection = document.getElementById('update-remove-user-section');
+    if (!updateRemoveUserSection) {
+        console.error('update-remove-user-section not found');
+        showError('Update/Remove User section not found.', 'content-area');
+        return;
+    }
+
+    // State for pagination and filters
+    let currentPage = 1;
+    let recordsPerPage = 5;
+    let filterRole = 'All';
+
+    // Get the current filter value (if any) before re-rendering
+    const roleFilter = document.getElementById('role-filter');
+    if (roleFilter) {
+        filterRole = roleFilter.value;
+    }
+
+    // Fetch the latest employee data from the server
+    fetch('../pages/features/fetch_employees.php?ts=' + new Date().getTime(), {
+        method: 'GET',
+        headers: { 'Cache-Control': 'no-cache' },
+    })
+        .then((response) => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.text(); // Get raw text first to debug
+        })
+        .then((text) => {
+            console.log('Raw response from fetch_employees.php:', text);
+            let employees;
+            try {
+                employees = JSON.parse(text);
+            } catch (e) {
+                throw new Error('Failed to parse response as JSON: ' + e.message);
+            }
+            console.log('Parsed response:', employees);
+
+            // Check if the response is an array (flat array format from fetch_employees.php)
+            if (!Array.isArray(employees)) {
+                throw new Error('Expected an array of employees in response');
+            }
+
+            const updatedEmployees = employees;
+
+            // Update the global employeesadmin array with the latest data
+            employeesadmin.length = 0;
+            updatedEmployees.forEach((emp) => {
+                // Add missing fields with default values
+                emp.middle_name = emp.middle_name || '';
+                emp.dob = emp.dob || '';
+                emp.manager_id = emp.manager_id || '';
+                emp.emp_status = emp.emp_status || 'Active';
+                emp.is_manager = emp.is_manager || '0';
+                emp.department_name = emp.department_name || ''; // fetch_employees.php doesn't provide this
+                // Ensure department_id is populated if possible (we'll rely on departments array later)
+                const dept = departments.find(d => d.department_id === emp.department_id);
+                emp.department_name = dept ? dept.department_name : emp.department_name || '';
+                employeesadmin.push(emp);
+            });
+
+            console.log('Employees array:', employeesadmin);
+            console.log('Roles in employeesadmin:', employeesadmin.map((emp) => emp.role));
+
+            function renderEmployeesTable() {
+                let filtered = employeesadmin.filter((emp) => {
+                    const role = emp.role ? emp.role.trim().toLowerCase() : '';
+                    return (
+                        (role === 'user' || role === 'manager' || role === 'hr' || role === 'super admin') &&
+                        emp.emp_status?.toLowerCase() !== 'inactive'
+                    );
+                });
+
+                if (filterRole === 'User') {
+                    filtered = filtered.filter((emp) => emp.role.trim().toLowerCase() === 'user');
+                } else if (filterRole === 'Manager') {
+                    filtered = filtered.filter((emp) => emp.role.trim().toLowerCase() === 'manager');
+                } else if (filterRole === 'HR') {
+                    filtered = filtered.filter((emp) => emp.role.trim().toLowerCase() === 'hr');
+                } else if (filterRole === 'Super Admin') {
+                    filtered = filtered.filter((emp) => emp.role.trim().toLowerCase() === 'super admin');
+                }
+
+                console.log('Filtered employees:', filtered);
+
+                const totalRecords = filtered.length;
+                const totalPages = Math.ceil(totalRecords / recordsPerPage);
+                currentPage = Math.min(currentPage, totalPages);
+                currentPage = Math.max(currentPage, 1);
+                const startIndex = (currentPage - 1) * recordsPerPage;
+                const endIndex = Math.min(startIndex + recordsPerPage, totalRecords);
+                const paginatedEmployees = filtered.slice(startIndex, endIndex);
+
+                let html = `
+                    <div class="card">
+                        <h2>Update or Remove User</h2>
+                        <div class="table-controls">
+                            <div class="filter-controls">
+                                <label>Show:</label>
+                                <select id="records-per-page">
+                                    <option value="5" ${recordsPerPage === 5 ? 'selected' : ''}>5</option>
+                                    <option value="10" ${recordsPerPage === 10 ? 'selected' : ''}>10</option>
+                                    <option value="15" ${recordsPerPage === 15 ? 'selected' : ''}>15</option>
+                                    <option value="20" ${recordsPerPage === 20 ? 'selected' : ''}>20</option>
+                                </select>
+                                <label>Role:</label>
+                                <select id="role-filter">
+                                    <option value="All" ${filterRole === 'All' ? 'selected' : ''}>All</option>
+                                    <option value="User" ${filterRole === 'User' ? 'selected' : ''}>Employee</option>
+                                    <option value="Manager" ${filterRole === 'Manager' ? 'selected' : ''}>Manager</option>
+                                    <option value="HR" ${filterRole === 'HR' ? 'selected' : ''}>HR</option>
+                                </select>
+                            </div>
+                            <input type="text" id="search-input" placeholder="Search not available..." disabled>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employees-table-body">
+                `;
+
+                paginatedEmployees.forEach((emp) => {
+                    html += `
+                            <tr>
+                                <td>${emp.employee_id}</td>
+                                <td>${emp.first_name} ${emp.last_name}</td>
+                                <td>${emp.email}</td>
+                                <td>
+                                    <button class="update-btn" onclick="showEmployeeUpdateForm(${emp.employee_id})">Update</button>
+                                    <button class="remove-btn" onclick="removeEmployee(${emp.employee_id})">Remove</button>
+                                </td>
+                            </tr>
+                    `;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                        <div class="pagination">
+                            <div>
+                                Showing ${startIndex + 1} to ${Math.min(endIndex, totalRecords)} of ${totalRecords} employees
+                            </div>
+                            <div>
+                                <button class="${currentPage === 1 ? 'disabled' : ''}" onclick="changePage(${currentPage - 1})">Previous</button>
+                    `;
+
+                const maxPagesToShow = 5;
+                let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
+                let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
+                if (endPage - startPage + 1 < maxPagesToShow) {
+                    startPage = Math.max(1, endPage - maxPagesToShow + 1);
+                }
+
+                for (let i = startPage; i <= endPage; i++) {
+                    html += `
+                            <button class="${i === currentPage ? 'active' : ''}" onclick="changePage(${i})">${i}</button>
+                    `;
+                }
+
+                html += `
+                                <button class="${currentPage === totalPages ? 'disabled' : ''}" onclick="changePage(${currentPage + 1})">Next</button>
+                            </div>
+                        </div>
+                        <div class="form-group button-group">
+                            <button type="button" onclick="showWelcomeMessage(event)">Back</button>
+                        </div>
+                    </div>
+                `;
+
+                updateRemoveUserSection.innerHTML = html;
+
+                const roleFilterSelect = document.getElementById('role-filter');
+                const recordsPerPageSelect = document.getElementById('records-per-page');
+
+                if (roleFilterSelect) {
+                    roleFilterSelect.addEventListener('change', (e) => {
+                        filterRole = e.target.value;
+                        currentPage = 1;
+                        renderEmployeesTable();
+                    });
+                }
+
+                if (recordsPerPageSelect) {
+                    recordsPerPageSelect.addEventListener('change', (e) => {
+                        recordsPerPage = parseInt(e.target.value, 10);
+                        currentPage = 1;
+                        renderEmployeesTable();
+                    });
+                }
+            }
+
+            window.changePage = function (page) {
+                currentPage = page;
+                renderEmployeesTable();
+            };
+
+            renderEmployeesTable();
+        })
+        .catch((error) => {
+            console.error('Error fetching employees:', error);
+            showError('Error fetching employee data: ' + error.message, 'update-remove-user-section');
+        });
+}
+
+function showEmployeeUpdateForm(employeeId) {
+  const emp = employeesadmin.find((e) => e.employee_id == employeeId);
+  if (!emp) {
+    alert('Employee not found!');
     return;
   }
 
-  // State for pagination and filters
-  let currentPage = 1;
-  let recordsPerPage = 5;
-  let filterRole = 'All';
+  // Use showSection to ensure only profile-update-form is visible
+  if (!showSection('profile-update-form')) return;
 
-  // Get the current filter value (if any) before re-rendering
-  const roleFilter = document.getElementById('role-filter');
-  if (roleFilter) {
-    filterRole = roleFilter.value;
+  const profileUpdateForm = document.getElementById('profile-update-form');
+  if (!profileUpdateForm) {
+    console.error('profile-update-form not found');
+    showError('Profile update form section not found.', 'content-area');
+    return;
   }
 
-  console.log('Employees array:', employeesadmin);
-  console.log(
-    'Roles in employeesadmin:',
-    employeesadmin.map((emp) => emp.role)
-  );
-
-  function renderEmployeesTable() {
-    let filtered = employeesadmin.filter((emp) => {
-      const role = emp.role ? emp.role.trim().toLowerCase() : '';
-      return (
-        (role === 'user' || role === 'manager' || role === 'hr') &&
-        emp.emp_status?.toLowerCase() !== 'inactive'
-      );
-    });
-
-    if (filterRole === 'User') {
-      filtered = filtered.filter(
-        (emp) => emp.role.trim().toLowerCase() === 'user'
-      );
-    } else if (filterRole === 'Manager') {
-      filtered = filtered.filter(
-        (emp) => emp.role.trim().toLowerCase() === 'manager'
-      );
-    } else if (filterRole === 'HR') {
-      filtered = filtered.filter(
-        (emp) => emp.role.trim().toLowerCase() === 'hr'
-      );
-    }
-
-    console.log('Filtered employees:', filtered);
-
-    const totalRecords = filtered.length;
-    const totalPages = Math.ceil(totalRecords / recordsPerPage);
-    currentPage = Math.min(currentPage, totalPages);
-    currentPage = Math.max(currentPage, 1);
-    const startIndex = (currentPage - 1) * recordsPerPage;
-    const endIndex = Math.min(startIndex + recordsPerPage, totalRecords);
-    const paginatedEmployees = filtered.slice(startIndex, endIndex);
-
-    let html = `
-            <div class="card">
-                <h2>Update or Remove User</h2>
-                <div class="table-controls">
-                    <div class="filter-controls">
-                            <label>Show:</label>
-                            <select id="records-per-page">
-                                <option value="5" ${
-                                  recordsPerPage === 5 ? 'selected' : ''
-                                }>5</option>
-                                <option value="10" ${
-                                  recordsPerPage === 10 ? 'selected' : ''
-                                }>10</option>
-                                <option value="15" ${
-                                  recordsPerPage === 15 ? 'selected' : ''
-                                }>15</option>
-                                <option value="20" ${
-                                  recordsPerPage === 20 ? 'selected' : ''
-                                }>20</option>
-                            </select>
-                            <label>Role:</label>
-                            <select id="role-filter">
-                                <option value="All" ${
-                                  filterRole === 'All' ? 'selected' : ''
-                                }>All</option>
-                                <option value="User" ${
-                                  filterRole === 'User' ? 'selected' : ''
-                                }>Employee</option>
-                                <option value="Manager" ${
-                                  filterRole === 'Manager' ? 'selected' : ''
-                                }>Manager</option>
-                                <option value="HR" ${
-                                  filterRole === 'HR' ? 'selected' : ''
-                                }>HR</option>
-                            </select>
-                    </div>
-                        <input type="text" id="search-input" placeholder="Search not available..." disabled>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="employees-table-body">
-        `;
-
-    paginatedEmployees.forEach((emp) => {
-      html += `
-                        <tr>
-                            <td>${emp.employee_id}</td>
-                            <td>${emp.first_name} ${emp.last_name}</td>
-                            <td>${emp.email}</td>
-                            <td>
-                                <button class="update-btn" onclick="showEmployeeUpdateForm(${emp.employee_id})">Update</button>
-                                <button class="remove-btn" onclick="removeEmployee(${emp.employee_id})">Remove</button>
-                            </td>
-                        </tr>
-            `;
-    });
-
-    html += `
-                    </tbody>
-                </table>
-                <div class="pagination">
-                    <div>
-                        Showing ${startIndex + 1} to ${Math.min(
-      endIndex,
-      totalRecords
-    )} of ${totalRecords} employees
-                    </div>
-                    <div>
-                        <button class="${
-                          currentPage === 1 ? 'disabled' : ''
-                        }" onclick="changePage(${
-      currentPage - 1
-    })">Previous</button>
-        `;
-
-    const maxPagesToShow = 5;
-    let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-    let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-    if (endPage - startPage + 1 < maxPagesToShow) {
-      startPage = Math.max(1, endPage - maxPagesToShow + 1);
-    }
-
-    for (let i = startPage; i <= endPage; i++) {
-      html += `
-                        <button class="${
-                          i === currentPage ? 'active' : ''
-                        }" onclick="changePage(${i})">${i}</button>
-            `;
-    }
-
-    html += `
-                        <button class="${
-                          currentPage === totalPages ? 'disabled' : ''
-                        }" onclick="changePage(${
-      currentPage + 1
-    })">Next</button>
-                    </div>
-                </div>
-                <div class="form-group button-group">
-                    <button type="button" onclick="showWelcomeMessage(event)">Back</button>
-                </div>
-            </div>
-        `;
-
-    updateRemoveUserSection.innerHTML = html;
-
-    const roleFilterSelect = document.getElementById('role-filter');
-    const recordsPerPageSelect = document.getElementById('records-per-page');
-
-    if (roleFilterSelect) {
-      roleFilterSelect.addEventListener('change', (e) => {
-        filterRole = e.target.value;
-        currentPage = 1;
-        renderEmployeesTable();
-      });
-    }
-
-    if (recordsPerPageSelect) {
-      recordsPerPageSelect.addEventListener('change', (e) => {
-        recordsPerPage = parseInt(e.target.value, 10);
-        currentPage = 1;
-        renderEmployeesTable();
-      });
-    }
-  }
-
-  window.changePage = function (page) {
-    currentPage = page;
-    renderEmployeesTable();
+  const salary =
+    emp.salary !== undefined && emp.salary !== null
+      ? parseFloat(emp.salary)
+      : 0;
+  const originalValues = {
+    first_name: (emp.first_name || '').trim(),
+    middle_name: (emp.middle_name || '').trim(),
+    last_name: (emp.last_name || '').trim(),
+    email: (emp.email || '').trim(),
+    role: (emp.role || '').trim(),
+    department_id: (emp.department_id || '').toString().trim(),
+    emp_hire_date: (emp.emp_hire_date || '').trim(),
+    dob: (emp.dob || '').trim(),
+    salary: salary.toFixed(2),
+    manager_id: (emp.manager_id || '').toString().trim(),
+    is_manager: (emp.is_manager || '0').toString().trim(),
   };
 
-  renderEmployeesTable();
+  // Log for debugging
+  console.log('Employee data:', emp);
+  console.log('Departments available:', departments);
+
+  const managers = employeesadmin.filter(
+    (emp) => emp.role === 'Manager' && (emp.emp_status ? emp.emp_status.toLowerCase() !== 'inactive' : true)
+  );
+  console.log('Filtered managers:', managers);
+
+  const deptOptions = departments
+    .map(
+      (d) => `
+          <option value="${d.department_id}" ${
+        d.department_id == emp.department_id ? 'selected' : ''
+      }>
+              ${d.department_name}
+          </option>
+      `
+    )
+    .join('');
+
+  profileUpdateForm.innerHTML = `
+      <h2>Update Employee</h2>
+      <form method="POST" action="../pages/features/update_employee_superadmin.php" id="updateUserForm">
+          <input type="hidden" name="employee_id" value="${emp.employee_id}">
+          <input type="hidden" name="is_manager" value="${emp.is_manager || '0'}">
+          <div class="form-group">
+              <label>First Name</label>
+              <input type="text" name="first_name" value="${emp.first_name || ''}" required 
+                     pattern="[A-Za-z ]+" 
+                     title="First name must contain only letters and spaces" 
+                     onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122) || event.charCode === 32">
+          </div>
+          <div class="form-group">
+              <label>Middle Name (Optional)</label>
+              <input type="text" name="middle_name" value="${emp.middle_name || ''}"
+                     pattern="[A-Za-z]+"
+                     title="Middle name must contain only letters"
+                     onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122)">
+          </div>
+          <div class="form-group">
+              <label>Last Name</label>
+              <input type="text" name="last_name" value="${emp.last_name || ''}" required 
+                     pattern="[A-Za-z ]+" 
+                     title="Last name must contain only letters and spaces" 
+                     onkeypress="return (event.charCode >= 65 && event.charCode <= 90) || (event.charCode >= 97 && event.charCode <= 122) || event.charCode === 32">
+          </div>
+          <div class="form-group">
+              <label>Email</label>
+              <input type="email" name="email" value="${emp.email || ''}" required>
+          </div>
+          <div class="form-group">
+              <label>Role</label>
+              <select name="role" id="role" required>
+                  <option value="User" ${emp.role === 'User' ? 'selected' : ''}>User</option>
+                  <option value="Manager" ${emp.role === 'Manager' ? 'selected' : ''}>Manager</option>
+                  <option value="HR" ${emp.role === 'HR' ? 'selected' : ''}>HR</option>
+                  <option value="Super Admin" ${emp.role === 'Super Admin' ? 'selected' : ''}>Super Admin</option>
+              </select>
+          </div>
+          <div class="form-group" id="assign-manager-group" style="display: ${emp.role === 'User' ? 'block' : 'none'};">
+              <label for="manager_id">Assign to Manager:</label>
+              <select id="manager_id" name="manager_id">
+                  <option value="">Select a Manager</option>
+                  ${managers
+                    .map((manager) => {
+                      const empManagerId = emp.manager_id ? String(emp.manager_id).trim() : '';
+                      const managerEmployeeId = manager.employee_id ? String(manager.employee_id).trim() : '';
+                      const isSelected = empManagerId === managerEmployeeId;
+                      console.log(`Comparing emp.manager_id (${empManagerId}) with manager.employee_id (${managerEmployeeId}): ${isSelected}`);
+                      return `<option value="${manager.employee_id}" data-department-id="${manager.department_id}" ${isSelected ? 'selected' : ''}>${manager.first_name} ${manager.last_name} (ID: ${manager.employee_id})</option>`;
+                    })
+                    .join('')}
+              </select>
+          </div>
+          <div class="form-group">
+              <label>Department</label>
+              <select name="department_id" id="department_id" required ${emp.role === 'User' ? 'disabled' : ''}>
+                  ${deptOptions}
+              </select>
+          </div>
+          <div class="form-group">
+              <label>Hire Date</label>
+              <input type="date" name="emp_hire_date" value="${emp.emp_hire_date || ''}" required>
+          </div>
+          <div class="form-group">
+              <label>Date of Birth</label>
+              <input type="date" name="dob" value="${emp.dob || ''}" required>
+          </div>
+          <div class="form-group">
+              <label>Salary</label>
+              <input type="number" name="salary" value="${salary.toFixed(2)}" step="0.01" required>
+          </div>
+          <div class="form-group button-group">
+              <button type="submit">Save Changes</button>
+              <button type="button" onclick="showUpdateRemoveUserForm(event)">Back</button>
+          </div>
+      </form>
+  `;
+
+  const form = document.getElementById('updateUserForm');
+  const roleSelect = document.getElementById('role');
+  const assignManagerGroup = document.getElementById('assign-manager-group');
+  const departmentSelect = document.getElementById('department_id');
+  const managerSelect = document.getElementById('manager_id');
+
+  if (
+    form &&
+    roleSelect &&
+    assignManagerGroup &&
+    departmentSelect &&
+    managerSelect
+  ) {
+    const updateDepartmentFromManager = () => {
+      const selectedOption = managerSelect.options[managerSelect.selectedIndex];
+      const managerDepartmentId = selectedOption ? selectedOption.getAttribute('data-department-id') : null;
+      if (managerDepartmentId) {
+        departmentSelect.value = managerDepartmentId;
+        departmentSelect.disabled = true;
+      } else {
+        departmentSelect.value = emp.department_id || '';
+        departmentSelect.disabled = true;
+        if (managerSelect.value) {
+          showError('Selected manager does not have a valid department assigned.', 'profile-update-form');
+        }
+      }
+    };
+
+    // Initial department update for User role
+    if (emp.role === 'User' && emp.manager_id) {
+      updateDepartmentFromManager();
+    }
+
+    roleSelect.addEventListener('change', function () {
+      console.log('Role changed to:', this.value);
+      console.log('Setting assign-manager-group display to:', this.value === 'User' ? 'block' : 'none');
+      assignManagerGroup.style.display = this.value === 'User' ? 'block' : 'none';
+      // Force a style update to ensure visibility
+      assignManagerGroup.style.visibility = this.value === 'User' ? 'visible' : 'hidden';
+      if (this.value === 'User') {
+        managerSelect.value = originalValues.manager_id || '';
+        updateDepartmentFromManager();
+      } else if (this.value === 'HR') {
+        const hrDepartment = departments.find((dept) => dept.department_id === 'D02');
+        if (hrDepartment) {
+          departmentSelect.value = 'D02';
+          departmentSelect.disabled = true;
+        } else {
+          console.warn('HR Department (D02) not found in departments list:', departments);
+          const fallbackHrDept = departments.find((dept) => dept.department_name.toLowerCase() === 'hr');
+          if (fallbackHrDept) {
+            departmentSelect.value = fallbackHrDept.department_id;
+            departmentSelect.disabled = true;
+          } else {
+            departmentSelect.value = emp.department_id || '';
+            departmentSelect.disabled = false;
+            alert('Warning: HR Department not found. Please select the department manually.');
+          }
+        }
+        managerSelect.value = '';
+      } else {
+        managerSelect.value = '';
+        departmentSelect.disabled = false;
+        departmentSelect.value = emp.department_id || '';
+      }
+    });
+
+    managerSelect.addEventListener('change', updateDepartmentFromManager);
+
+    form.addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      const formData = new FormData(form);
+      const currentValues = {
+        first_name: (formData.get('first_name') || '').trim(),
+        middle_name: (formData.get('middle_name') || '').trim(),
+        last_name: (formData.get('last_name') || '').trim(),
+        email: (formData.get('email') || '').trim(),
+        role: (formData.get('role') || '').trim(),
+        department_id: (formData.get('department_id') || '').trim(),
+        emp_hire_date: (formData.get('emp_hire_date') || '').trim(),
+        dob: (formData.get('dob') || '').trim(),
+        salary: parseFloat(formData.get('salary') || '0').toFixed(2),
+        manager_id: (formData.get('manager_id') || '').toString().trim(),
+        is_manager: (formData.get('is_manager') || '0').toString().trim(),
+      };
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(currentValues.email)) {
+        alert('Please enter a valid email address');
+        return;
+      }
+      if (parseFloat(currentValues.salary) <= 0) {
+        alert('Salary must be a positive number');
+        return;
+      }
+      const today = new Date().toISOString().split('T')[0];
+      if (currentValues.emp_hire_date > today) {
+        alert('Hire date cannot be in the future');
+        return;
+      }
+      if (currentValues.dob > today) {
+        alert('Date of birth cannot be in the future');
+        return;
+      }
+      const minAgeDate = new Date();
+      minAgeDate.setFullYear(minAgeDate.getFullYear() - 18);
+      const minAgeDateString = minAgeDate.toISOString().split('T')[0];
+      if (currentValues.dob > minAgeDateString) {
+        alert('Employee must be at least 18 years old');
+        return;
+      }
+      if (currentValues.middle_name && !/^[A-Za-z]+$/.test(currentValues.middle_name)) {
+        alert('Middle name must contain only letters');
+        return;
+      }
+
+      let hasChanges = false;
+      for (const key in originalValues) {
+        const originalValue = String(originalValues[key]).trim();
+        const currentValue = String(currentValues[key]).trim();
+        if (originalValue !== currentValue) {
+          hasChanges = true;
+          break;
+        }
+      }
+
+      if (!hasChanges) {
+        alert('No changes detected');
+        return;
+      }
+
+      if (originalValues.role === 'Manager' && currentValues.role === 'User') {
+        const subordinates = employeesadmin.filter(
+          (e) =>
+            e.manager_id &&
+            String(e.manager_id).trim() === String(emp.employee_id).trim() &&
+            e.employee_id !== emp.employee_id
+        );
+        if (subordinates.length > 0) {
+          alert(
+            'Cannot change role to User: This manager has ' +
+              subordinates.length +
+              ' employee(s) assigned.'
+          );
+          return;
+        }
+      }
+
+      if (roleSelect.value === 'User') {
+        if (!managerSelect.value) {
+          alert('Please select a manager for the user.');
+          return;
+        }
+        const selectedOption = managerSelect.options[managerSelect.selectedIndex];
+        const managerDepartmentId = selectedOption.getAttribute('data-department-id');
+        if (managerDepartmentId) {
+          formData.set('department_id', managerDepartmentId);
+        } else {
+          alert('Selected manager does not have a valid department assigned.');
+          return;
+        }
+      } else {
+        formData.set('manager_id', '');
+        formData.set('is_manager', roleSelect.value === 'Manager' ? '1' : '0');
+      }
+
+      if (!currentValues.department_id) {
+        alert('Please select a department.');
+        return;
+      }
+
+      fetch(form.action, {
+        method: 'POST',
+        body: formData,
+      })
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response
+            .text()
+            .then((text) => ({ text, headers: response.headers }));
+        })
+        .then(({ text, headers }) => {
+          const contentType = headers.get('content-type');
+          if (!contentType || !contentType.includes('application/json')) {
+            throw new Error('Server returned non-JSON response');
+          }
+          const data = JSON.parse(text);
+          if (data.success) {
+            alert(data.message || 'Employee updated successfully');
+            fetch(
+              '../pages/features/fetch_employees.php?ts=' +
+                new Date().getTime(),
+              {
+                method: 'GET',
+                headers: { 'Cache-Control': 'no-cache' },
+              }
+            )
+              .then((response) => response.json())
+              .then((employees) => {
+                if (!Array.isArray(employees)) {
+                  throw new Error('Expected an array of employees after update');
+                }
+                employeesadmin.length = 0;
+                employees.forEach((emp) => {
+                  emp.middle_name = emp.middle_name || '';
+                  emp.dob = emp.dob || '';
+                  emp.manager_id = emp.manager_id || '';
+                  emp.emp_status = emp.emp_status || 'Active';
+                  emp.is_manager = emp.is_manager || '0';
+                  const dept = departments.find(d => d.department_id === emp.department_id);
+                  emp.department_name = dept ? dept.department_name : emp.department_name || '';
+                  employeesadmin.push(emp);
+                });
+                showUpdateRemoveUserForm();
+              })
+              .catch((error) => {
+                alert('Error fetching updated employee list: ' + error.message);
+              });
+          } else {
+            alert(data.message || data.error || 'Error updating employee');
+          }
+        })
+        .catch((error) => {
+          alert('Error updating employee: ' + error.message);
+        });
+    });
+  } else {
+    console.error(
+      'Form elements (updateUserForm, role, assign-manager-group, department_id, or manager_id) not found after rendering'
+    );
+    showError('Form setup error.', 'profile-update-form');
+  }
 }
+
 function removeEmployee(employeeId) {
   // Show confirmation alert
   if (!confirm('Are you sure you want to deactivate this employee?')) {
@@ -2548,320 +2918,6 @@ function removeEmployee(employeeId) {
     });
 }
 
-function showEmployeeUpdateForm(employeeId) {
-  const emp = employeesadmin.find((e) => e.employee_id == employeeId);
-  if (!emp) {
-    alert('Employee not found!');
-    return;
-  }
-
-  // Use showSection to ensure only profile-update-form is visible
-  if (!showSection('profile-update-form')) return;
-
-  const profileUpdateForm = document.getElementById('profile-update-form');
-  if (!profileUpdateForm) {
-    console.error('profile-update-form not found');
-    showError('Profile update form section not found.', 'content-area');
-    return;
-  }
-
-  const salary =
-    emp.salary !== undefined && emp.salary !== null
-      ? parseFloat(emp.salary)
-      : 0;
-  const originalValues = {
-    first_name: (emp.first_name || '').trim(),
-    last_name: (emp.last_name || '').trim(),
-    email: (emp.email || '').trim(),
-    role: (emp.role || '').trim(),
-    department_id: (emp.department_id || '').toString().trim(),
-    emp_hire_date: (emp.emp_hire_date || '').trim(),
-    salary: salary.toFixed(2),
-    manager_id: (emp.manager_id || '').toString().trim(),
-    is_manager: (emp.is_manager || '0').toString().trim(),
-  };
-
-  const managers = employeesadmin.filter(
-    (emp) =>
-      emp.role === 'Manager' && emp.emp_status?.toLowerCase() !== 'inactive'
-  );
-
-  const deptOptions = departments
-    .map(
-      (d) => `
-          <option value="${d.department_id}" ${
-        d.department_id == emp.department_id ? 'selected' : ''
-      }>
-              ${d.department_name}
-          </option>
-      `
-    )
-    .join('');
-
-  profileUpdateForm.innerHTML = `
-          <h2>Update Employee</h2>
-          <form method="POST" action="../pages/features/update_employee_superadmin.php" id="updateUserForm">
-              <input type="hidden" name="employee_id" value="${
-                emp.employee_id
-              }">
-              <input type="hidden" name="is_manager" value="${
-                emp.is_manager || '0'
-              }">
-              <div class="form-group">
-                  <label>First Name</label>
-                  <input type="text" name="first_name" value="${
-                    emp.first_name || ''
-                  }" required>
-              </div>
-              <div class="form-group">
-                  <label>Last Name</label>
-                  <input type="text" name="last_name" value="${
-                    emp.last_name || ''
-                  }" required>
-              </div>
-              <div class="form-group">
-                  <label>Email</label>
-                  <input type="email" name="email" value="${
-                    emp.email || ''
-                  }" required>
-              </div>
-              <div class="form-group">
-                  <label>Role</label>
-                  <select name="role" id="role" required>
-                      <option value="User" ${
-                        emp.role === 'User' ? 'selected' : ''
-                      }>User</option>
-                      <option value="Manager" ${
-                        emp.role === 'Manager' ? 'selected' : ''
-                      }>Manager</option>
-                      <option value="HR" ${
-                        emp.role === 'HR' ? 'selected' : ''
-                      }>HR</option>
-                  </select>
-              </div>
-              <div class="form-group" id="assign-manager-group" style="display: ${
-                emp.role === 'User' ? 'block' : 'none'
-              };">
-                  <label for="manager_id">Assign to Manager:</label>
-                  <select id="manager_id" name="manager_id">
-                      <option value="">Select a Manager</option>
-                      ${managers
-                        .map((manager) => {
-                          const empManagerId = emp.manager_id
-                            ? String(emp.manager_id).trim()
-                            : '';
-                          const managerEmployeeId = manager.employee_id
-                            ? String(manager.employee_id).trim()
-                            : '';
-                          const isSelected = empManagerId === managerEmployeeId;
-                          return `<option value="${
-                            manager.employee_id
-                          }" data-department-id="${manager.department_id}" ${
-                            isSelected ? 'selected' : ''
-                          }>${manager.first_name} ${manager.last_name} (ID: ${
-                            manager.employee_id
-                          })</option>`;
-                        })
-                        .join('')}
-                  </select>
-              </div>
-              <div class="form-group">
-                  <label>Department</label>
-                  <select name="department_id" id="department_id" required ${
-                    emp.role === 'User' ? 'disabled' : ''
-                  }>
-                      ${deptOptions}
-                  </select>
-              </div>
-              <div class="form-group">
-                  <label>Hire Date</label>
-                  <input type="date" name="emp_hire_date" value="${
-                    emp.emp_hire_date || ''
-                  }" required>
-              </div>
-              <div class="form-group">
-                  <label>Salary</label>
-                  <input type="number" name="salary" value="${salary.toFixed(
-                    2
-                  )}" step="0.01" required>
-              </div>
-              <div class="form-group button-group">
-                  <button type="submit">Save Changes</button>
-                  <button type="button" onclick="showUpdateRemoveUserForm(event)">Back</button>
-              </div>
-          </form>
-      `;
-
-  const form = document.getElementById('updateUserForm');
-  const roleSelect = document.getElementById('role');
-  const assignManagerGroup = document.getElementById('assign-manager-group');
-  const departmentSelect = document.getElementById('department_id');
-  const managerSelect = document.getElementById('manager_id');
-
-  if (
-    form &&
-    roleSelect &&
-    assignManagerGroup &&
-    departmentSelect &&
-    managerSelect
-  ) {
-    roleSelect.addEventListener('change', function () {
-      assignManagerGroup.style.display =
-        this.value === 'User' ? 'block' : 'none';
-      managerSelect.value =
-        this.value === 'User' ? originalValues.manager_id : '';
-      departmentSelect.disabled = this.value === 'User';
-      departmentSelect.value = emp.department_id || '';
-    });
-
-    managerSelect.addEventListener('change', function () {
-      const selectedOption = this.options[this.selectedIndex];
-      const managerDepartmentId =
-        selectedOption.getAttribute('data-department-id');
-      if (managerDepartmentId) {
-        departmentSelect.value = managerDepartmentId;
-        departmentSelect.disabled = true;
-      } else {
-        departmentSelect.value = emp.department_id || '';
-        departmentSelect.disabled = true;
-      }
-    });
-
-    form.addEventListener('submit', function (event) {
-      event.preventDefault();
-
-      const formData = new FormData(form);
-      const currentValues = {
-        first_name: (formData.get('first_name') || '').trim(),
-        last_name: (formData.get('last_name') || '').trim(),
-        email: (formData.get('email') || '').trim(),
-        role: (formData.get('role') || '').trim(),
-        department_id: departmentSelect.disabled
-          ? originalValues.department_id
-          : (formData.get('department_id') || '').trim(),
-        emp_hire_date: (formData.get('emp_hire_date') || '').trim(),
-        salary: parseFloat(formData.get('salary') || '0').toFixed(2),
-        manager_id: (formData.get('manager_id') || '').toString().trim(),
-        is_manager: (formData.get('is_manager') || '0').toString().trim(),
-      };
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(currentValues.email)) {
-        alert('Please enter a valid email address');
-        return;
-      }
-      if (parseFloat(currentValues.salary) <= 0) {
-        alert('Salary must be a positive number');
-        return;
-      }
-      const today = new Date().toISOString().split('T')[0];
-      if (currentValues.emp_hire_date > today) {
-        alert('Hire date cannot be in the future');
-        return;
-      }
-
-      let hasChanges = false;
-      for (const key in originalValues) {
-        const originalValue = String(originalValues[key]).trim();
-        const currentValue = String(currentValues[key]).trim();
-        if (originalValue !== currentValue) {
-          hasChanges = true;
-          break;
-        }
-      }
-
-      if (!hasChanges) {
-        alert('No changes detected');
-        return;
-      }
-
-      // Check if changing from Manager to User and has subordinates
-      if (originalValues.role === 'Manager' && currentValues.role === 'User') {
-        const subordinates = employeesadmin.filter(
-          (e) =>
-            e.manager_id &&
-            String(e.manager_id).trim() === String(emp.employee_id).trim() &&
-            e.employee_id !== emp.employee_id // Exclude self
-        );
-        if (subordinates.length > 0) {
-          alert(
-            'Cannot change role to User: This manager has ' +
-              subordinates.length +
-              ' employee(s) assigned.'
-          );
-          return;
-        }
-      }
-
-      if (roleSelect.value === 'User') {
-        if (!managerSelect.value) {
-          alert('Please select a manager for the user.');
-          return;
-        }
-        const selectedOption =
-          managerSelect.options[managerSelect.selectedIndex];
-        const managerDepartmentId =
-          selectedOption.getAttribute('data-department-id');
-        if (managerDepartmentId) {
-          formData.set('department_id', managerDepartmentId);
-        }
-      } else {
-        formData.set('manager_id', '');
-        formData.set('is_manager', '1');
-      }
-
-      fetch(form.action, {
-        method: 'POST',
-        body: formData,
-      })
-        .then((response) => {
-          if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-          }
-          return response
-            .text()
-            .then((text) => ({ text, headers: response.headers }));
-        })
-        .then(({ text, headers }) => {
-          const contentType = headers.get('content-type');
-          if (!contentType || !contentType.includes('application/json')) {
-            throw new Error('Server returned non-JSON response');
-          }
-          const data = JSON.parse(text);
-          if (data.success) {
-            alert(data.message || 'Employee updated successfully');
-            fetch(
-              '../pages/features/fetch_employees.php?ts=' +
-                new Date().getTime(),
-              {
-                method: 'GET',
-                headers: { 'Cache-Control': 'no-cache' },
-              }
-            )
-              .then((response) => response.json())
-              .then((updatedEmployees) => {
-                employeesadmin.length = 0;
-                updatedEmployees.forEach((emp) => employeesadmin.push(emp));
-                showUpdateRemoveUserForm();
-              })
-              .catch((error) => {
-                alert('Error fetching updated employee list: ' + error.message);
-              });
-          } else {
-            alert(data.message || data.error || 'Error updating employee');
-          }
-        })
-        .catch((error) => {
-          alert('Error updating employee: ' + error.message);
-        });
-    });
-  } else {
-    console.error(
-      'Form elements (updateUserForm, role, assign-manager-group, department_id, or manager_id) not found after rendering'
-    );
-    showError('Form setup error.', 'profile-update-form');
-  }
-}
 
 function showDepartmentManagement(event) {
   if (event) event.preventDefault();
