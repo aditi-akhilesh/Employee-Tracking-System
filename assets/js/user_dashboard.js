@@ -274,7 +274,7 @@ function handleMarkAttendanceSubmit(event) {
   const form = document.getElementById('mark-attendance-form');
   const checkIn = document.getElementById('check_in').value;
   const checkOut = document.getElementById('check_out').value;
-  const status = document.getElementById('status').value;
+  const status = 'present'; // Hardcoded since dropdown only has "Present"
 
   fetch('', {
     method: 'POST',

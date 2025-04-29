@@ -46,6 +46,18 @@ if (isset($_POST['action'])) {
         exit;
     }
 
+    // Validate check-out time if provided
+    if ($check_out) {
+        $check_in_time = strtotime($check_in);
+        $check_out_time = strtotime($check_out);
+
+        if ($check_out_time < $check_in_time) {
+            $response['error'] = "Check-out time cannot be earlier than check-in time.";
+            echo json_encode($response);
+            exit;
+        }
+    }
+
     // Extract date from check_in for validation
     $check_in_date = date('Y-m-d', strtotime($check_in));
 
@@ -608,30 +620,34 @@ elseif ($_POST['action'] === 'fetch_attendance') {
         </div>
 
         <!-- Mark Attendance Section -->
-        <div id="mark-attendance-section" style="display: none;" class="card">
-            <h2>Mark Daily Attendance</h2>
-            <form id="mark-attendance-form">
-                <div class="form-group">
-                    <label for="check_in">Check-In Time:</label>
-                    <input type="datetime-local" id="check_in" name="check_in" required>
-                </div>
-                <div class="form-group">
-                    <label for="check_out">Check-Out Time (Optional):</label>
-                    <input type="datetime-local" id="check_out" name="check_out">
-                </div>
-                <div class="form-group">
-                    <label for="status">Status:</label>
-                    <select id="status" name="status">
-                        <option value="present">Present</option>
-                        <option value="absent">Absent</option>
-                    </select>
-                </div>
-                <div class="form-group button-group">
-                    <button type="submit">Mark Attendance</button>
-                    <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
-                </div>
-            </form>
+<div id="mark-attendance-section" style="display: none;" class="card">
+    <h2>Mark Daily Attendance</h2>
+    <form id="mark-attendance-form">
+        <div class="form-group">
+            <label for="check_in">Check-In Time:</label>
+            <input type="datetime-local" id="check_in" name="check_in" required>
         </div>
+        <div class="form-group">
+            <label for="check_out">Check-Out Time (Optional):</label>
+            <input type="datetime-local" id="check_out" name="check_out">
+        </div>
+        <div class="form-group">
+            <label for="status">Status:</label>
+            <select id="status" name="status">
+                <option value="present">Present</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <p style="color: #ff0000; font-size: 14px;">
+                Note: If you are absent, please apply for a leave request in the "Apply for Leave" section under "Attendance & Leaves".
+            </p>
+        </div>
+        <div class="form-group button-group">
+            <button type="submit">Mark Attendance</button>
+            <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
+        </div>
+    </form>
+</div>
 
         <!-- Attendance History Section -->
         <div id="attendance-history-section" style="display: none;" class="card">
