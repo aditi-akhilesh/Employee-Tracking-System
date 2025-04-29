@@ -1753,12 +1753,19 @@ function showCreateUserForm() {
         method: 'POST',
         body: formData,
       })
-        .then((response) => response.json())
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+        })
         .then((data) => {
           submitButton.disabled = false;
           submitButton.innerHTML = 'Create User';
           if (data.success) {
-            showSuccess('User created successfully!', 'profile-update-form');
+            console.log('User creation successful:', data);
+            alert('User created successfully!'); // Add alert for visibility
+            showSuccess('User created successfully!', 'create-user-form'); // Keep showSuccess for consistency
             // Reset the form to allow creating another user
             form.reset();
             // Reset role-specific UI elements
@@ -1769,7 +1776,8 @@ function showCreateUserForm() {
             departmentHiddenInput.value = '';
             roleSelect.value = '';
           } else {
-            showError(data.error || 'Unknown error', 'profile-update-form');
+            console.error('User creation failed:', data);
+            showError(data.error || 'Unknown error', 'create-user-form');
           }
         })
         .catch((error) => {
@@ -1778,7 +1786,7 @@ function showCreateUserForm() {
           console.error('Error submitting form:', error);
           showError(
             'An error occurred while creating the user. Please try again.',
-            'profile-update-form'
+            'create-user-form'
           );
         });
     });
@@ -1786,7 +1794,7 @@ function showCreateUserForm() {
     console.error(
       'createUserForm, role select, assign-manager-group, department-group, department select, or manager select not found after rendering'
     );
-    showError('Form setup error.', 'profile-update-form');
+    showError('Form setup error.', 'create-user-form');
   }
 }
 
@@ -2089,7 +2097,7 @@ function showAllEmployees() {
               </br><input type="text" id="search-input" placeholder="Search by name or email..." value="${searchQuery}">
           </div>
           <div class="button-group download-controls">
-              <button type="button" id="downloadExcelBtn" style="padding: 8px 12px; margin-left: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;" 
+              <button type="button" id="downloadExcelBtn" class="download-btn" style="padding: 8px 12px; margin-left: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;" 
                     onmouseover="this.style.backgroundColor='#218838'" 
                     onmouseout="this.style.backgroundColor='#28a745'"
  onclick="exportToExcel()">Download employee information</button>
@@ -2263,6 +2271,9 @@ function showUpdateRemoveUserForm(event) {
         return;
     }
 
+    // Clear the section to avoid DOM conflicts
+    updateRemoveUserSection.innerHTML = '';
+
     // State for pagination and filters
     let currentPage = 1;
     let recordsPerPage = 5;
@@ -2311,8 +2322,7 @@ function showUpdateRemoveUserForm(event) {
                 emp.manager_id = emp.manager_id || '';
                 emp.emp_status = emp.emp_status || 'Active';
                 emp.is_manager = emp.is_manager || '0';
-                emp.department_name = emp.department_name || ''; // fetch_employees.php doesn't provide this
-                // Ensure department_id is populated if possible (we'll rely on departments array later)
+                emp.department_name = emp.department_name || '';
                 const dept = departments.find(d => d.department_id === emp.department_id);
                 emp.department_name = dept ? dept.department_name : emp.department_name || '';
                 employeesadmin.push(emp);
@@ -2368,6 +2378,7 @@ function showUpdateRemoveUserForm(event) {
                                     <option value="User" ${filterRole === 'User' ? 'selected' : ''}>Employee</option>
                                     <option value="Manager" ${filterRole === 'Manager' ? 'selected' : ''}>Manager</option>
                                     <option value="HR" ${filterRole === 'HR' ? 'selected' : ''}>HR</option>
+                                    <option value="Super Admin" ${filterRole === 'Super Admin' ? 'selected' : ''}>Super Admin</option>
                                 </select>
                             </div>
                             <input type="text" id="search-input" placeholder="Search not available..." disabled>
@@ -2484,6 +2495,9 @@ function showEmployeeUpdateForm(employeeId) {
     return;
   }
 
+  // Clear the section to avoid DOM conflicts
+  profileUpdateForm.innerHTML = '';
+
   const salary =
     emp.salary !== undefined && emp.salary !== null
       ? parseFloat(emp.salary)
@@ -2523,9 +2537,16 @@ function showEmployeeUpdateForm(employeeId) {
     )
     .join('');
 
+  // Use unique IDs by appending employeeId
+  const roleId = `role-${employeeId}`;
+  const assignManagerGroupId = `assign-manager-group-${employeeId}`;
+  const departmentId = `department_id-${employeeId}`;
+  const managerId = `manager_id-${employeeId}`;
+  const formId = `updateUserForm-${employeeId}`;
+
   profileUpdateForm.innerHTML = `
       <h2>Update Employee</h2>
-      <form method="POST" action="../pages/features/update_employee_superadmin.php" id="updateUserForm">
+      <form method="POST" action="../pages/features/update_employee_superadmin.php" id="${formId}">
           <input type="hidden" name="employee_id" value="${emp.employee_id}">
           <input type="hidden" name="is_manager" value="${emp.is_manager || '0'}">
           <div class="form-group">
@@ -2555,16 +2576,16 @@ function showEmployeeUpdateForm(employeeId) {
           </div>
           <div class="form-group">
               <label>Role</label>
-              <select name="role" id="role" required>
+              <select name="role" id="${roleId}" required>
                   <option value="User" ${emp.role === 'User' ? 'selected' : ''}>User</option>
                   <option value="Manager" ${emp.role === 'Manager' ? 'selected' : ''}>Manager</option>
                   <option value="HR" ${emp.role === 'HR' ? 'selected' : ''}>HR</option>
                   <option value="Super Admin" ${emp.role === 'Super Admin' ? 'selected' : ''}>Super Admin</option>
               </select>
           </div>
-          <div class="form-group" id="assign-manager-group" style="display: ${emp.role === 'User' ? 'block' : 'none'};">
-              <label for="manager_id">Assign to Manager:</label>
-              <select id="manager_id" name="manager_id">
+          <div class="form-group" id="${assignManagerGroupId}" style="display: ${emp.role === 'User' ? 'block' : 'none'};">
+              <label for="${managerId}">Assign to Manager:</label>
+              <select id="${managerId}" name="manager_id">
                   <option value="">Select a Manager</option>
                   ${managers
                     .map((manager) => {
@@ -2579,7 +2600,7 @@ function showEmployeeUpdateForm(employeeId) {
           </div>
           <div class="form-group">
               <label>Department</label>
-              <select name="department_id" id="department_id" required ${emp.role === 'User' ? 'disabled' : ''}>
+              <select name="department_id" id="${departmentId}" required ${emp.role === 'User' ? 'disabled' : ''}>
                   ${deptOptions}
               </select>
           </div>
@@ -2602,11 +2623,11 @@ function showEmployeeUpdateForm(employeeId) {
       </form>
   `;
 
-  const form = document.getElementById('updateUserForm');
-  const roleSelect = document.getElementById('role');
-  const assignManagerGroup = document.getElementById('assign-manager-group');
-  const departmentSelect = document.getElementById('department_id');
-  const managerSelect = document.getElementById('manager_id');
+  const form = document.getElementById(formId);
+  const roleSelect = document.getElementById(roleId);
+  const assignManagerGroup = document.getElementById(assignManagerGroupId);
+  const departmentSelect = document.getElementById(departmentId);
+  const managerSelect = document.getElementById(managerId);
 
   if (
     form &&
@@ -2616,6 +2637,7 @@ function showEmployeeUpdateForm(employeeId) {
     managerSelect
   ) {
     const updateDepartmentFromManager = () => {
+      console.log('updateDepartmentFromManager called for employee:', employeeId);
       const selectedOption = managerSelect.options[managerSelect.selectedIndex];
       const managerDepartmentId = selectedOption ? selectedOption.getAttribute('data-department-id') : null;
       if (managerDepartmentId) {
@@ -2636,10 +2658,9 @@ function showEmployeeUpdateForm(employeeId) {
     }
 
     roleSelect.addEventListener('change', function () {
-      console.log('Role changed to:', this.value);
-      console.log('Setting assign-manager-group display to:', this.value === 'User' ? 'block' : 'none');
+      console.log(`Role changed to: ${this.value} for employee: ${employeeId}`);
+      console.log(`Setting ${assignManagerGroupId} display to: ${this.value === 'User' ? 'block' : 'none'}`);
       assignManagerGroup.style.display = this.value === 'User' ? 'block' : 'none';
-      // Force a style update to ensure visibility
       assignManagerGroup.style.visibility = this.value === 'User' ? 'visible' : 'hidden';
       if (this.value === 'User') {
         managerSelect.value = originalValues.manager_id || '';
@@ -2833,91 +2854,11 @@ function showEmployeeUpdateForm(employeeId) {
     });
   } else {
     console.error(
-      'Form elements (updateUserForm, role, assign-manager-group, department_id, or manager_id) not found after rendering'
+      `Form elements (${formId}, ${roleId}, ${assignManagerGroupId}, ${departmentId}, or ${managerId}) not found after rendering`
     );
     showError('Form setup error.', 'profile-update-form');
   }
 }
-
-function removeEmployee(employeeId) {
-  // Show confirmation alert
-  if (!confirm('Are you sure you want to deactivate this employee?')) {
-    return; // If user clicks "Cancel", do nothing
-  }
-
-  // Find the employee in the employees array
-  const employee = employeesadmin.find((emp) => emp.employee_id == employeeId);
-  if (!employee) {
-    alert('Employee not found in local data.');
-    return;
-  }
-
-  // Check if the employee is a Manager with subordinates
-  if (employee.role === 'Manager') {
-    const subordinates = employeesadmin.filter(
-      (e) =>
-        e.manager_id &&
-        String(e.manager_id).trim() === String(employeeId).trim() &&
-        e.employee_id !== employeeId // Exclude self
-    );
-    if (subordinates.length > 0) {
-      alert(
-        `Cannot deactivate this manager: They have ${subordinates.length} employee(s) assigned.`
-      );
-      return;
-    }
-  }
-
-  const formData = new FormData();
-  formData.append('employee_id', employeeId);
-
-  fetch('../pages/features/remove_employee.php', {
-    method: 'POST',
-    body: formData,
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      const contentType = response.headers.get('content-type');
-      if (!contentType || !contentType.includes('application/json')) {
-        return response.text().then((text) => {
-          throw new Error(`Server returned non-JSON response: ${text}`);
-        });
-      }
-      return response.json();
-    })
-    .then((data) => {
-      if (data.success) {
-        alert(data.message || 'Employee deactivated successfully');
-        // Fetch the updated list of employees from the server
-        fetch('../pages/features/fetch_employees.php')
-          .then((response) => {
-            if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            return response.json();
-          })
-          .then((updatedEmployees) => {
-            employeesadmin.length = 0; // Clear the array
-            updatedEmployees.forEach((emp) => employeesadmin.push(emp)); // Repopulate with updated data
-            showUpdateRemoveUserForm();
-          })
-          .catch((error) => {
-            // console.error('Error fetching updated employees:', error);
-            alert('Error fetching updated employee list: ' + error.message);
-            showUpdateRemoveUserForm();
-          });
-      } else {
-        alert(data.error || 'Error deactivating employee');
-      }
-    })
-    .catch((error) => {
-      // console.error('Fetch error:', error);
-      alert('Error deactivating employee: ' + error.message);
-    });
-}
-
 
 function showDepartmentManagement(event) {
   if (event) event.preventDefault();
