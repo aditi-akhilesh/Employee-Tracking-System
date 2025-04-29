@@ -1833,6 +1833,9 @@ function fetchEnrolledTrainings() {
       ) {
         data.enrolled_trainings.forEach((training) => {
           const row = document.createElement('tr');
+          // Disable the score input if status is not "Completed"
+          const isScoreDisabled =
+            training.completion_status !== 'Completed' ? 'disabled' : '';
           row.innerHTML = `
                     <td>${training.training_name}</td>
                     <td>${training.enrollment_date}</td>
@@ -1862,7 +1865,7 @@ function fetchEnrolledTrainings() {
                           training.score || ''
                         }" min="0" max="100" onchange="updateTrainingScore(${
             training.employee_training_id
-          }, this.value)" placeholder="Enter score (0-100)">
+          }, this.value)" placeholder="Enter score (0-100)" ${isScoreDisabled}>
                     </td>
                     <td>
                         <button onclick="updateTraining(${
@@ -1912,6 +1915,17 @@ function updateTrainingStatus(employeeTrainingId, newStatus) {
     .then((data) => {
       console.log('updateTrainingStatus data:', data);
       if (data.success) {
+        // Find the score input field for this training and enable/disable based on newStatus
+        const scoreInput = document.querySelector(
+          `input[onchange="updateTrainingScore(${employeeTrainingId}, this.value)"]`
+        );
+        if (scoreInput) {
+          scoreInput.disabled = newStatus !== 'Completed';
+          // Optionally clear the score if status is not "Completed"
+          if (newStatus !== 'Completed') {
+            scoreInput.value = '';
+          }
+        }
         alert(data.message);
         fetchEnrolledTrainings();
       } else {
