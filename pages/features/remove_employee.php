@@ -23,12 +23,7 @@ try {
         throw new Exception("Invalid request");
     }
 
-    // Check if the user is authenticated and has HR role
-    if (!isset($_SESSION['user_id'])) {
-        throw new Exception("Unauthorized: User is not authenticated");
-    }
-
-
+ 
     $current_user_id = $_SESSION['user_id'];
 
     // safeLog("Starting remove_employee.php");

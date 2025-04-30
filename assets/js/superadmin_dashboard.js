@@ -4749,3 +4749,83 @@ document.addEventListener('click', (e) => {
     }
   }
 });
+
+
+function removeEmployee(employeeId) {
+  // Show confirmation alert
+  if (!confirm('Are you sure you want to deactivate this employee?')) {
+    return; // If user clicks "Cancel", do nothing
+  }
+
+  // Find the employee in the employees array
+  const employee = employeesadmin.find((emp) => emp.employee_id == employeeId);
+  if (!employee) {
+    alert('Employee not found in local data.');
+    return;
+  }
+
+  // Check if the employee is a Manager with subordinates
+  if (employee.role === 'Manager') {
+    const subordinates = employeesadmin.filter(
+      (e) =>
+        e.manager_id &&
+        String(e.manager_id).trim() === String(employeeId).trim() &&
+        e.employee_id !== employeeId // Exclude self
+    );
+    if (subordinates.length > 0) {
+      alert(
+        `Cannot deactivate this manager: They have ${subordinates.length} employee(s) assigned.`
+      );
+      return;
+    }
+  }
+
+  const formData = new FormData();
+  formData.append('employee_id', employeeId);
+
+  fetch('../pages/features/remove_employee.php', {
+    method: 'POST',
+    body: formData,
+  })
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        return response.text().then((text) => {
+          throw new Error(`Server returned non-JSON response: ${text}`);
+        });
+      }
+      return response.json();
+    })
+    .then((data) => {
+      if (data.success) {
+        alert(data.message || 'Employee deactivated successfully');
+        // Fetch the updated list of employees from the server
+        fetch('../pages/features/fetch_employees.php')
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then((updatedEmployees) => {
+            employeesadmin.length = 0; // Clear the array
+            updatedEmployees.forEach((emp) => employeesadmin.push(emp)); // Repopulate with updated data
+            showUpdateRemoveUserForm();
+          })
+          .catch((error) => {
+            // console.error('Error fetching updated employees:', error);
+            alert('Error fetching updated employee list: ' + error.message);
+            showUpdateRemoveUserForm();
+          });
+      } else {
+        alert(data.error || 'Error deactivating employee');
+      }
+    })
+    .catch((error) => {
+      // console.error('Fetch error:', error);
+      alert('Error deactivating employee: ' + error.message);
+    });
+}
