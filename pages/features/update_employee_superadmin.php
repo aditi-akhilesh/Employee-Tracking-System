@@ -80,7 +80,7 @@ try {
     }
 
     // Fetch the employee being updated
-    $stmt = $con->prepare("SELECT e.*, u.first_name, u.middle_name, u.last_name, u.email, u.role, u.dob 
+    $stmt = $con->prepare("SELECT e.*, u.first_name, u.middle_name, u.last_name, u.email, u.role, e.dob 
                            FROM Employees e 
                            JOIN Users u ON e.user_id = u.user_id 
                            WHERE e.employee_id = :employee_id");
@@ -179,7 +179,7 @@ try {
 
     $user_id = $currentEmployee['user_id'];
 
-    $sqlUser = "UPDATE Users SET first_name = :first_name, middle_name = :middle_name, last_name = :last_name, email = :email, role = :role, dob = :dob WHERE user_id = :user_id";
+    $sqlUser = "UPDATE Users SET first_name = :first_name, middle_name = :middle_name, last_name = :last_name, email = :email, role = :role WHERE user_id = :user_id";
     $stmtUser = $con->prepare($sqlUser);
     $stmtUser->execute([
         ':first_name' => $first_name,
@@ -187,11 +187,10 @@ try {
         ':last_name' => $last_name,
         ':email' => $email,
         ':role' => $role,
-        ':dob' => $dob,
         ':user_id' => $user_id
     ]);
 
-    $sqlEmployee = "UPDATE Employees SET department_id = :department_id, emp_hire_date = :emp_hire_date, salary = :salary, manager_id = :manager_id, is_manager = :is_manager WHERE employee_id = :employee_id";
+    $sqlEmployee = "UPDATE Employees SET department_id = :department_id, emp_hire_date = :emp_hire_date, dob = :dob,salary = :salary, manager_id = :manager_id, is_manager = :is_manager WHERE employee_id = :employee_id";
     $stmtEmployee = $con->prepare($sqlEmployee);
     $stmtEmployee->execute([
         ':department_id' => $department_id,
@@ -199,6 +198,7 @@ try {
         ':salary' => $salary,
         ':manager_id' => $manager_id === '' ? null : $manager_id,
         ':is_manager' => $is_manager,
+        ':dob' => $dob,
         ':employee_id' => $employee_id
     ]);
 

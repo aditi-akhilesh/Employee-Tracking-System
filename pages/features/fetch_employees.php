@@ -9,7 +9,7 @@ try {
     }
     error_log("Database connection successful");
 
-    $stmt = $con->prepare("SELECT e.employee_id, u.first_name, u.last_name, u.email, u.role, e.department_id, e.emp_hire_date, e.salary, e.manager_id, e.emp_status, e.is_manager FROM Employees e JOIN Users u ON e.user_id = u.user_id where e.emp_status != 'Inactive'  and u.role !='Super Admin'");
+    $stmt = $con->prepare("SELECT e.employee_id, u.first_name, u.last_name, u.email, u.role,e.dob, e.department_id, e.emp_hire_date, e.salary, e.manager_id, e.emp_status, e.is_manager FROM Employees e JOIN Users u ON e.user_id = u.user_id where e.emp_status != 'Inactive'  and u.role !='Super Admin'");
     if (!$stmt) {
         throw new Exception("Failed to prepare statement: " . $con->error);
     }

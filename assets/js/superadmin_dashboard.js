@@ -1764,7 +1764,7 @@ function showCreateUserForm() {
           submitButton.innerHTML = 'Create User';
           if (data.success) {
             console.log('User creation successful:', data);
-            alert('User created successfully!'); // Add alert for visibility
+            alert('User created successfully!'); 
             showSuccess('User created successfully!', 'create-user-form'); // Keep showSuccess for consistency
             // Reset the form to allow creating another user
             form.reset();
@@ -2485,7 +2485,6 @@ function showEmployeeUpdateForm(employeeId) {
     return;
   }
 
-  // Use showSection to ensure only profile-update-form is visible
   if (!showSection('profile-update-form')) return;
 
   const profileUpdateForm = document.getElementById('profile-update-form');
@@ -2495,13 +2494,24 @@ function showEmployeeUpdateForm(employeeId) {
     return;
   }
 
-  // Clear the section to avoid DOM conflicts
   profileUpdateForm.innerHTML = '';
 
   const salary =
     emp.salary !== undefined && emp.salary !== null
       ? parseFloat(emp.salary)
       : 0;
+
+  // Utility function to format date to YYYY-MM-DD
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      console.warn(`Invalid date format for DOB: ${dateStr}`);
+      return '';
+    }
+    return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+  };
+
   const originalValues = {
     first_name: (emp.first_name || '').trim(),
     middle_name: (emp.middle_name || '').trim(),
@@ -2509,14 +2519,13 @@ function showEmployeeUpdateForm(employeeId) {
     email: (emp.email || '').trim(),
     role: (emp.role || '').trim(),
     department_id: (emp.department_id || '').toString().trim(),
-    emp_hire_date: (emp.emp_hire_date || '').trim(),
-    dob: (emp.dob || '').trim(),
+    emp_hire_date: formatDate(emp.emp_hire_date),
+    dob: formatDate(emp.dob),
     salary: salary.toFixed(2),
     manager_id: (emp.manager_id || '').toString().trim(),
     is_manager: (emp.is_manager || '0').toString().trim(),
   };
 
-  // Log for debugging
   console.log('Employee data:', emp);
   console.log('Departments available:', departments);
 
@@ -2537,7 +2546,6 @@ function showEmployeeUpdateForm(employeeId) {
     )
     .join('');
 
-  // Use unique IDs by appending employeeId
   const roleId = `role-${employeeId}`;
   const assignManagerGroupId = `assign-manager-group-${employeeId}`;
   const departmentId = `department_id-${employeeId}`;
@@ -2606,11 +2614,11 @@ function showEmployeeUpdateForm(employeeId) {
           </div>
           <div class="form-group">
               <label>Hire Date</label>
-              <input type="date" name="emp_hire_date" value="${emp.emp_hire_date || ''}" required>
+              <input type="date" name="emp_hire_date" value="${originalValues.emp_hire_date}" required>
           </div>
           <div class="form-group">
               <label>Date of Birth</label>
-              <input type="date" name="dob" value="${emp.dob || ''}" required>
+              <input type="date" name="dob" value="${originalValues.dob}" required>
           </div>
           <div class="form-group">
               <label>Salary</label>
@@ -2652,7 +2660,6 @@ function showEmployeeUpdateForm(employeeId) {
       }
     };
 
-    // Initial department update for User role
     if (emp.role === 'User' && emp.manager_id) {
       updateDepartmentFromManager();
     }
@@ -2696,13 +2703,41 @@ function showEmployeeUpdateForm(employeeId) {
       event.preventDefault();
 
       const formData = new FormData(form);
+      let departmentIdToSubmit = formData.get('department_id') || '';
+
+      if (roleSelect.value === 'User') {
+        if (!managerSelect.value) {
+          alert('Please select a manager for the user.');
+          return;
+        }
+        const selectedOption = managerSelect.options[managerSelect.selectedIndex];
+        const managerDepartmentId = selectedOption.getAttribute('data-department-id');
+        if (managerDepartmentId) {
+          formData.set('department_id', managerDepartmentId);
+          departmentIdToSubmit = managerDepartmentId;
+        } else {
+          // Fallback to employee's existing department_id if manager has no department
+          if (emp.department_id) {
+            formData.set('department_id', emp.department_id);
+            departmentIdToSubmit = emp.department_id;
+          } else {
+            alert('Selected manager does not have a valid department assigned, and employee has no department set.');
+            return;
+          }
+        }
+      } else {
+        formData.set('manager_id', '');
+        formData.set('is_manager', roleSelect.value === 'Manager' ? '1' : '0');
+        departmentIdToSubmit = formData.get('department_id') || emp.department_id || '';
+      }
+
       const currentValues = {
         first_name: (formData.get('first_name') || '').trim(),
         middle_name: (formData.get('middle_name') || '').trim(),
         last_name: (formData.get('last_name') || '').trim(),
         email: (formData.get('email') || '').trim(),
         role: (formData.get('role') || '').trim(),
-        department_id: (formData.get('department_id') || '').trim(),
+        department_id: departmentIdToSubmit,
         emp_hire_date: (formData.get('emp_hire_date') || '').trim(),
         dob: (formData.get('dob') || '').trim(),
         salary: parseFloat(formData.get('salary') || '0').toFixed(2),
@@ -2770,24 +2805,6 @@ function showEmployeeUpdateForm(employeeId) {
           );
           return;
         }
-      }
-
-      if (roleSelect.value === 'User') {
-        if (!managerSelect.value) {
-          alert('Please select a manager for the user.');
-          return;
-        }
-        const selectedOption = managerSelect.options[managerSelect.selectedIndex];
-        const managerDepartmentId = selectedOption.getAttribute('data-department-id');
-        if (managerDepartmentId) {
-          formData.set('department_id', managerDepartmentId);
-        } else {
-          alert('Selected manager does not have a valid department assigned.');
-          return;
-        }
-      } else {
-        formData.set('manager_id', '');
-        formData.set('is_manager', roleSelect.value === 'Manager' ? '1' : '0');
       }
 
       if (!currentValues.department_id) {
@@ -2859,6 +2876,7 @@ function showEmployeeUpdateForm(employeeId) {
     showError('Form setup error.', 'profile-update-form');
   }
 }
+
 
 function showDepartmentManagement(event) {
   if (event) event.preventDefault();
