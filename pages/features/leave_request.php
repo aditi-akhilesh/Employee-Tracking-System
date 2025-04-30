@@ -35,7 +35,6 @@ if (isset($_POST['action'])) {
             $leave_type_id = filter_var($_POST['leave_type_id'] ?? '', FILTER_SANITIZE_NUMBER_INT);
             $start_date = $_POST['start_date'] ?? '';
             $end_date = $_POST['end_date'] ?? '';
-            // Replace FILTER_SANITIZE_STRING with htmlspecialchars and trim
             $leave_reason = htmlspecialchars(trim($_POST['leave_reason'] ?? ''), ENT_QUOTES, 'UTF-8');
 
             // Validation
@@ -121,35 +120,94 @@ if (isset($_POST['action'])) {
                 exit();
             }
 
-            // Insert leave request with status 'ispending' and leave_reason
-            $stmt = $con->prepare("
-                INSERT INTO Leaves (employee_id, leave_type_id, leave_start_date, leave_end_date, status, leave_reason)
-                VALUES (?, ?, ?, ?, 'ispending', ?)
-            ");
-            if (!$stmt) {
-                throw new Exception('Failed to prepare leave insertion query: ' . implode(' ', $con->errorInfo()));
-            }
-            $executed = $stmt->execute([$employee_id, $leave_type_id, $start_date, $end_date, $leave_reason]);
-            if (!$executed) {
-                throw new Exception('Failed to execute leave insertion query: ' . implode(' ', $stmt->errorInfo()));
+            // Begin a transaction to ensure data consistency
+            $transaction_supported = true;
+            try {
+                $con->beginTransaction();
+            } catch (PDOException $e) {
+                $transaction_supported = false;
+                error_log("Transactions not supported: " . $e->getMessage());
             }
 
-            // Update leave balance
-            $stmt = $con->prepare("
-                UPDATE Leave_Balance 
-                SET days_used = days_used + ?, last_updated = CURDATE()
-                WHERE employee_id = ? AND leave_type_id = ?
-            ");
-            if (!$stmt) {
-                throw new Exception('Failed to prepare leave balance update query: ' . implode(' ', $con->errorInfo()));
-            }
-            $executed = $stmt->execute([$days_requested, $employee_id, $leave_type_id]);
-            if (!$executed) {
-                throw new Exception('Failed to execute leave balance update query: ' . implode(' ', $stmt->errorInfo()));
-            }
+            if ($transaction_supported) {
+                try {
+                    // Insert leave request with status 'ispending' and leave_reason
+                    $stmt = $con->prepare("
+                        INSERT INTO Leaves (employee_id, leave_type_id, leave_start_date, leave_end_date, status, leave_reason)
+                        VALUES (?, ?, ?, ?, 'ispending', ?)
+                    ");
+                    if (!$stmt) {
+                        throw new Exception('Failed to prepare leave insertion query: ' . implode(' ', $con->errorInfo()));
+                    }
+                    $executed = $stmt->execute([$employee_id, $leave_type_id, $start_date, $end_date, $leave_reason]);
+                    if (!$executed) {
+                        throw new Exception('Failed to execute leave insertion query: ' . implode(' ', $stmt->errorInfo()));
+                    }
 
-            $response['success'] = true;
-            $response['message'] = 'Leave application submitted successfully';
+                    // Update leave balance
+                    $stmt = $con->prepare("
+                        UPDATE Leave_Balance 
+                        SET days_used = days_used + ?,
+                            total_days_allocated = GREATEST(0, total_days_allocated - ?),
+                            last_updated = CURDATE()
+                        WHERE employee_id = ? AND leave_type_id = ?
+                    ");
+                    if (!$stmt) {
+                        throw new Exception('Failed to prepare leave balance update query: ' . implode(' ', $con->errorInfo()));
+                    }
+                    $executed = $stmt->execute([$days_requested, $days_requested, $employee_id, $leave_type_id]);
+                    if (!$executed) {
+                        throw new Exception('Failed to execute leave balance update query: ' . implode(' ', $stmt->errorInfo()));
+                    }
+
+                    // Commit the transaction
+                    $con->commit();
+                    $response['success'] = true;
+                    $response['message'] = 'Leave application submitted successfully';
+                } catch (Throwable $e) {
+                    $con->rollBack();
+                    $response['error'] = 'Error applying leave: ' . $e->getMessage();
+                    error_log("Error applying leave: " . $e->getMessage());
+                }
+            } else {
+                // Fallback: Proceed without transactions
+                try {
+                    // Insert leave request with status 'ispending' and leave_reason
+                    $stmt = $con->prepare("
+                        INSERT INTO Leaves (employee_id, leave_type_id, leave_start_date, leave_end_date, status, leave_reason)
+                        VALUES (?, ?, ?, ?, 'ispending', ?)
+                    ");
+                    if (!$stmt) {
+                        throw new Exception('Failed to prepare leave insertion query: ' . implode(' ', $con->errorInfo()));
+                    }
+                    $executed = $stmt->execute([$employee_id, $leave_type_id, $start_date, $end_date, $leave_reason]);
+                    if (!$executed) {
+                        throw new Exception('Failed to execute leave insertion query: ' . implode(' ', $stmt->errorInfo()));
+                    }
+
+                    // Update leave balance
+                    $stmt = $con->prepare("
+                        UPDATE Leave_Balance 
+                        SET days_used = days_used + ?,
+                            total_days_allocated = GREATEST(0, total_days_allocated - ?),
+                            last_updated = CURDATE()
+                        WHERE employee_id = ? AND leave_type_id = ?
+                    ");
+                    if (!$stmt) {
+                        throw new Exception('Failed to prepare leave balance update query: ' . implode(' ', $con->errorInfo()));
+                    }
+                    $executed = $stmt->execute([$days_requested, $days_requested, $employee_id, $leave_type_id]);
+                    if (!$executed) {
+                        throw new Exception('Failed to execute leave balance update query: ' . implode(' ', $stmt->errorInfo()));
+                    }
+
+                    $response['success'] = true;
+                    $response['message'] = 'Leave application submitted successfully';
+                } catch (Throwable $e) {
+                    $response['error'] = 'Error applying leave: ' . $e->getMessage();
+                    error_log("Error applying leave: " . $e->getMessage());
+                }
+            }
         } elseif ($_POST['action'] === 'fetch_leave_requests') {
             $leave_filter = $_POST['leave_filter'] ?? 'ispending';
             if (!in_array($leave_filter, ['ispending', 'approved', 'rejected'])) {

@@ -94,7 +94,7 @@ if (isset($_POST['action'])) {
                 FROM Leaves l
                 JOIN Employees e ON l.employee_id = e.employee_id
                 JOIN Users u ON e.user_id = u.user_id
-                WHERE l.status = ?  and u.role not in ('Super Admin', 'HR')
+                WHERE l.status = ? AND u.role NOT IN ('Super Admin', 'HR')
             ");
             $stmt->execute([$leave_filter]);
             $response['leave_applications'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -142,17 +142,304 @@ if (isset($_POST['action'])) {
             $response['success'] = true;
         } elseif ($_POST['action'] === 'reconsider_leave') {
             $request_id = $_POST['request_id'];
-            $stmt = $con->prepare("UPDATE Leaves SET status = 'ispending' WHERE leave_id = ?");
-            $stmt->execute([$request_id]);
-            $response['success'] = true;
-            $response['message'] = "Leave application moved back to pending.";
+
+            // Begin a transaction to ensure data consistency
+            $transaction_supported = true;
+            try {
+                $con->beginTransaction();
+            } catch (PDOException $e) {
+                $transaction_supported = false;
+                error_log("Transactions not supported: " . $e->getMessage());
+            }
+
+            if ($transaction_supported) {
+                try {
+                    // Fetch the leave request details, including leave_type_id
+                    $stmt = $con->prepare("
+                        SELECT employee_id, leave_type_id, leave_start_date, leave_end_date, status
+                        FROM Leaves
+                        WHERE leave_id = ?
+                    ");
+                    $stmt->execute([$request_id]);
+                    $leave = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    if (!$leave) {
+                        throw new Exception("Leave request not found.");
+                    }
+
+                    // Get leave_type_id directly from Leaves
+                    $leave_type_id = $leave['leave_type_id'] ?? null;
+                    if (!$leave_type_id) {
+                        throw new Exception("Leave type not found for this request.");
+                    }
+
+                    // Validate dates and calculate the number of leave days
+                    if (empty($leave['leave_start_date']) || empty($leave['leave_end_date'])) {
+                        throw new Exception("Leave start or end date is missing.");
+                    }
+
+                    $start_date = new DateTime($leave['leave_start_date']);
+                    $end_date = new DateTime($leave['leave_end_date']);
+                    if ($start_date > $end_date) {
+                        throw new Exception("Leave start date cannot be after end date.");
+                    }
+
+                    $interval = $start_date->diff($end_date);
+                    $days = $interval->days + 1; // Include both start and end dates
+
+                    // Get the current status
+                    $current_status = $leave['status'];
+                    $employee_id = $leave['employee_id'];
+
+                    // Update the leave status to ispending
+                    $stmt = $con->prepare("UPDATE Leaves SET status = 'ispending' WHERE leave_id = ?");
+                    $stmt->execute([$request_id]);
+
+                    // If the leave was rejected, increase days_used and decrease total_days_allocated
+                    if ($current_status === 'rejected') {
+                        $stmt = $con->prepare("
+                            UPDATE Leave_Balance 
+                            SET days_used = days_used + ?,
+                                total_days_allocated = GREATEST(0, total_days_allocated - ?),
+                                last_updated = CURDATE()
+                            WHERE employee_id = ? AND leave_type_id = ?
+                        ");
+                        $stmt->execute([$days, $days, $employee_id, $leave_type_id]);
+                    }
+
+                    // Commit the transaction
+                    $con->commit();
+                    $response['success'] = true;
+                    $response['message'] = "Leave application moved back to pending.";
+                } catch (Throwable $e) {
+                    $con->rollBack();
+                    $response['error'] = "Error reconsidering leave: " . $e->getMessage();
+                }
+            } else {
+                // Fallback: Proceed without transactions
+                try {
+                    // Fetch the leave request details, including leave_type_id
+                    $stmt = $con->prepare("
+                        SELECT employee_id, leave_type_id, leave_start_date, leave_end_date, status
+                        FROM Leaves
+                        WHERE leave_id = ?
+                    ");
+                    $stmt->execute([$request_id]);
+                    $leave = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    if (!$leave) {
+                        throw new Exception("Leave request not found.");
+                    }
+
+                    // Get leave_type_id directly from Leaves
+                    $leave_type_id = $leave['leave_type_id'] ?? null;
+                    if (!$leave_type_id) {
+                        throw new Exception("Leave type not found for this request.");
+                    }
+
+                    // Validate dates and calculate the number of leave days
+                    if (empty($leave['leave_start_date']) || empty($leave['leave_end_date'])) {
+                        throw new Exception("Leave start or end date is missing.");
+                    }
+
+                    $start_date = new DateTime($leave['leave_start_date']);
+                    $end_date = new DateTime($leave['leave_end_date']);
+                    if ($start_date > $end_date) {
+                        throw new Exception("Leave start date cannot be after end date.");
+                    }
+
+                    $interval = $start_date->diff($end_date);
+                    $days = $interval->days + 1;
+
+                    $current_status = $leave['status'];
+                    $employee_id = $leave['employee_id'];
+
+                    // Update the leave status to ispending
+                    $stmt = $con->prepare("UPDATE Leaves SET status = 'ispending' WHERE leave_id = ?");
+                    $stmt->execute([$request_id]);
+
+                    // If the leave was rejected, increase days_used and decrease total_days_allocated
+                    if ($current_status === 'rejected') {
+                        $stmt = $con->prepare("
+                            UPDATE Leave_Balance 
+                            SET days_used = days_used + ?,
+                                total_days_allocated = GREATEST(0, total_days_allocated - ?),
+                                last_updated = CURDATE()
+                            WHERE employee_id = ? AND leave_type_id = ?
+                        ");
+                        $stmt->execute([$days, $days, $employee_id, $leave_type_id]);
+                    }
+
+                    $response['success'] = true;
+                    $response['message'] = "Leave application moved back to pending.";
+                } catch (Throwable $e) {
+                    $response['error'] = "Error reconsidering leave: " . $e->getMessage();
+                }
+            }
         } elseif ($_POST['action'] === 'update_leave_status') {
             $request_id = $_POST['request_id'];
             $new_status = $_POST['status'];
-            $stmt = $con->prepare("UPDATE Leaves SET status = ?, approved_by = ? WHERE leave_id = ?");
-            $stmt->execute([$new_status, $_SESSION['user_id'], $request_id]); // Assuming user_id is in session
-            $response['success'] = true;
-            $response['message'] = "Leave application status updated to " . $new_status . ".";
+
+            // Check if user_id is set in session
+            if (!isset($_SESSION['user_id'])) {
+                $response['error'] = "User ID not found in session. Please log in.";
+                echo json_encode($response);
+                exit;
+            }
+
+            // Begin a transaction to ensure data consistency
+            $transaction_supported = true;
+            try {
+                $con->beginTransaction();
+            } catch (PDOException $e) {
+                $transaction_supported = false;
+                error_log("Transactions not supported: " . $e->getMessage());
+            }
+
+            if ($transaction_supported) {
+                try {
+                    // Fetch the leave request details, including leave_type_id
+                    $stmt = $con->prepare("
+                        SELECT employee_id, leave_type_id, leave_start_date, leave_end_date, status
+                        FROM Leaves
+                        WHERE leave_id = ?
+                    ");
+                    $stmt->execute([$request_id]);
+                    $leave = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    if (!$leave) {
+                        throw new Exception("Leave request not found.");
+                    }
+
+                    // Get leave_type_id directly from Leaves
+                    $leave_type_id = $leave['leave_type_id'] ?? null;
+                    if (!$leave_type_id) {
+                        throw new Exception("Leave type not found for this request.");
+                    }
+
+                    // Validate dates and calculate the number of leave days
+                    if (empty($leave['leave_start_date']) || empty($leave['leave_end_date'])) {
+                        throw new Exception("Leave start or end date is missing.");
+                    }
+
+                    $start_date = new DateTime($leave['leave_start_date']);
+                    $end_date = new DateTime($leave['leave_end_date']);
+                    if ($start_date > $end_date) {
+                        throw new Exception("Leave start date cannot be after end date.");
+                    }
+
+                    $interval = $start_date->diff($end_date);
+                    $days = $interval->days + 1; // Include both start and end dates
+
+                    // Get the current status and new status
+                    $current_status = $leave['status'];
+                    $employee_id = $leave['employee_id'];
+
+                    // Update the leave status
+                    $stmt = $con->prepare("UPDATE Leaves SET status = ?, approved_by = ? WHERE leave_id = ?");
+                    $stmt->execute([$new_status, $_SESSION['user_id'], $request_id]);
+
+                    // Handle days_used and total_days_allocated in Leave_Balance based on status changes
+                    if ($new_status === 'rejected' && $current_status === 'ispending') {
+                        // Leave is rejected from pending: decrease days_used, increase total_days_allocated
+                        $stmt = $con->prepare("
+                            UPDATE Leave_Balance 
+                            SET days_used = GREATEST(0, days_used - ?),
+                                total_days_allocated = total_days_allocated + ?,
+                                last_updated = CURDATE()
+                            WHERE employee_id = ? AND leave_type_id = ?
+                        ");
+                        $stmt->execute([$days, $days, $employee_id, $leave_type_id]);
+                    } elseif ($new_status === 'approved' && $current_status === 'rejected') {
+                        // Leave is approved after being rejected: increase days_used, decrease total_days_allocated
+                        $stmt = $con->prepare("
+                            UPDATE Leave_Balance 
+                            SET days_used = days_used + ?,
+                                total_days_allocated = GREATEST(0, total_days_allocated - ?),
+                                last_updated = CURDATE()
+                            WHERE employee_id = ? AND leave_type_id = ?
+                        ");
+                        $stmt->execute([$days, $days, $employee_id, $leave_type_id]);
+                    }
+
+                    // Commit the transaction
+                    $con->commit();
+                    $response['success'] = true;
+                    $response['message'] = "Leave application status updated to " . $new_status . ".";
+                } catch (Throwable $e) {
+                    $con->rollBack();
+                    $response['error'] = "Error updating leave status: " . $e->getMessage();
+                }
+            } else {
+                // Fallback: Proceed without transactions
+                try {
+                    // Fetch the leave request details, including leave_type_id
+                    $stmt = $con->prepare("
+                        SELECT employee_id, leave_type_id, leave_start_date, leave_end_date, status
+                        FROM Leaves
+                        WHERE leave_id = ?
+                    ");
+                    $stmt->execute([$request_id]);
+                    $leave = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                    if (!$leave) {
+                        throw new Exception("Leave request not found.");
+                    }
+
+                    // Get leave_type_id directly from Leaves
+                    $leave_type_id = $leave['leave_type_id'] ?? null;
+                    if (!$leave_type_id) {
+                        throw new Exception("Leave type not found for this request.");
+                    }
+
+                    // Validate dates and calculate the number of leave days
+                    if (empty($leave['leave_start_date']) || empty($leave['leave_end_date'])) {
+                        throw new Exception("Leave start or end date is missing.");
+                    }
+
+                    $start_date = new DateTime($leave['leave_start_date']);
+                    $end_date = new DateTime($leave['leave_end_date']);
+                    if ($start_date > $end_date) {
+                        throw new Exception("Leave start date cannot be after end date.");
+                    }
+
+                    $interval = $start_date->diff($end_date);
+                    $days = $interval->days + 1;
+
+                    $current_status = $leave['status'];
+                    $employee_id = $leave['employee_id'];
+
+                    // Update the leave status
+                    $stmt = $con->prepare("UPDATE Leaves SET status = ?, approved_by = ? WHERE leave_id = ?");
+                    $stmt->execute([$new_status, $_SESSION['user_id'], $request_id]);
+
+                    // Handle days_used and total_days_allocated in Leave_Balance based on status changes
+                    if ($new_status === 'rejected' && $current_status === 'ispending') {
+                        $stmt = $con->prepare("
+                            UPDATE Leave_Balance 
+                            SET days_used = GREATEST(0, days_used - ?),
+                                total_days_allocated = total_days_allocated + ?,
+                                last_updated = CURDATE()
+                            WHERE employee_id = ? AND leave_type_id = ?
+                        ");
+                        $stmt->execute([$days, $days, $employee_id, $leave_type_id]);
+                    } elseif ($new_status === 'approved' && $current_status === 'rejected') {
+                        $stmt = $con->prepare("
+                            UPDATE Leave_Balance 
+                            SET days_used = days_used + ?,
+                                total_days_allocated = GREATEST(0, total_days_allocated - ?),
+                                last_updated = CURDATE()
+                            WHERE employee_id = ? AND leave_type_id = ?
+                        ");
+                        $stmt->execute([$days, $days, $employee_id, $leave_type_id]);
+                    }
+
+                    $response['success'] = true;
+                    $response['message'] = "Leave application status updated to " . $new_status . ".";
+                } catch (Throwable $e) {
+                    $response['error'] = "Error updating leave status: " . $e->getMessage();
+                }
+            }
         }
     } catch (PDOException $e) {
         $response['error'] = "Database error: " . $e->getMessage();
@@ -162,7 +449,6 @@ if (isset($_POST['action'])) {
     exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
