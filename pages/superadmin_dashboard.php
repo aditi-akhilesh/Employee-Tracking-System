@@ -540,13 +540,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 				// Base query for joining tables
 				$sql = "
 					SELECT
-  						e.employee_id,
-  						u.first_name,
-  						u.last_name,
-  						SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) AS tasks_completed,
-  						AVG(f.rating) AS average_feedback,
-  						(SUM(CASE WHEN t.status = 'completed' THEN 1 ELSE 0 END) * 0.6
-   						+ AVG(f.rating) * 0.4) AS combined_score
+ 				        e.employee_id,
+  					u.first_name,
+  					u.last_name,
+  					-- count each completed task only once, even if it appears multiple times
+  					COUNT(DISTINCT IF(t.status = 'completed', t.task_id, NULL)) AS tasks_completed,
+  					-- average feedback is unaffected by the task join
+  					AVG(f.rating) AS average_feedback,
+  					-- re-use the distinct-count here for your weighted score
+  					(
+   					 COUNT(DISTINCT IF(t.status = 'completed', t.task_id, NULL)) * 0.6
+    					+ AVG(f.rating) * 0.4
+  					) AS combined_score
 					FROM Employees e
 					LEFT JOIN Users u
   						ON e.user_id = u.user_id
@@ -556,8 +561,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
   						ON t.task_id = ast.task_id
 					LEFT JOIN Feedback f
   						ON f.employee_id = e.employee_id
-					GROUP BY e.employee_id;
-				";
+					GROUP BY e.employee_id	";
 
 				// Order by the selected filter
 				if ($filter === 'tasks_completed') {
