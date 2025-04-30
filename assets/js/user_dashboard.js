@@ -332,12 +332,7 @@ function fetchAttendanceHistory() {
             <td>${record.check_in || 'N/A'}</td>
             <td>${record.check_out || 'N/A'}</td>
             <td>${record.status}</td>
-            <td style="display: flex; gap: 5px;">
-              <button class="update-btn" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;" data-attendance-id="${
-                record.attendance_id
-              }" data-check-in="${record.check_in}" data-check-out="${
-            record.check_out
-          }" data-status="${record.status}">Update</button>
+            <td>
               <button class="delete-btn" style="background-color: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer;" data-attendance-id="${
                 record.attendance_id
               }">Delete</button>
@@ -346,17 +341,7 @@ function fetchAttendanceHistory() {
           tableBody.appendChild(row);
         });
 
-        // Attach event listeners to Update and Delete buttons
-        document.querySelectorAll('.update-btn').forEach((button) => {
-          button.addEventListener('click', () => {
-            const attendanceId = button.getAttribute('data-attendance-id');
-            const checkIn = button.getAttribute('data-check-in');
-            const checkOut = button.getAttribute('data-check-out');
-            const status = button.getAttribute('data-status');
-            showUpdateAttendanceForm(attendanceId, checkIn, checkOut, status);
-          });
-        });
-
+        // Attach event listeners to Delete buttons
         document.querySelectorAll('.delete-btn').forEach((button) => {
           button.addEventListener('click', () => {
             const attendanceId = button.getAttribute('data-attendance-id');
@@ -375,182 +360,7 @@ function fetchAttendanceHistory() {
     });
 }
 
-// Show update attendance form
-function showUpdateAttendanceForm(attendanceId, checkIn, checkOut, status) {
-  // Format check-in and check-out for datetime-local input (YYYY-MM-DDThh:mm)
-  const formatDateTimeForInput = (dateTime) => {
-    if (!dateTime) return '';
-    // Expected format: YYYY-MM-DD HH:mm:ss (e.g., 2025-03-11 08:00:00)
-    const [datePart, timePart] = dateTime.split(' ');
-    if (!datePart || !timePart) {
-      console.error('Invalid dateTime format:', dateTime);
-      return '';
-    }
-    const [year, month, day] = datePart.split('-');
-    const [hours, minutes] = timePart.split(':');
-    if (!year || !month || !day || !hours || !minutes) {
-      console.error('Invalid dateTime components:', dateTime);
-      return '';
-    }
-    return `${year}-${month}-${day}T${hours}:${minutes}`;
-  };
-
-  const formattedCheckIn = formatDateTimeForInput(checkIn);
-  const formattedCheckOut = formatDateTimeForInput(checkOut);
-
-  // Log the formatted values for debugging
-  console.log('Formatted Check-In:', formattedCheckIn);
-  console.log('Formatted Check-Out:', formattedCheckOut);
-
-  const section = document.getElementById('attendance-history-section');
-  section.innerHTML = `
-    <div class="card">
-      <h2>Update Attendance</h2>
-      <form id="update-attendance-form">
-        <input type="hidden" id="attendance_id" name="attendance_id" value="${attendanceId}">
-        <div class="form-group">
-          <label for="check_in">Check-In Time:</label>
-          <input type="datetime-local" id="check_in" name="check_in" value="${formattedCheckIn}" required onchange="ensureCheckInValue(this)">
-        </div>
-        <div class="form-group">
-          <label for="check_out">Check-Out Time (Optional):</label>
-          <input type="datetime-local" id="check_out" name="check_out" value="${formattedCheckOut}">
-        </div>
-        <div class="form-group">
-          <label for="status">Status:</label>
-          <select id="status" name="status">
-            <option value="present" ${
-              status === 'Present' ? 'selected' : ''
-            }>Present</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <p style="color: #ff0000; font-size: 14px;">
-            Note: If you are absent, please apply for a leave request in the "Apply for Leave" section under "Attendance & Leaves".
-          </p>
-        </div>
-        <div class="form-group button-group">
-          <button type="submit">Update Attendance</button>
-          <button type="button" class="back-btn" onclick="navigateToAttendanceHistory()">Back</button>
-        </div>
-      </form>
-    </div>
-  `;
-
-  const form = document.getElementById('update-attendance-form');
-  form.addEventListener('submit', handleUpdateAttendanceSubmit);
-}
-
-function ensureCheckInValue(input) {
-  if (!input.value || input.value.trim() === '') {
-    // Set a default value (current date and time) if the field is cleared
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    input.value = `${year}-${month}-${day}T${hours}:${minutes}`;
-    alert(
-      'Check-in time is required. It has been set to the current date and time. Please adjust if needed.'
-    );
-  }
-}
-
-// Handle update attendance submission
-function handleUpdateAttendanceSubmit(event) {
-  event.preventDefault();
-  const form = document.getElementById('update-attendance-form');
-  const attendanceId = document.getElementById('attendance_id').value;
-  const checkIn = document.getElementById('check_in').value;
-  const checkOut = document.getElementById('check_out').value;
-  const status = document.getElementById('status').value;
-
-  // Log the checkIn value for debugging
-  console.log('checkIn value:', checkIn);
-
-  // Ensure the attendance_id is not empty
-  if (!attendanceId) {
-    alert('Error: Attendance ID is missing.');
-    return;
-  }
-
-  // Validate check-in time
-  if (!checkIn || checkIn.trim() === '') {
-    alert(
-      'Error: Check-in time is required. Please select a valid date and time.'
-    );
-    return;
-  }
-
-  // Validate the format of checkIn (should be YYYY-MM-DDThh:mm)
-  const checkInFormatRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
-  if (!checkInFormatRegex.test(checkIn)) {
-    alert(
-      'Error: Check-in time format is invalid. Expected format: YYYY-MM-DDThh:mm (e.g., 2025-03-11T08:00).'
-    );
-    return;
-  }
-
-  // Format the check-in and check-out times for the backend (YYYY-MM-DD HH:mm:ss)
-  const formatDateTimeForBackend = (dateTime) => {
-    if (!dateTime) return null;
-    // datetime-local input gives format: YYYY-MM-DDThh:mm (e.g., 2025-03-11T08:00)
-    const [datePart, timePart] = dateTime.split('T');
-    if (!datePart || !timePart) {
-      console.error(
-        'Invalid date format in formatDateTimeForBackend:',
-        dateTime
-      );
-      return null;
-    }
-    const [year, month, day] = datePart.split('-');
-    const [hours, minutes] = timePart.split(':');
-    if (!year || !month || !day || !hours || !minutes) {
-      console.error(
-        'Missing date/time components in formatDateTimeForBackend:',
-        { year, month, day, hours, minutes }
-      );
-      return null;
-    }
-    return `${year}-${month}-${day} ${hours}:${minutes}:00`;
-  };
-
-  const formattedCheckIn = formatDateTimeForBackend(checkIn);
-  const formattedCheckOut = formatDateTimeForBackend(checkOut);
-
-  if (!formattedCheckIn) {
-    alert(
-      'Error: Invalid check-in time format. Please ensure the date and time are correctly set (e.g., 2025-03-11 08:00).'
-    );
-    return;
-  }
-
-  fetch('', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      action: 'update_attendance',
-      attendance_id: attendanceId,
-      check_in: formattedCheckIn,
-      check_out: formattedCheckOut || '', // Send empty string if null
-      status: status,
-    }),
-  })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        alert(data.message);
-        navigateToAttendanceHistory();
-      } else {
-        alert('Error: ' + (data.error || 'Failed to update attendance'));
-      }
-    })
-    .catch((error) => {
-      console.error('Error:', error);
-      alert('An error occurred while updating attendance.');
-    });
-}
+// Removed update attendance form and related functions to disable updating attendance records
 
 // Delete attendance record
 function deleteAttendance(attendanceId) {

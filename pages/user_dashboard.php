@@ -85,42 +85,6 @@ if (isset($_POST['action'])) {
             } else {
                 $response['error'] = "Failed to mark attendance.";
             }
-        } elseif ($_POST['action'] === 'update_attendance') {
-            $attendance_id = $_POST['attendance_id'] ?? null;
-            $check_in = $_POST['check_in'] ?? null;
-            $check_out = !empty($_POST['check_out']) ? $_POST['check_out'] : null;
-            $status = $_POST['status'] ?? 'present';
-
-            if (!$attendance_id || !$check_in) {
-                $response['error'] = "Attendance ID and check-in time are required.";
-                echo json_encode($response);
-                exit;
-            }
-
-            if ($check_out) {
-                $check_in_time = strtotime($check_in);
-                $check_out_time = strtotime($check_out);
-
-                if ($check_out_time < $check_in_time) {
-                    $response['error'] = "Check-out time cannot be earlier than check-in time.";
-                    echo json_encode($response);
-                    exit;
-                }
-            }
-
-            $stmt = $con->prepare("
-                UPDATE Attendance 
-                SET check_in = ?, check_out = ?, status = ?
-                WHERE attendance_id = ? AND employee_id = ?
-            ");
-            $success = $stmt->execute([$check_in, $check_out, $status, $attendance_id, $employee_id]);
-
-            if ($success) {
-                $response['success'] = true;
-                $response['message'] = "Attendance updated successfully.";
-            } else {
-                $response['error'] = "Failed to update attendance.";
-            }
         } elseif ($_POST['action'] === 'delete_attendance') {
             $attendance_id = $_POST['attendance_id'] ?? null;
 
@@ -567,13 +531,13 @@ if (isset($_POST['action'])) {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=devic-width, initial-scale=1.0">
     <title>Employee Dashboard</title>
     <link rel="stylesheet" href="../assets/css/styles.css">
     <link rel="stylesheet" href="../assets/css/dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-   </head>
+</head>
 <body>
 <?php include '../includes/header.php'; ?>
 <div class="dashboard-container">
@@ -589,7 +553,7 @@ if (isset($_POST['action'])) {
 
         <!-- Feedback Section -->
         <div id="feedback-section" style="display: none;" class="card"></div>
-		 <!-- Enroll in Training Programs Section -->
+        <!-- Enroll in Training Programs Section -->
         <div id="enroll-training-section" style="display: none;" class="card">
             <h2>Enroll in Training Programs</h2>
             <div class="form-group">
@@ -599,7 +563,7 @@ if (isset($_POST['action'])) {
                     <!-- Populated dynamically -->
                 </select>
             </div>
-			<table id="available-trainings-table">
+            <table id="available-trainings-table">
                 <thead>
                     <tr>
                         <th>Training Name</th>
@@ -616,7 +580,6 @@ if (isset($_POST['action'])) {
                 <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
             </div>
         </div>
-
 
         <!-- Submit Exit Interview Section -->
         <div id="submit-exit-interview-section" style="display: none;" class="card"></div>
@@ -696,34 +659,34 @@ if (isset($_POST['action'])) {
         </div>
 
         <!-- Mark Attendance Section -->
-<div id="mark-attendance-section" style="display: none;" class="card">
-    <h2>Mark Daily Attendance</h2>
-    <form id="mark-attendance-form">
-        <div class="form-group">
-            <label for="check_in">Check-In Time:</label>
-            <input type="datetime-local" id="check_in" name="check_in" required>
+        <div id="mark-attendance-section" style="display: none;" class="card">
+            <h2>Mark Daily Attendance</h2>
+            <form id="mark-attendance-form">
+                <div class="form-group">
+                    <label for="check_in">Check-In Time:</label>
+                    <input type="datetime-local" id="check_in" name="check_in" required>
+                </div>
+                <div class="form-group">
+                    <label for="check_out">Check-Out Time (Optional):</label>
+                    <input type="datetime-local" id="check_out" name="check_out">
+                </div>
+                <div class="form-group">
+                    <label for="status">Status:</label>
+                    <select id="status" name="status">
+                        <option value="present">Present</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <p style="color: #ff0000; font-size: 14px;">
+                        Note: If you are absent, please apply for a leave request in the "Apply for Leave" section under "Attendance & Leaves".
+                    </p>
+                </div>
+                <div class="form-group button-group">
+                    <button type="submit">Mark Attendance</button>
+                    <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
+                </div>
+            </form>
         </div>
-        <div class="form-group">
-            <label for="check_out">Check-Out Time (Optional):</label>
-            <input type="datetime-local" id="check_out" name="check_out">
-        </div>
-        <div class="form-group">
-            <label for="status">Status:</label>
-            <select id="status" name="status">
-                <option value="present">Present</option>
-            </select>
-        </div>
-        <div class="form-group">
-            <p style="color: #ff0000; font-size: 14px;">
-                Note: If you are absent, please apply for a leave request in the "Apply for Leave" section under "Attendance & Leaves".
-            </p>
-        </div>
-        <div class="form-group button-group">
-            <button type="submit">Mark Attendance</button>
-            <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
-        </div>
-    </form>
-</div>
 
         <!-- Attendance History Section -->
         <div id="attendance-history-section" style="display: none;" class="card">
@@ -741,16 +704,16 @@ if (isset($_POST['action'])) {
                 <button type="button" class="back-btn" onclick="showWelcomeMessage()">Back</button>
             </div>
             <table>
-    <thead>
-        <tr>
-            <th>Check-In</th>
-            <th>Check-Out</th>
-            <th>Status</th>
-            <th>Action</th>
-        </tr>
-    </thead>
-    <tbody id="attendance-history-table"></tbody>
-</table>
+                <thead>
+                    <tr>
+                        <th>Check-In</th>
+                        <th>Check-Out</th>
+                        <th>Status</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody id="attendance-history-table"></tbody>
+            </table>
         </div>
 
         <!-- Update Training Status Section -->
