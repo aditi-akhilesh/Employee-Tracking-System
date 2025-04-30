@@ -1387,7 +1387,7 @@ function updateExitInterview(selectedInterviewId = null) {
                                 <td style="border: 1px solid #ddd; padding: 8px;">
                                     <button class="update-btn" data-interview-id="${
                                       ei.interview_id
-                                    }" style="margin-right: 5px;">Update</button>
+                                    }" style="margin-bottom: 5px;">Update</button>
                                     <button class="remove-btn" data-interview-id="${
                                       ei.interview_id
                                     }" style="background-color: #dc3545; color: white;">Delete</button>
@@ -1803,6 +1803,7 @@ function editSubtask(taskId) {
 
   const employeeSelect = document.getElementById('employee_id_subtask');
   const projectSelect = document.getElementById('project_id_subtask');
+  const dueDateInput = document.getElementById('due_date'); // Get the due date input
 
   console.log('editSubtask - Task data:', task);
   console.log('editSubtask - Project ID:', task.project_id);
@@ -1822,7 +1823,8 @@ function editSubtask(taskId) {
   projectSelect.value = task.project_id;
   projectSelect.disabled = true;
   document.getElementById('task_description').value = task.task_description;
-  document.getElementById('due_date').value = task.due_date;
+  dueDateInput.value = task.due_date;
+  dueDateInput.disabled = true; // Disable the due date field
   document.getElementById('task_status').value = task.status;
   document.getElementById('delete-task-btn').style.display = 'inline-block';
   document.getElementById('filter_project').value = task.project_id;
@@ -1838,6 +1840,7 @@ function editSubtask(taskId) {
         (emp) => emp.employee_id == task.employee_id
       );
       employeeSelect.value = validEmployee ? task.employee_id : '';
+      employeeSelect.disabled = true; // Disable the employee dropdown
       console.log(
         'editSubtask - Employee dropdown set to:',
         employeeSelect.value
