@@ -1,34 +1,76 @@
-# Employee Tracking System
+                                        🧭 Employee Tracker — Role-Based Workforce Management System
 
-A web-based system for managing employees, attendance, projects, and more with role-based dashboards (User, Manager, HR, Super Admin).
+**Employee Tracker** is a full-stack web application built by a team of four graduate students from Indiana University to streamline HR operations, reduce manual overhead, and create transparency in organizational workflows. Designed for startups and growing businesses, it provides secure, role-specific dashboards that automate everything from attendance tracking and task assignments to training, feedback, and audit logging.
 
-## Features
-- **Role-Based Access**: User (Employee), Manager, HR, and Super Admin dashboards.
-- **Login**: Dropdown to select role (User, Manager, HR, Super Admin).
-- **UI**: Blue-and-white theme with modern design and animations.
-- **Modular Code**: Separated PHP, HTML, CSS, and JS for easy maintenance.
+> 🏆 Recipient of the **Best UI/UX Award** — IUI CIS Hackathon 2025
 
-## Directory Structure
-employee-tracking-system/
-├── assets/           # Static assets (CSS, JS, images)
-├── includes/         # Reusable PHP components
-├── auth/             # Authentication logic
-├── pages/            # Main pages (login, dashboards)
-├── README.md         # This file
-└── index.php         # Entry point
+---
 
+## 🎯 Vision & Purpose
 
-## Setup Instructions
-1. **Requirements**: PHP 7+, a web server (e.g., Apache), and a browser.
-2. **Installation**:
-   - Clone or download this repository.
-   - Place it in your web server directory (e.g., `htdocs` for XAMPP).
-   - Navigate to `http://localhost/employee-tracking-system/` in your browser.
-3. **Credentials**:
-   - User: `bob.brown@gmail.com` / `Bob@123`
-   - Manager: `alice.johnson@gmail.com` / `Alice@123`
-   - HR: `jane.smith@gmail.com` / `Jane@123`
-   - Super Admin: `john.doe@gmail.com` / `John@123`
+Modern HR shouldn't revolve around fragmented spreadsheets and approval bottlenecks. Our goal was to design a system that simplifies workforce management by offering intuitive interfaces, secure data flows, and real-time visibility across organizational roles. With the growing need for integrated platforms in small businesses, *Employee Tracker* offers a scalable solution built with usability and structure in mind.
 
-## Contributing
-Feel free to fork this repository and submit pull requests for improvements!
+---
+
+## 🏗️ What We Built
+
+This project delivers four dedicated dashboards — **Employee**, **Manager**, **HR Admin**, and **Super Admin** — each optimized for its role’s responsibilities and access level.
+
+It supports:
+
+- ✅ **Live attendance monitoring**
+- ✅ **Leave application & approval workflow**
+- ✅ **Task assignment and tracking**
+- ✅ **Training management & performance reviews**
+- ✅ **Exit interview & feedback submission**
+- ✅ **Audit logs & system insights**
+- ✅ **Role-based authentication and data export**
+
+Every dashboard operates through a modular design, enhancing both maintainability and user experience.
+
+---
+
+## 🧠 System Architecture
+
+- 🔒 **Security:** Authentication system with hashed passwords and restricted role access
+- 📊 **Database:** MySQL backend with **21 normalized tables** for clean relational integrity
+- 🛠️ **Deployment:** Hosted on Indiana University’s Linux-based Apache server for live testing
+- 📂 **Audit Trail:** Triggers and logs for system actions across all modules
+- 🔄 **CRUD Operations:** Real-time updates across profile, attendance, training, and more
+
+---
+
+## 💻 Tech Stack
+
+| Layer       | Tools Used                      |
+|-------------|----------------------------------|
+| Frontend    | HTML • CSS • JavaScript          |
+| Backend     | PHP                              |
+| Database    | MySQL                            |
+| Deployment  | IU Apache Server (Linux)         |
+| Security    | Hashed passwords • Role control  |
+| Extras      | DB Triggers • Audit Logging      |
+
+---
+
+## 👥 Team Members & Roles
+
+| Name               | Contributions                                    |
+|--------------------|--------------------------------------------------|
+| **Vaishali Kondoju** | User & Dept Management • Audit Dashboard • Data Export • Testing |
+| Aditi Akhilesh      | Project & Training Modules                      |
+| Aditya Sholapurkar  | Reports • Attendance • Department Oversight     |
+| Amritha Prakash     | Audit Triggers • Performance Metrics • Testing  |
+
+---
+
+## 🔗 Access & References
+
+- 📁 [GitHub Repository](https://github.com/VaishaliKondoju/Employee-Tracking-System)
+- 📊 [ER Diagram](https://dbdiagram.io/d/ERD-2-67b01b38263d6cf9a03d8462)
+
+---
+
+## 🏁 Outcomes & Recognition
+
+Submitted to the IUI CIS Hackathon, this project won the **Best UI/UX Award** for its streamlined design, structured navigation, and intuitive data flow across user roles. It also validated our collective mission: building tools that prioritize both functionality and user empowerment.
