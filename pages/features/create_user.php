@@ -148,7 +148,7 @@ try {
 
     // Generate password
     $password = $first_name . "@" . $dob;
-    $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+    $hashed_password = password_hash($password, PASSWORD_BCRYPT);
     if ($hashed_password === false) {
         throw new Exception("Password hashing failed");
     }

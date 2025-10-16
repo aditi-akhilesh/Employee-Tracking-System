@@ -53,7 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   try {
     // Hash the new password
-    $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+    $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
     if ($hashed_password === false) {
       throw new Exception('Password hashing failed.');
     }
